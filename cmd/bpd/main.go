@@ -1,5 +1,79 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"flag"
+	"fmt"
+	"github.com/seanheiney/agent-backplane/internal/adapters/tmux"
+	"github.com/seanheiney/agent-backplane/internal/config"
+	"github.com/seanheiney/agent-backplane/internal/daemon"
+	"github.com/seanheiney/agent-backplane/internal/store"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
 
-func main() { fmt.Println("bpd development (protocol bp/1); daemon integration is under construction") }
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, "bpd:", err)
+		os.Exit(1)
+	}
+}
+func run() error {
+	state := flag.String("state", "", "private state directory")
+	flag.Parse()
+	p, err := config.Resolve(*state)
+	if err != nil {
+		return err
+	}
+	if err = p.Ensure(); err != nil {
+		return err
+	}
+	lock, err := p.Lock()
+	if err != nil {
+		return err
+	}
+	defer lock.Close()
+	host, err := p.HostID()
+	if err != nil {
+		return err
+	}
+	db, err := store.Open(p.DB)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	backend, err := tmux.New(p.Tmux)
+	if err != nil {
+		return err
+	}
+	svc, err := daemon.New(db, backend, host)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	if err = svc.Reconcile(ctx); err != nil {
+		return fmt.Errorf("startup reconciliation: %w", err)
+	}
+	l, err := p.Listen()
+	if err != nil {
+		return err
+	}
+	defer l.Close()
+	srv := &http.Server{Handler: svc.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 25 * time.Second, MaxHeaderBytes: 16 << 10}
+	go func() {
+		<-ctx.Done()
+		stop, c := context.WithTimeout(context.Background(), 5*time.Second)
+		defer c()
+		_ = srv.Shutdown(stop)
+	}()
+	fmt.Fprintln(os.Stderr, "bpd ready:", p.Control)
+	err = srv.Serve(l)
+	if err == http.ErrServerClosed {
+		return nil
+	}
+	return err
+}
