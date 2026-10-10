@@ -38,6 +38,7 @@ jobs:
           go test -race ./...
           go vet ./...
           python3 tests/installer_test.py
+          python3 tests/native_package_acceptance_test.py -v
       - name: Four target archives
         env:
           RELEASE_TAG: ${{ github.ref_name }}

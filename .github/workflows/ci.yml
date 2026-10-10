@@ -35,6 +35,8 @@ jobs:
           go vet -mod=readonly ./...
       - name: Installer negative and ownership cases
         run: python3 tests/installer_test.py
+      - name: Package qualification cancellation and identity controls
+        run: python3 tests/native_package_acceptance_test.py -v
       - name: Actual host archive smoke
         run: |
           case "$(uname -s)" in Darwin) os=darwin;; Linux) os=linux;; esac
