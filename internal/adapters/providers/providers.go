@@ -134,8 +134,20 @@ func validateNativeArgs(provider string, args []string) error {
 		if arg == "--" {
 			continue // Conservatively inspect the next positional token too.
 		}
-		if provider == "claude" && (arg == "-p" || arg == "--print" || strings.HasPrefix(arg, "--print=") || arg == "--bg" || arg == "--background") {
-			return errors.New("managed launch requires an interactive native terminal; print/background workflows are unsupported")
+		if provider == "claude" {
+			if arg == "--print" || strings.HasPrefix(arg, "--print=") || arg == "--bg" || strings.HasPrefix(arg, "--bg=") || arg == "--background" || strings.HasPrefix(arg, "--background=") {
+				return errors.New("managed launch requires an interactive native terminal; print/background workflows are unsupported")
+			}
+			if strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, "--") {
+				for _, short := range arg[1:] {
+					if short == 'p' {
+						return errors.New("managed launch requires an interactive native terminal; print workflows are unsupported")
+					}
+					if strings.ContainsRune("nrdw", short) {
+						break // Remaining characters are this option's value.
+					}
+				}
+			}
 		}
 		if values[arg] {
 			i++
@@ -147,7 +159,8 @@ func validateNativeArgs(provider string, args []string) error {
 		if blocked[arg] {
 			return errors.New("native management commands require the provider's separate explicit workflow")
 		}
-		return nil // First positional token is an interactive prompt/resume command.
+		// Keep inspecting positional tokens: an unknown value-taking flag may
+		// have consumed this one in the native parser, revealing a later command.
 	}
 	return nil
 }

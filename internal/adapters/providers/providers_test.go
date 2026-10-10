@@ -99,7 +99,7 @@ func TestSupportedLaunchPreservesArgvAndRejectsImplicitAuthChanges(t *testing.T)
 }
 
 func TestNativeWorkflowGuardHandlesOptionsAndLiteralPrompts(t *testing.T) {
-	for _, bad := range [][]string{{"setup-token"}, {"--model", "example", "auth", "logout"}, {"--model=example", "setup-token"}, {"--dangerously-skip-permissions", "daemon", "stop"}, {"--", "setup-token"}, {"-p", "prompt"}, {"--bg"}} {
+	for _, bad := range [][]string{{"setup-token"}, {"--model", "example", "auth", "logout"}, {"--model=example", "setup-token"}, {"--unknown-future-option", "value", "auth"}, {"--dangerously-skip-permissions", "daemon", "stop"}, {"--", "setup-token"}, {"-p", "prompt"}, {"-cp", "prompt"}, {"--bg"}} {
 		if err := validateNativeArgs("claude", bad); err == nil {
 			t.Fatalf("nonterminal or management workflow accepted: %v", bad)
 		}
