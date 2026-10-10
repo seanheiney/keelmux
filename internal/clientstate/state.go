@@ -120,6 +120,12 @@ func Load(path string) (State, error) {
 	if err != nil {
 		return State{}, err
 	}
+	return Decode(data)
+}
+
+// Decode validates an existing bounded place snapshot without file IO or repair.
+// Legacy decoding changes only the returned in-memory value.
+func Decode(data []byte) (State, error) {
 	if len(data) > 4<<20 || !utf8.Valid(data) {
 		return State{}, errors.New("client place exceeds safe size or has invalid UTF-8")
 	}
