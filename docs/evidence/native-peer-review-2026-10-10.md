@@ -168,3 +168,24 @@ in row two, cursor `(1,1)`. The defect was reproduced independently on
 `2397355`; it was not introduced by that correction. The captain owns the
 narrow margin-validation follow-up and its final integrated source freeze.
 No source changes were made in the author's worktree by this reviewer.
+
+The captain's follow-up
+`c55fff82176f4e8d941a569136e15567872ffbb9` resolves that margin defect. Independent
+inspection confirmed that the guard applies the pinned emulator's same defaults
+and rejects the same inverted/equal bounds. The new 20 expected-state cases
+cover inverted/equal bounds and zero top/bottom/both values across four chunk
+sizes, asserting every cell, cursor, pending wrap and tracked region. A separate
+race-enabled overlay run passed in 3.468 s: the original minimized margin repro,
+all 20 new cases, the 735-combination wrap oracle, and the 2,000-stream seeded
+differential probe. The root HEAD and native source bytes were unchanged before
+and after that run. This review approves native source integration at `c55fff8`;
+no native source blocker remains from this review. Final combined qualification
+and fresh installed-package/provider proof remain the captain's separate gates.
+
+Verified native SHA-256 at `c55fff8`:
+
+```text
+c7fac861fadbd01321d4ab36977505fa782a47c0356c5ca969b30156e48dcb25  internal/adapters/nativepty/filter.go
+1b66bc668054beac35a98ff981984920caef4e78adf083f0d10a69d74204f47b  internal/adapters/nativepty/screen.go
+cd5a4dff9a45f5f00364a9d6f9612a14f5f73ae08d7f2193a0bce5c76018c954  internal/adapters/nativepty/glyph_state_test.go
+```
