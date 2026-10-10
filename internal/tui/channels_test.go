@@ -115,6 +115,7 @@ func newChannelHTTPFixture(t *testing.T, m *model, b protocol.ChannelStatus) *ch
 			d, ok := f.deliveries[domain.ID(r.URL.Query().Get("id"))]
 			if !ok {
 				w.WriteHeader(404)
+				json.NewEncoder(w).Encode(protocol.Error{Message: "not found"})
 				return
 			}
 			json.NewEncoder(w).Encode(d)

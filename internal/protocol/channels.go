@@ -81,42 +81,42 @@ type ChannelHistory struct {
 
 func (c *Client) Channels(ctx context.Context) ([]ChannelStatus, error) {
 	var out []ChannelStatus
-	err := c.Call(ctx, "GET", "/v1/channels", nil, &out)
+	err := c.callChannel(ctx, "GET", "/v1/channels", nil, &out)
 	return out, err
 }
 func (c *Client) BindChannel(ctx context.Context, r ChannelBindRequest) (ChannelStatus, error) {
 	var out ChannelStatus
-	err := c.Call(ctx, "POST", "/v1/channels/bind", r, &out)
+	err := c.callChannel(ctx, "POST", "/v1/channels/bind", r, &out)
 	return out, err
 }
 func (c *Client) DisableChannel(ctx context.Context, id domain.ID) error {
-	return c.Call(ctx, "POST", "/v1/channels/disable", ChannelIDRequest{ID: id}, nil)
+	return c.callChannel(ctx, "POST", "/v1/channels/disable", ChannelIDRequest{ID: id}, nil)
 }
 func (c *Client) SyncChannel(ctx context.Context, id domain.ID) (ChannelSyncResponse, error) {
 	var out ChannelSyncResponse
-	err := c.Call(ctx, "POST", "/v1/channels/sync", ChannelIDRequest{ID: id}, &out)
+	err := c.callChannel(ctx, "POST", "/v1/channels/sync", ChannelIDRequest{ID: id}, &out)
 	return out, err
 }
 func (c *Client) SendChannelMessage(ctx context.Context, r ChannelSendRequest) (ChannelSendResponse, error) {
 	var out ChannelSendResponse
-	err := c.Call(ctx, "POST", "/v1/channels/send", r, &out)
+	err := c.callChannel(ctx, "POST", "/v1/channels/send", r, &out)
 	return out, err
 }
 func (c *Client) ChannelHistory(ctx context.Context, thread domain.ID, after int64, limit int) (ChannelHistory, error) {
 	var out ChannelHistory
 	q := url.Values{"thread": {string(thread)}, "after": {strconv.FormatInt(after, 10)}, "limit": {strconv.Itoa(limit)}}
-	err := c.Call(ctx, "GET", "/v1/channels/history?"+q.Encode(), nil, &out)
+	err := c.callChannel(ctx, "GET", "/v1/channels/history?"+q.Encode(), nil, &out)
 	return out, err
 }
 
 func (c *Client) ChannelDelivery(ctx context.Context, id domain.ID) (channels.Delivery, error) {
 	var out channels.Delivery
-	err := c.Call(ctx, "GET", "/v1/channels/delivery?id="+url.QueryEscape(string(id)), nil, &out)
+	err := c.callChannel(ctx, "GET", "/v1/channels/delivery?id="+url.QueryEscape(string(id)), nil, &out)
 	return out, err
 }
 func (c *Client) ReconcileChannelDelivery(ctx context.Context, id domain.ID) (channels.Delivery, error) {
 	var out channels.Delivery
-	err := c.Call(ctx, "POST", "/v1/channels/reconcile", struct {
+	err := c.callChannel(ctx, "POST", "/v1/channels/reconcile", struct {
 		ID domain.ID `json:"message_id"`
 	}{id}, &out)
 	return out, err
