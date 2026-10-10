@@ -157,6 +157,12 @@ func run() error {
 		if len(args) < 2 {
 			return fmt.Errorf("%s needs exact session ID", args[0])
 		}
+		if args[0] == "attach" && (len(args) > 3 || (len(args) == 3 && args[2] != "--read-only")) {
+			return errors.New("attach accepts SESSION [--read-only]")
+		}
+		if args[0] == "inspect" && len(args) != 2 {
+			return errors.New("inspect accepts only SESSION")
+		}
 		sessions, err := c.List(ctx)
 		if err != nil {
 			return err

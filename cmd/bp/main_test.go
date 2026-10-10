@@ -64,7 +64,13 @@ func TestEntryDirectoryFetchesOnceAndManagementStaysLocal(t *testing.T) {
 			t.Fatalf("entry management %q was not refused locally: %v", command, err)
 		}
 	}
+	for _, command := range [][]string{{"attach", "fixture_session", "--readonly"}, {"attach", "fixture_session", "--read-only", "extra"}, {"inspect", "fixture_session", "extra"}} {
+		os.Args = append(append([]string{}, base...), command...)
+		if err := run(); err == nil {
+			t.Fatalf("unrecognized attachment/inspection arguments accepted: %v", command)
+		}
+	}
 	if calls.Load() != 1 {
-		t.Fatal("unsupported management commands contacted execution homes")
+		t.Fatal("unsupported management or malformed attachment commands contacted execution homes")
 	}
 }
