@@ -94,6 +94,54 @@ func TestRealPinnedThreadAccountsAndProjectIntent(t *testing.T) {
 		t.Fatal("mutated stable nick was adopted", e)
 	}
 	os.WriteFile(cred.CredentialRef, secretBytes, 0600)
+	// A surviving thread claim never regenerates authority after the private
+	// account pair disappears, even if a server snapshot later loses that
+	// account. These failures occur before account IO or credential generation.
+	originalClaim := claim
+	originalAccount := account
+	accountDirectory := filepath.Dir(cred.CredentialRef)
+	for _, state := range []string{"confirmed", "attempted", "legacy-claimed", "legacy-confirmed"} {
+		claim = originalClaim
+		switch state {
+		case "attempted":
+			claim.State, claim.RegisteredAt = "attempted", ""
+		case "legacy-claimed":
+			claim.State, claim.CredentialSHA256, claim.RegisteredAt = "claimed", "", ""
+		case "legacy-confirmed":
+			claim.CredentialSHA256, claim.RegisteredAt = "", ""
+		}
+		if writeJSON(claimPath, claim, true) != nil {
+			t.Fatal("owned recovery claim fixture")
+		}
+		backup := filepath.Join(dir, "original-thread-authority")
+		if os.Rename(accountDirectory, backup) != nil {
+			t.Fatal("owned missing-authority fixture")
+		}
+		if _, e = m.EnsureThreadAccount(ctx, thread); e != ErrRepair {
+			t.Fatal("lost original thread authority replayed", state, e)
+		}
+		if _, e = os.Lstat(accountDirectory); !os.IsNotExist(e) {
+			t.Fatal("lost thread credentials were regenerated", state)
+		}
+		if os.Rename(backup, accountDirectory) != nil {
+			t.Fatal("restore owned original authority")
+		}
+		account.State, account.RegisteredAt = "prepared", ""
+		if writeJSON(journal, account, true) != nil {
+			t.Fatal("owned replacement prepared-journal fixture")
+		}
+		if _, e = m.EnsureThreadAccount(ctx, thread); e != ErrRepair {
+			t.Fatal("replacement prepared journal replayed", state, e)
+		}
+		account = originalAccount
+		if writeJSON(journal, account, true) != nil {
+			t.Fatal("restore owned original account journal")
+		}
+	}
+	claim = originalClaim
+	if writeJSON(claimPath, claim, true) != nil {
+		t.Fatal("restore owned original thread claim")
+	}
 	// A private account directory without an original thread claim is foreign,
 	// even if locally generated with a matching deterministic account spelling.
 	unclaimed := domain.NewID("thread")
