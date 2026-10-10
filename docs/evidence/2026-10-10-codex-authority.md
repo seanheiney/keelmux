@@ -1,9 +1,8 @@
-# Unified home actor source evidence
+# Experimental Codex authority source evidence
 
-2026-10-10. Source-only zero-turn actor slice, based on published contracts
-`fd412b320a4ea28dc99d96f202e9a42afb78e74a` and the Deliver amendment
-`0b1daf8`. The commit containing this note implements only `internal/store/`
-and `internal/daemon/`; the final commit identity is reported in the handoff.
+2026-10-10. Initial actor implementation `efb0111eb068f11555eb70a72e7fe8eff4a802c8`, integrated as `b65688986c93c8a58f0e8cde9dc1fb5e0f7f407f`. The source build, full repository race run and vet passed at that integration. An ignored standalone review test initially made `go test ./...` fail outside the product packages; its unchanged repro was preserved under a `.go.txt` filename before the full check passed.
+
+**Independent review qualification:** that source pass did not establish acceptance. Review reproduced a callback registration gap before handover commit and an inconsistent master reservation flag permitting replacement while an old receipt remained uncertain. Their repairs and independent regressions are pending. Counted relay review also reproduced malformed source disposal without a durable blocker; a relay repair is present but requires the actor's non-actionable missing-ID quarantine support. No live native broker journey has passed yet.
 
 On one physical macOS arm64 computer, these checks passed:
 
@@ -23,7 +22,7 @@ common gate, lost/partial acknowledgement and restart without replay, computed
 hash and provenance collisions, typed channel/request identity, same-principal
 new epochs with immutable old endpoints/processes, historical settlement without
 current-owner projection, read delivery versus revoke, coherent quiescence
-requirements, callback registration versus handover, unscoped/foreign/large
+requirements, callback registration during the quiescence probe, unscoped/foreign/large
 callback quarantine, projection loss without primary release, and fencing while
 primary or optional adapter dependencies are unavailable.
 

@@ -15,7 +15,7 @@ GitHub issues are the task records for this separate product repository. The cap
 | BP-009 | Bidirectional communication thread bridge | Waiting | Communication worker | BP-007, BP-008 | Addressed Mattermost path then declared IRC mode; correct delivery/replay/input arbitration |
 | BP-010 | Readiness, auth repair, usage and bounded continuity | Waiting | Continuity worker | BP-007 | Shared repair; qualified meters; eligible route; one task/thread; uncertain effects reconciled |
 | BP-011 | Optional group and personal advice captains | Waiting | Coordination worker | BP-009, BP-010 | Scoped sourced reports; useful attention; accounted usage; zero unchanged-idle model activity |
-| BP-012 | Codex native/semantic authority broker [#12](https://github.com/seanheiney/agent-backplane/issues/12) | Active contract and native-bootstrap review | native_runtime; durable_state; integrated_acceptance; captain | BP-003, BP-004; prerequisite for BP-009 | Real zero-turn native broker resume; scoped observer; unified writer and durable race/uncertainty gates |
+| BP-012 | Codex native/semantic authority broker [#12](https://github.com/seanheiney/agent-backplane/issues/12) | Experimental actor/policy/relay integrated; authority repairs and native envelope compatibility pending | codex_broker_contract; durable_state; integrated_acceptance; captain | BP-003, BP-004; prerequisite for BP-009 | Real zero-turn native broker resume; scoped observer; unified writer and durable race/uncertainty gates |
 
 Tasks are implementation milestones, not shipped feature claims. Split them into small issues before parallel assignment. BP-008 remains an early experiment even while local terminal alpha is developed.
 

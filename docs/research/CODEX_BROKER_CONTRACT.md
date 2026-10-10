@@ -2,7 +2,7 @@
 
 2026-10-10 · [tracking issue #12](https://github.com/seanheiney/agent-backplane/issues/12)
 
-**Decision:** the first runnable target is a private local broker for the real installed Codex 0.159.0 native CLI, zero-turn bootstrap/resume of one exact authoritative thread, and a typed scoped observer. The feature branch now contains a strict policy, private byte transport and experimental relay. Independent policy unit acceptance passed; durable actor integration, counted relay acceptance and the real native broker journey remain pending. Existing terminal capability flags stay unchanged. These internals do not add a product launcher, remote-machine support, authenticated turns or model-work evidence.
+**Decision:** the first runnable target is a private local broker for the real installed Codex 0.159.0 native CLI, zero-turn bootstrap/resume of one exact authoritative thread, and a typed scoped observer. The feature branch now contains a strict policy, private byte transport and experimental relay. Independent policy unit acceptance passed, and the durable actor is integrated. Counted Unix relay acceptance is in progress; independent review found actor handover/reservation gaps and malformed-source recovery that must be repaired before acceptance. The real native broker journey has reached owned process/socket and exact durable thread proof, then stopped on an unsupported pinned envelope. Native bootstrap/resume through the broker remains unproved. Existing terminal capability flags stay unchanged. These internals do not add a product launcher, remote-machine support, authenticated turns or model-work evidence.
 
 ## Authority and identities
 
