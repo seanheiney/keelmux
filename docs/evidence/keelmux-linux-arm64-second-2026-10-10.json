@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "tested_source_sha": "0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44",
+  "archive_sha256": "38c04ebb0d2815bebea4f4966e0cbd254412072fe4cf16c0ac6210b083df4aa3",
+  "harness_sha256": "e1a504de02e3f2d957948ae43aff32cefe35459e88f2f894da0b310e4e1de809",
+  "utc": "2026-10-10T19:26:07Z",
+  "platform": "Linux-6.8.0-100-generic-aarch64-with-glibc2.36",
+  "kernel": "6.8.0-100-generic",
+  "machine": "aarch64",
+  "python": "3.11.2",
+  "tmux": "tmux 3.3a",
+  "packages": "lsof 4.95.0-1\nprocps 2:4.0.2-3\npython3 3.11.2-1+b1\ntmux 3.3a-3",
+  "kind": "Linux_packaged_terminal_fixture",
+  "provider_programs": "authored raw terminal fixture only",
+  "model_turn_submitted": false,
+  "native_auth_copied": false,
+  "checks": [
+    {
+      "name": "release archive provenance and executable identity",
+      "result": "pass",
+      "detail": {
+        "checksum_pinned_archive": true,
+        "all_binary_manifest_digests": true,
+        "clean_source_manifest": true,
+        "canonical_and_alias_versions_match": true
+      }
+    },
+    {
+      "name": "owned launch/link and dropped launch acknowledgement",
+      "result": "pass",
+      "detail": {
+        "actual_packaged_daemon_and_tmux": true,
+        "exact_inherited_link": true,
+        "forged_link_refused": true,
+        "dropped_reply_retry_exact_identity": true,
+        "same_session_thread_execution_pid_pane_after_daemon_SIGKILL": true
+      }
+    },
+    {
+      "name": "CLI raw controls, readonly view, detach and reconnect",
+      "result": "pass",
+      "detail": {
+        "actual_cli_attach_detach_reconnect": true,
+        "raw_Unicode_Escape_CtrlC_literal_prefix": true,
+        "resize": "76x23",
+        "readonly_input_and_writer_size_preserved": true
+      }
+    },
+    {
+      "name": "TUI and daemon crash recovery with saved place and draft",
+      "result": "pass",
+      "detail": {
+        "actual_packaged_TUI": true,
+        "daemon_SIGKILL_while_attached": true,
+        "TUI_SIGKILL_and_saved_grant_release": true,
+        "same_selected_work_and_local_draft_after_reconnect": true
+      }
+    },
+    {
+      "name": "lost attach acknowledgement and one cooperating writer",
+      "result": "pass",
+      "detail": {
+        "dropped_attach_reply_and_restart_exact_grant": true,
+        "forged_release_and_reused_retired_operation_refused": true,
+        "concurrent_contenders": 2,
+        "writer_grants": 1
+      }
+    },
+    {
+      "name": "lost stop acknowledgement and stale generation",
+      "result": "pass",
+      "detail": {
+        "stale_generation_refused": true,
+        "dropped_stop_reply_idempotent_across_restart": true,
+        "operation_target_conflict_refused": true
+      }
+    },
+    {
+      "name": "durable private host registry and journal",
+      "result": "pass",
+      "detail": {
+        "persisted_host_identity": true,
+        "second_daemon_refused": true,
+        "events": 24,
+        "threads": 2,
+        "contiguous_per_thread": true,
+        "private_authority_and_client_state_modes": true,
+        "native_auth_realm_untouched": true
+      }
+    },
+    {
+      "name": "tmux loss and no automatic execution replay",
+      "result": "pass",
+      "detail": {
+        "owned_tmux_loss_projects_missing": true,
+        "launch_retry_and_daemon_restart_do_not_replay": true,
+        "original_execution_and_stopped_tombstone_preserved": true
+      }
+    }
+  ],
+  "missing_evidence": [
+    "Linux native Codex and Claude programs and authenticated model turns",
+    "native skill invocation and verified account/model entitlement",
+    "independent remote servers and SSH lifecycle",
+    "host reboot/native conversation resume",
+    "installer execution on Linux",
+    "Linux amd64 runtime (arm64 runtime only)",
+    "independent-user accessibility/speed pilot"
+  ],
+  "container_environment": {
+    "docker_server_version": "29.2.1",
+    "docker_server_go_version": "go1.25.6",
+    "container_id": "598d36ff1a61b8995116298723cf35dc3ad241baeb032784e6c35321e9f20238",
+    "container_name": "/keelmux-validation-20261010",
+    "image_digest": "sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251",
+    "image_manifest_digest": "sha256:0c8bbb8e987a035fe1d9704eb2e571b7e9a836e1caa46345290674b45b69e417",
+    "image_platform": {
+      "architecture": "arm64",
+      "os": "linux",
+      "variant": "v8"
+    },
+    "privileged": false,
+    "mounts": [],
+    "network_disconnected": true,
+    "owner_label": "linux_runtime"
+  },
+  "release": {
+    "aliases": {
+      "bp": "keelmux",
+      "bpd": "keelmuxd",
+      "bpg": "keelmux-entry"
+    },
+    "arch": "arm64",
+    "built_at": "2026-10-10T19:00:00Z",
+    "commit": "0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44",
+    "development_test": false,
+    "files": {
+      "LICENSE": "901e05e6fcd7fb304f28703f4b20c17e9c393e98035748538e09321eb559de42",
+      "README.md": "26af9177af54f691ddb1ed53260574a7e354f94ded2e4d93cf8ffe30d165e7d3",
+      "keelmux": "cecae75ab819dd602e3387f0a2d4642b4fc76e746bfcda4c68d266f340462aa9",
+      "keelmux-entry": "8bf55ec506c45703e5f020db49fca2128b27630422b0886f1bb013127db67482",
+      "keelmuxd": "ac54bb2afec3bd78bdf9adff2c853805e628adb7adf45a119d1b28da388c21ef"
+    },
+    "go_version": "go1.26.6",
+    "os": "linux",
+    "product": "Keelmux",
+    "schema": 1,
+    "source_clean": true,
+    "version": "v0.1.0"
+  },
+  "executable_buildinfo": {
+    "name": "Keelmux",
+    "version": "v0.1.0",
+    "commit": "0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44",
+    "built_at": "2026-10-10T19:00:00Z",
+    "protocol": "bp/1",
+    "go_version": "go1.26.6",
+    "os": "linux",
+    "arch": "arm64"
+  },
+  "binary_sha256": {
+    "keelmux": "cecae75ab819dd602e3387f0a2d4642b4fc76e746bfcda4c68d266f340462aa9",
+    "keelmuxd": "ac54bb2afec3bd78bdf9adff2c853805e628adb7adf45a119d1b28da388c21ef",
+    "keelmux-entry": "8bf55ec506c45703e5f020db49fca2128b27630422b0886f1bb013127db67482"
+  },
+  "cleanup": {
+    "owned_terminal_clients_reaped": true,
+    "owned_daemons_reaped": true,
+    "owned_panes_not_live": false,
+    "owned_temp_removed": false,
+    "errors": [
+      "owned tmux cleanup returned failure"
+    ]
+  },
+  "result": "fail"
+}
