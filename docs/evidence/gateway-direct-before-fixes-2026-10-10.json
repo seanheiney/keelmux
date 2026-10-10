@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "tested_sha": "9c73d939a7f1fcb211f8b63b154a5b7172b772ad",
+  "harness_sha256": "78528bdfc10ba1ee454e19fcca4c9fbea3c243c29a7740885b5db2f0e524b79c",
+  "native_core_harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "binary_sha256": {
+    "bp": "23355a9fc214247ec40e9fbd1214ab579e70bfc3b8ee916ccc7af529488cbcf9",
+    "bpd": "eb8b8430c072c6db8c353760ce5343fb1401428f9c45b2ffe6081608f7dda6f3",
+    "bpg": "8f705ab94d619fbefe12563e7356316fe6fb45b88d0c12e846d3bbda1fc0ec8f"
+  },
+  "utc": "2026-10-10T17:42:16Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "kind": "same_computer_executable_process_fixture",
+  "model_prompt_submitted": false,
+  "configuration": "owned600 principal+explicit home/session grants; startup reload on restart",
+  "checks": [
+    {
+      "name": "executable homes and counted private proxy",
+      "result": "pass",
+      "detail": {
+        "homes": 2,
+        "separate_bpd_processes": true,
+        "one_entry_cli_directory": true,
+        "runtime_locators_scrubbed": true,
+        "entry_management_refused": true,
+        "automatic_local_home_started": false
+      }
+    },
+    {
+      "name": "direct native open original-principal restart fence",
+      "result": "fail",
+      "detail": {
+        "error": "direct-open acquisition lost its principal claim after entry restart"
+      }
+    }
+  ],
+  "missing_evidence": [
+    "independent remote hosts",
+    "SSH or other remote enrollment/authentication",
+    "native provider authenticated model turns",
+    "live configuration revocation without entry restart",
+    "host reboot and network transport faults"
+  ],
+  "gateway_harness_sha256": "09ebded8b6046468b65c94ad330a63d0a90abf2dc4b83b65f172f7bad8958780",
+  "claim": "original principal retains uncertain and direct-open acquisition ownership across executable entry restart",
+  "selected_groups": "direct",
+  "qualification": "Expected independent executable reproduction of a known pre-fix restart-authority defect. This is failing evidence, not certification."
+}

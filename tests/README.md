@@ -36,3 +36,11 @@ python3 tests/gateway_acceptance.py --report docs/evidence/gateway-acceptance.js
 ```
 
 Checks cover scoped unified inventory, scrubbed home locators, home-only management, routed Unicode/control bytes and resize, read-only attachment, writer contention, entry SIGKILL with a saved lease, startup configuration revocation with exact receipt release, an idle unavailable home with usable surviving work, and attached-home failure followed by exact repair. Configuration changes take effect on explicit entry restart; this is not a live-reload claim. Static fixture output and continuous PTY consumption do not establish behavior under display backpressure or continuous native rendering. The initial six-group receipt is explicitly qualified because independent review found additional authority and transport failures outside those checks.
+
+`gateway_authority.py` is an adverse executable restart fixture. A private counted proxy lets the home complete an attachment and then discards the response. After entry restart with a different principal, replaying public operation/client IDs must be refused before another home attachment call. Restoring the original principal must recover the exact original grant. A separate actual `bp drive` path opens without prior entry `/attach`; its principal claim must survive entry restart too. No private lease token is printed or stored in the receipt.
+
+```sh
+python3 tests/gateway_authority.py --report docs/evidence/gateway-authority.json
+```
+
+`--only uncertain` and `--only direct` isolate the two restart boundaries. Pre-fix receipts intentionally record both failing reproductions; use a repaired implementation for acceptance. This remains a same-computer policy/transport fixture.
