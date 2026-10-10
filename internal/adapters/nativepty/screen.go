@@ -40,7 +40,12 @@ func newTerminalScreen(cols, rows int) *terminalScreen {
 			s.modes[mode] = false
 		}
 	}
-	s.emulator.SetScrollbackSize(0)
+	// The pinned SetScrollbackSize(0) ignores zero and keeps 10,000 main
+	// history rows. Reconnect uses current cells only, so disable that unused
+	// buffer through its exported zero value; Push is inert at maxLines zero.
+	// This accessor covers the main buffer; alternate history stays at the
+	// library default. All visible cells and raw output are still processed.
+	*s.emulator.Scrollback() = vt.Scrollback{}
 	// The tracker must not generate arbitrary responses or block the drain.
 	// Our streaming filter answers an explicit protocol allowlist exactly once.
 	if closer, ok := s.emulator.InputPipe().(io.Closer); ok {
