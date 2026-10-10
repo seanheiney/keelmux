@@ -3,10 +3,12 @@ package ircd
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/seanheiney/keelmux/internal/domain"
@@ -128,6 +130,42 @@ func (s *ownedTestSupervisor) cleanup() {
 		case <-time.After(5 * time.Second):
 			p.cmd.Process.Kill()
 			<-p.done
+		}
+	}
+}
+
+func TestLifecycleFreshState(t *testing.T) {
+	for _, existing := range []bool{false, true} {
+		dir := filepath.Join(t.TempDir(), "private-server")
+		if existing {
+			if os.Mkdir(dir, 0700) != nil {
+				t.Fatal("private fixture")
+			}
+		}
+		supervisor := newTestSupervisor(dir)
+		m, e := NewWithSupervisor(dir, supervisor)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if _, e = m.Status(context.Background()); e != ErrNotInitialized {
+			t.Fatal("fresh status must report absence", e)
+		}
+		if supervisor.launches != 0 || supervisor.stops != 0 {
+			t.Fatal("fresh status changed lifecycle")
+		}
+		if existing {
+			entries, e := os.ReadDir(dir)
+			if e != nil || len(entries) != 0 {
+				t.Fatal("fresh status created files", e)
+			}
+			if publish(filepath.Join(dir, "config.json"), []byte("corrupt"), 0600, false) != nil {
+				t.Fatal("corrupt fixture")
+			}
+			if _, e = m.Status(context.Background()); e != ErrRepair {
+				t.Fatal("corrupt config must require repair", e)
+			}
+		} else if _, e = os.Lstat(dir); !os.IsNotExist(e) {
+			t.Fatal("fresh status created directory")
 		}
 	}
 }

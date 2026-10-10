@@ -2,9 +2,12 @@ package ircd
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/seanheiney/keelmux/internal/config"
 )
 
 type accountRecord struct {
@@ -14,10 +17,28 @@ type accountRecord struct {
 	UpdatedAt                                      time.Time
 }
 
+const maxManagedAccounts = 128
+
+// ValidAccount accepts one canonical services account spelling. This bounded
+// ASCII subset has no IRC case aliases or filesystem path components.
+func ValidAccount(account string) bool {
+	if len(account) < 1 || len(account) > 32 || account[0] < 'a' || account[0] > 'z' {
+		return false
+	}
+	for _, ch := range account {
+		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_' || ch == '-') {
+			return false
+		}
+	}
+	return true
+}
+
 func (m *Manager) accountSecret(c Config) (saslSecret, string, error) {
-	var s saslSecret
-	b, e := readFile(c.CredentialRef, 8192, 0600)
-	if e != nil || strictJSON(b, &s) != nil || s.Account != c.Account || len(s.Password) != 64 {
+	return readAccountSecret(c.Account, c.CredentialRef)
+}
+func readAccountSecret(account, ref string) (s saslSecret, sha string, err error) {
+	b, e := readFile(ref, 8192, 0600)
+	if e != nil || strictJSON(b, &s) != nil || s.Account != account || len(s.Password) != 64 {
 		return s, "", ErrRepair
 	}
 	for _, r := range s.Password {
@@ -26,6 +47,63 @@ func (m *Manager) accountSecret(c Config) (saslSecret, string, error) {
 		}
 	}
 	return s, digest(b), nil
+}
+
+// prepareAccount atomically publishes a private secret and prepared journal for
+// each optional human services identity. A partial stage is never adopted; no
+// remote request has been sent until the journal changes to attempted.
+func (m *Manager) prepareAccount(c Config, account string) (Credential, string, error) {
+	if !ValidAccount(account) {
+		return Credential{}, "", ErrConflict
+	}
+	if account == c.Account {
+		return Credential{Account: account, CredentialRef: c.CredentialRef}, filepath.Join(m.dir, "account.json"), nil
+	}
+	dir := filepath.Join(m.dir, "accounts")
+	if config.EnsurePrivateDirectory(dir) != nil {
+		return Credential{}, "", ErrRepair
+	}
+	entries, e := os.ReadDir(dir)
+	if e != nil || len(entries) > maxManagedAccounts-1 {
+		return Credential{}, "", ErrRepair
+	}
+	found := false
+	for _, entry := range entries {
+		if !ValidAccount(entry.Name()) || !entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || config.EnsurePrivateDirectory(filepath.Join(dir, entry.Name())) != nil {
+			return Credential{}, "", ErrRepair
+		}
+		found = found || entry.Name() == account
+	}
+	destination := filepath.Join(dir, account)
+	cred := Credential{Account: account, CredentialRef: filepath.Join(destination, "credential.json")}
+	journal := filepath.Join(destination, "account.json")
+	if found {
+		return cred, journal, nil
+	}
+	if len(entries) >= maxManagedAccounts-1 {
+		return Credential{}, "", ErrConflict
+	}
+	stage, e := os.MkdirTemp(dir, ".account-")
+	if e != nil {
+		return Credential{}, "", ErrRepair
+	}
+	defer os.RemoveAll(stage)
+	if os.Chmod(stage, 0700) != nil {
+		return Credential{}, "", ErrRepair
+	}
+	password, e := randomHex(32)
+	if e != nil {
+		return Credential{}, "", e
+	}
+	b, e := json.Marshal(saslSecret{Account: account, Password: password})
+	if e != nil || publish(filepath.Join(stage, "credential.json"), b, 0600, false) != nil {
+		return Credential{}, "", ErrRepair
+	}
+	record := accountRecord{Format: 1, ServerID: string(c.ID), Account: account, CredentialSHA256: digest(b), State: "prepared", UpdatedAt: time.Now().UTC()}
+	if writeJSON(filepath.Join(stage, "account.json"), record, false) != nil || syncDir(stage) != nil || renameDirectoryExclusive(stage, destination) != nil || syncDir(dir) != nil {
+		return Credential{}, "", ErrRepair
+	}
+	return cred, journal, nil
 }
 func (m *Manager) accountProof(ctx context.Context, c Config, s saslSecret) (accountResponse, error) {
 	var a authResponse
@@ -47,8 +125,9 @@ func (m *Manager) accountProof(ctx context.Context, c Config, s saslSecret) (acc
 	return info, nil
 }
 
-// EnsureAccount registers the private bot once. An admitted attempt is never
-// sent again; matching password/account proof reconciles a lost acknowledgement.
+// EnsureAccount registers one private managed services identity once. Each
+// identity has a separate credential and durable intent. An admitted attempt is
+// never sent again; matching account/password proof reconciles a lost ACK.
 func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential, error) {
 	unlock, e := m.lock(ctx, false)
 	if e != nil {
@@ -63,38 +142,44 @@ func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential
 	if e = m.requireLive(ctx, r); e != nil {
 		return Credential{}, e
 	}
-	if account != c.Account {
+	if !ValidAccount(account) {
 		return Credential{}, ErrConflict
 	}
 	if _, e = m.probe(ctx, c); e != nil {
 		return Credential{}, e
 	}
-	secret, sha, e := m.accountSecret(c)
+	cred, p, e := m.prepareAccount(c, account)
 	if e != nil {
 		return Credential{}, e
 	}
-	p := filepath.Join(m.dir, "account.json")
+	secret, sha, e := readAccountSecret(account, cred.CredentialRef)
+	if e != nil {
+		return Credential{}, e
+	}
 	var saved accountRecord
 	e = readJSON(p, &saved)
+	hasRecord := e == nil
 	if e == nil {
-		if saved.Format != 1 || saved.ServerID != string(c.ID) || saved.Account != account || saved.CredentialSHA256 != sha || (saved.State != "attempted" && saved.State != "confirmed") {
+		if saved.Format != 1 || saved.ServerID != string(c.ID) || saved.Account != account || saved.CredentialSHA256 != sha || saved.UpdatedAt.IsZero() || (saved.State != "prepared" && saved.State != "attempted" && saved.State != "confirmed") || (saved.State == "prepared" && saved.RegisteredAt != "") || (saved.State == "confirmed" && !validTimestamp(saved.RegisteredAt)) {
 			return Credential{}, ErrRepair
 		}
-		proof, e := m.accountProof(ctx, c, secret)
-		if e != nil {
-			return Credential{}, ErrUncertain
+		if saved.State != "prepared" {
+			proof, e := m.accountProof(ctx, c, secret)
+			if e != nil {
+				return Credential{}, ErrUncertain
+			}
+			if saved.RegisteredAt != "" && saved.RegisteredAt != proof.RegisteredAt {
+				return Credential{}, ErrConflict
+			}
+			saved.State = "confirmed"
+			saved.RegisteredAt = proof.RegisteredAt
+			saved.UpdatedAt = time.Now().UTC()
+			if writeJSON(p, saved, true) != nil {
+				return Credential{}, ErrRepair
+			}
+			return cred, nil
 		}
-		if saved.RegisteredAt != "" && saved.RegisteredAt != proof.RegisteredAt {
-			return Credential{}, ErrConflict
-		}
-		saved.State = "confirmed"
-		saved.RegisteredAt = proof.RegisteredAt
-		saved.UpdatedAt = time.Now().UTC()
-		if writeJSON(p, saved, true) != nil {
-			return Credential{}, ErrRepair
-		}
-		return Credential{Account: account, CredentialRef: c.CredentialRef}, nil
-	} else if !os.IsNotExist(e) {
+	} else if !os.IsNotExist(e) || account != c.Account {
 		return Credential{}, ErrRepair
 	}
 	var exists accountResponse
@@ -103,11 +188,11 @@ func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential
 	}{account}, &exists) != nil {
 		return Credential{}, ErrUnavailable
 	}
-	if exists.Success || exists.Error != "" || exists.ErrorCode != "" {
+	if exists.Success || exists.Error != "" || exists.ErrorCode != "" || exists.Account != "" || exists.RegisteredAt != "" || len(exists.Channels) != 0 {
 		return Credential{}, ErrConflict
 	}
 	saved = accountRecord{Format: 1, ServerID: string(c.ID), Account: account, CredentialSHA256: sha, State: "attempted", UpdatedAt: time.Now().UTC()}
-	if writeJSON(p, saved, false) != nil {
+	if writeJSON(p, saved, hasRecord) != nil {
 		return Credential{}, ErrRepair
 	}
 	var ack apiGeneric
@@ -127,5 +212,5 @@ func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential
 	if writeJSON(p, saved, true) != nil {
 		return Credential{}, ErrRepair
 	}
-	return Credential{Account: account, CredentialRef: c.CredentialRef}, nil
+	return cred, nil
 }

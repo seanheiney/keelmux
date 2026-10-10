@@ -132,12 +132,27 @@ func (m *Manager) inspectStatus(ctx context.Context, c configRecord, r lifecycle
 	return s, nil
 }
 func (m *Manager) Status(ctx context.Context) (Status, error) {
+	// Fresh state is a read-only absence, including an existing empty private
+	// directory. Do not create the lock or initialize a server to answer status.
+	if _, e := os.Lstat(m.dir); os.IsNotExist(e) {
+		return Status{}, ErrNotInitialized
+	} else if e != nil || config.EnsurePrivateDirectory(m.dir) != nil {
+		return Status{}, ErrRepair
+	}
+	if _, e := readFile(filepath.Join(m.dir, "config.json"), 65536, 0600); os.IsNotExist(e) {
+		return Status{}, ErrNotInitialized
+	} else if e != nil {
+		return Status{}, ErrRepair
+	}
 	unlock, e := m.lock(ctx, false)
 	if e != nil {
 		return Status{}, e
 	}
 	defer unlock()
 	c, e := m.readConfig(ctx)
+	if os.IsNotExist(e) {
+		return Status{}, ErrNotInitialized
+	}
 	if e != nil || c.Stage != "ready" {
 		return Status{}, ErrRepair
 	}

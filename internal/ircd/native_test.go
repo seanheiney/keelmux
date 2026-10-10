@@ -95,6 +95,9 @@ func TestNativeErgoControl(t *testing.T) {
 		if _, e = m.EnsureAccount(ctx, status.Config.Account); e != nil {
 			os.Exit(11)
 		}
+		if _, e = m.EnsureAccount(ctx, "operator-one"); e != nil {
+			os.Exit(11)
+		}
 	}
 	c, e := m.readConfig(ctx)
 	if e != nil {

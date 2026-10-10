@@ -99,8 +99,54 @@ func TestRealPinnedServer(t *testing.T) {
 	if e = readJSON(filepath.Join(dir, "account.json"), &saved); e != nil || saved.RegisteredAt != originalTime || saved.State != "confirmed" {
 		t.Fatal("account incarnation changed", e)
 	}
-	if _, e = m.EnsureAccount(context.Background(), "foreign-account"); e != ErrConflict {
+	if _, e = m.EnsureAccount(context.Background(), "Foreign-Account"); e != ErrConflict {
 		t.Fatal("foreign account")
+	}
+	human, e := m.EnsureAccount(context.Background(), "operator-one")
+	if e != nil || human.Account != "operator-one" || human.CredentialRef == c.CredentialRef {
+		t.Fatal("private human registration", e)
+	}
+	humanSecret, humanSHA, e := readAccountSecret(human.Account, human.CredentialRef)
+	if e != nil || humanSHA == saved.CredentialSHA256 {
+		t.Fatal("human credential isolation", e)
+	}
+	humanJournal := filepath.Join(filepath.Dir(human.CredentialRef), "account.json")
+	var humanSaved accountRecord
+	if readJSON(humanJournal, &humanSaved) != nil || humanSaved.State != "confirmed" {
+		t.Fatal("human registration journal")
+	}
+	humanTime := humanSaved.RegisteredAt
+	humanSaved.State, humanSaved.RegisteredAt = "attempted", ""
+	if writeJSON(humanJournal, humanSaved, true) != nil {
+		t.Fatal("lost human acknowledgement fixture")
+	}
+	if again, e := m.EnsureAccount(context.Background(), human.Account); e != nil || again != human {
+		t.Fatal("human read-only reconciliation", e)
+	}
+	if readJSON(humanJournal, &humanSaved) != nil || humanSaved.RegisteredAt != humanTime {
+		t.Fatal("human account incarnation changed")
+	}
+	var foreignAck apiGeneric
+	foreignPassword, _ := randomHex(32)
+	if m.api(context.Background(), c, "/v1/ns/saregister", authInput{Account: "existing-human", Password: foreignPassword}, &foreignAck) != nil || !foreignAck.Success {
+		t.Fatal("owned foreign-account fixture")
+	}
+	if _, e = m.EnsureAccount(context.Background(), "existing-human"); e != ErrConflict {
+		t.Fatal("adopted existing services account", e)
+	}
+	if _, e = m.accountProof(context.Background(), c, saslSecret{Account: "existing-human", Password: foreignPassword}); e != nil {
+		t.Fatal("existing services account altered", e)
+	}
+	originalHumanBytes, _ := readFile(human.CredentialRef, 8192, 0600)
+	humanSecret.Password, _ = randomHex(32)
+	if writeJSON(human.CredentialRef, humanSecret, true) != nil {
+		t.Fatal("credential alteration fixture")
+	}
+	if _, e = m.EnsureAccount(context.Background(), human.Account); e != ErrRepair {
+		t.Fatal("mutated human secret accepted", e)
+	}
+	if publish(human.CredentialRef, originalHumanBytes, 0600, true) != nil {
+		t.Fatal("credential fixture restore")
 	}
 	thread := domain.NewID("thread")
 	op, eFresh, e := m.BeginChannel(context.Background(), "#keelmux-owned", thread, domain.NewID("operation"))
@@ -134,6 +180,12 @@ func TestRealPinnedServer(t *testing.T) {
 	}
 	if _, e = m.EnsureAccount(context.Background(), c.Account); e != nil {
 		t.Fatal("durable account survived real server replacement", e)
+	}
+	if again, e := m.EnsureAccount(context.Background(), human.Account); e != nil || again != human {
+		t.Fatal("human account survived replacement", e)
+	}
+	if readJSON(humanJournal, &humanSaved) != nil || humanSaved.RegisteredAt != humanTime {
+		t.Fatal("restart replaced human services identity")
 	}
 	var afterRestart accountRecord
 	if e = readJSON(filepath.Join(dir, "account.json"), &afterRestart); e != nil || afterRestart.RegisteredAt != originalTime {
