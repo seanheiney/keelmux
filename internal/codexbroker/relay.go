@@ -2,9 +2,11 @@ package codexbroker
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/seanheiney/agent-backplane/internal/codexbroker/wire"
@@ -36,6 +38,7 @@ type Channel struct {
 	attached  bool
 	requests  map[string]*relayRequest
 	usedIDs   map[string]bool
+	settled   map[string][32]byte
 	err       error
 }
 
@@ -45,16 +48,34 @@ type relayRequest struct {
 }
 
 func NewRelay(policy Policy, baseline Baseline) (*Relay, error) {
-	if policy == nil || baseline.ProtocolVersion == "" || baseline.Workspace == "" {
+	if missingDependency(policy) || baseline.ProtocolVersion == "" || baseline.Workspace == "" {
 		return nil, errors.New("broker relay requires policy and pinned home baseline")
 	}
-	return &Relay{policy: policy, baseline: baseline, channels: make(map[domain.ID]*Channel)}, nil
+	b := baseline
+	b.WorkspaceAliases = append([]string(nil), baseline.WorkspaceAliases...)
+	b.NativeBootstrap = make(map[string]json.RawMessage, len(baseline.NativeBootstrap))
+	for method, value := range baseline.NativeBootstrap {
+		b.NativeBootstrap[method] = append(json.RawMessage(nil), value...)
+	}
+	return &Relay{policy: policy, baseline: b, channels: make(map[domain.ID]*Channel)}, nil
+}
+
+func missingDependency(value any) bool {
+	if value == nil {
+		return true
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Interface, reflect.Func, reflect.Chan, reflect.Slice:
+		return v.IsNil()
+	}
+	return false
 }
 
 // Open takes ownership of a dedicated, already-owned upstream connection only
 // after authority verifies the immutable binding. It sends no initialization.
 func (r *Relay) Open(ctx context.Context, authority Authority, binding ConnectionBinding, upstream *wire.Conn) (*Channel, error) {
-	if authority == nil || upstream == nil || binding.Role != NativeLocal {
+	if missingDependency(authority) || upstream == nil || binding.Role != NativeLocal {
 		return nil, errors.New("initial native relay requires verified native-local authority and upstream")
 	}
 	verified, err := authority.Bind(ctx, binding)
@@ -63,7 +84,7 @@ func (r *Relay) Open(ctx context.Context, authority Authority, binding Connectio
 	}
 	ownedCtx, cancel := context.WithCancel(ctx)
 	c := &Channel{relay: r, authority: authority, id: domain.NewID("channel"), binding: verified, upstream: upstream,
-		ctx: ownedCtx, cancel: cancel, done: make(chan struct{}), requests: make(map[string]*relayRequest), usedIDs: make(map[string]bool)}
+		ctx: ownedCtx, cancel: cancel, done: make(chan struct{}), requests: make(map[string]*relayRequest), usedIDs: make(map[string]bool), settled: make(map[string][32]byte)}
 	r.mu.Lock()
 	r.channels[c.id] = c
 	r.mu.Unlock()
@@ -172,11 +193,26 @@ func (c *Channel) readUpstream() {
 		}
 		output := OutputContext{Recipient: c.binding, UpstreamChannelID: c.id}
 		if frame.Kind == Result || frame.Kind == RPCError {
+			encoded, err := Encode(frame)
+			if err != nil {
+				c.finish(errors.New("upstream reply frame could not be retained"))
+				return
+			}
+			hash := sha256.Sum256(encoded)
 			c.mu.Lock()
 			pending := c.requests[string(frame.ID)]
+			oldHash, known := c.settled[string(frame.ID)]
 			c.mu.Unlock()
 			if pending == nil {
-				// Never infer response provenance from coincident public IDs.
+				if known && oldHash == hash {
+					continue // Exact duplicate of a previously settled source frame.
+				}
+				// Unknown or changed replies may represent an unmapped effect.
+				// Preserve a blocker rather than manufacturing idle quiescence.
+				if err := c.quarantine(frame.ID, encoded); err != nil {
+					c.finish(err)
+					return
+				}
 				continue
 			}
 			select {
@@ -205,6 +241,7 @@ func (c *Channel) readUpstream() {
 			}
 			c.mu.Lock()
 			delete(c.requests, string(frame.ID))
+			c.settled[string(frame.ID)] = hash
 			c.mu.Unlock()
 			continue
 		}
@@ -216,11 +253,8 @@ func (c *Channel) readUpstream() {
 				c.finish(errors.New("upstream callback frame could not be retained"))
 				return
 			}
-			record := CallbackRecord{ID: domain.NewID("callback"), Origin: c.binding,
-				Key:     CallbackKey{UpstreamChannelID: c.id, RequestID: append(json.RawMessage(nil), frame.ID...)},
-				Payload: callbackFrame}
-			if _, err := c.authority.RecordCallback(c.ctx, record); err != nil {
-				c.finish(errors.New("upstream callback could not be durably retained"))
+			if err := c.quarantine(frame.ID, callbackFrame); err != nil {
+				c.finish(err)
 				return
 			}
 			// No native/typed response can answer it in this initial profile.
@@ -230,6 +264,16 @@ func (c *Channel) readUpstream() {
 			c.detachClient()
 		}
 	}
+}
+
+func (c *Channel) quarantine(id json.RawMessage, frame []byte) error {
+	record := CallbackRecord{ID: domain.NewID("callback"), Origin: c.binding,
+		Key:     CallbackKey{UpstreamChannelID: c.id, RequestID: append(json.RawMessage(nil), id...)},
+		Payload: append(json.RawMessage(nil), frame...)}
+	if _, err := c.authority.RecordCallback(c.ctx, record); err != nil {
+		return errors.New("unattributed upstream frame could not be durably retained")
+	}
+	return nil
 }
 
 func (c *Channel) deliver(output OutputContext, frame Frame, downstreamID json.RawMessage) error {
