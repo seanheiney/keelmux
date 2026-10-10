@@ -24,6 +24,7 @@ import time
 
 
 NAMES = ("keelmux", "keelmuxd", "keelmux-entry", "bp", "bpd", "bpg")
+CANONICAL = ("keelmux", "keelmuxd", "keelmux-entry", "keelmux-supervisor")
 ALIASES = {"bp": "keelmux", "bpd": "keelmuxd", "bpg": "keelmux-entry"}
 
 
@@ -162,9 +163,6 @@ class Harness:
         self.private.mkdir(mode=0o700)
         self.tools = self.state / "tools"
         self.tools.mkdir(mode=0o700)
-        tmux = shutil.which("tmux")
-        if tmux:
-            (self.tools / "tmux").symlink_to(Path(tmux).resolve())
         self.commands = 0
         self.cases = 0
         self.results = []
@@ -179,7 +177,7 @@ class Harness:
 
     def case(self, name):
         self.cases += 1
-        # Short directories keep actual Darwin control/tmux sockets portable.
+        # Short directories keep actual Darwin control/native sockets portable.
         base = self.state / ("c%02d" % self.cases)
         base.mkdir(mode=0o700)
         home = base / "home"
@@ -195,8 +193,8 @@ class Harness:
         bindir = base / "bin"
         bindir.mkdir(mode=0o700)
         # A fresh-install fixture must not inherit a real user's product PATH
-        # collisions. OS tools plus a link to the existing tmux prerequisite
-        # are enough; no dependency is installed or upgraded by this harness.
+        # collisions. OS tools and owned dependency-denial probes are enough;
+        # no dependency is installed or upgraded by this harness.
         env = {"HOME": str(home), "PATH": str(self.tools) + ":/usr/bin:/bin:/usr/sbin:/sbin",
                "LC_ALL": "C", "TMPDIR": str(base), "TERM": "xterm-256color"}
         return base, home, prefix, bindir, env
@@ -227,6 +225,15 @@ class Harness:
             hashes[name] = digest(resolved.read_bytes())
         for alias, canonical in ALIASES.items():
             need(hashes[alias] == hashes[canonical], "compatibility_alias_differs")
+        selected = prefix / Path(os.readlink(prefix / "current"))
+        need(not os.path.lexists(bindir / "keelmux-supervisor"), "internal_helper_public_link_created")
+        canonical = CANONICAL if self.manifest["schema"] == 2 else CANONICAL[:3]
+        for name in canonical:
+            path = selected / name
+            need(path.is_file() and not path.is_symlink() and os.access(path, os.X_OK),
+                 "installed_canonical_binary_missing")
+            hashes[name] = digest(path.read_bytes())
+            need(hashes[name] == self.manifest["files"][name], "installed_binary_digest_differs")
         return hashes
 
     def record(self, name, operation):
@@ -261,11 +268,14 @@ class Harness:
             need(set(NAMES).issubset(members), "archive_command_missing")
             need("LICENSE" in members and "README.md" in members, "archive_documents_missing")
             need("RELEASE.json" in members, "archive_manifest_missing")
-            need(set(members) == set(NAMES) | {"LICENSE", "README.md", "RELEASE.json"},
-                 "archive_member_set_mismatch")
             manifest = json.loads(package.extractfile(members["RELEASE.json"]).read())
             self.manifest = manifest
-            need(manifest.get("schema") == 1 and manifest.get("product") == "Keelmux"
+            schema = manifest.get("schema")
+            need(schema in (1, 2), "unsupported_archive_schema")
+            canonical = CANONICAL if schema == 2 else CANONICAL[:3]
+            need(set(members) == set(canonical) | set(ALIASES) | {"LICENSE", "README.md", "RELEASE.json"},
+                 "archive_member_set_mismatch")
+            need(manifest.get("product") == "Keelmux"
                  and manifest.get("version") == self.args.version
                  and manifest.get("commit") == self.args.artifact_source_sha,
                  "archive_manifest_identity_mismatch")
@@ -274,18 +284,26 @@ class Harness:
             need(manifest.get("aliases") == ALIASES, "archive_manifest_alias_mismatch")
             need(manifest.get("source_clean") is True and manifest.get("development_test") is False,
                  "artifact_is_not_clean_release_source")
-            need(set(manifest.get("files", {})) == set(NAMES[:3]) | {"LICENSE", "README.md"},
+            need(set(manifest.get("files", {})) == set(canonical) | {"LICENSE", "README.md"},
                  "archive_manifest_digest_set_mismatch")
             for name, sha256 in manifest["files"].items():
                 need(digest(package.extractfile(members[name]).read()) == sha256,
                      "archive_manifest_file_digest_mismatch")
-            for name in NAMES[:3]:
+            for name in canonical:
                 need(members[name].isfile() and members[name].mode & 0o111,
                      "canonical_command_not_executable")
             for alias, canonical in ALIASES.items():
                 need(members[alias].issym() and members[alias].linkname == canonical,
                      "archive_alias_wrong_target")
-        return {"archive_sha256": expected, "target": self.target,
+        if self.manifest["schema"] == 2:
+            # A fake dependency fails and records any accidental invocation.
+            # A passing native package gate therefore cannot borrow host tmux.
+            blocked = self.tools / "tmux"
+            blocked.write_text("#!/bin/sh\n/usr/bin/touch " + shlex.quote(str(self.state / "tmux-invoked")) + "\nexit 97\n")
+            blocked.chmod(0o700)
+        elif shutil.which("tmux"):
+            (self.tools / "tmux").symlink_to(Path(shutil.which("tmux")).resolve())
+        return {"archive_schema": self.manifest["schema"], "archive_sha256": expected, "target": self.target,
                 "manifest_source_commit_verified": True, "manifest_file_digests_verified": True}
 
     def http_optin(self):
@@ -342,6 +360,14 @@ class Harness:
                 need(version.returncode == 0 and self.args.version.encode() in version.stdout
                      and self.args.artifact_source_sha.encode() in version.stdout,
                      "installed_daemon_or_entry_provenance_mismatch")
+            canonical = CANONICAL if self.manifest["schema"] == 2 else CANONICAL[:3]
+            selected = prefix / Path(os.readlink(prefix / "current"))
+            expected_version = (f"Keelmux {self.manifest['version']} "
+                                f"(commit {self.manifest['commit']}, protocol bp/1)").encode()
+            for name in canonical:
+                version = self.run([str(selected / name), "--version"], env)
+                need(version.returncode == 0 and version.stdout.strip() == expected_version,
+                     "installed_canonical_version_mismatch")
             need(self.install(fixture, prefix, bindir, env).returncode == 0, "owned_reinstall_failed")
             need(first == self.check_installed(prefix, bindir), "reinstall_changed_artifacts")
         need(snapshot(home) == untouched, "installer_mutated_native_or_shell_files")
@@ -605,7 +631,8 @@ class Harness:
                 self.stop_daemon(receipt)
 
     def runtime_states(self):
-        need(shutil.which("tmux") is not None, "runtime_tmux_prerequisite_missing")
+        if self.manifest["schema"] == 1:
+            need(shutil.which("tmux") is not None, "legacy_runtime_tmux_prerequisite_missing")
         _, _, prefix, bindir, install_env = self.case("runtime_install")
         with Fixture(self.files, self.args.version) as fixture:
             need(self.install(fixture, prefix, bindir, install_env).returncode == 0,
@@ -669,6 +696,7 @@ class Harness:
             need(not (home / ".local/state/keelmux").exists(), "unsafe_legacy_created_second_authority")
             if kind == "symlink_directory":
                 need(snapshot(target) == before, "legacy_symlink_target_mutated")
+        need(not (self.state / "tmux-invoked").exists(), "native_package_invoked_tmux")
         return {"canonical_and_legacy_cold_starts": 10, "state_precedence_cases": 5,
                 "unsafe_legacy_refusals": 3, "owned_daemons_stopped": True,
                 "native_processes_launched": 0}
@@ -697,7 +725,8 @@ class Harness:
         return {"actual_packaged_command_cases": count, "state_not_created": True}
 
     def authority_refusals(self):
-        need(shutil.which("tmux") is not None, "runtime_tmux_prerequisite_missing")
+        if self.manifest["schema"] == 1:
+            need(shutil.which("tmux") is not None, "legacy_runtime_tmux_prerequisite_missing")
         _, _, prefix, bindir, env = self.case("authority_install")
         with Fixture(self.files, self.args.version) as fixture:
             need(self.install(fixture, prefix, bindir, env).returncode == 0,
@@ -809,9 +838,11 @@ class Harness:
                 "version": self.args.version, "platform": platform.platform(),
                 "archive": self.archive_name, "model_turns_submitted": 0,
                 "qualification": "Actual release binaries and installer with owned loopback assets and temporary HOME. Preservation uses owned sentinels, not real credentials. Optional runtime starts empty packaged daemons only; no vendor CLI or native model work.",
+                "archive_schema": self.manifest.get("schema") if self.manifest else None,
+                "forbidden_tmux_invocations_observed": (self.state / "tmux-invoked").exists(),
                 "artifact_source_clean": self.manifest.get("source_clean") if self.manifest else None,
                 "artifact_development_test": self.manifest.get("development_test") if self.manifest else None,
-                "result": "pass" if self.results and all(r["result"] == "pass" for r in self.results) else "fail",
+                "result": "pass" if self.results and all(r["result"] == "pass" for r in self.results) and not (self.state / "tmux-invoked").exists() else "fail",
                 "groups": self.results,
                 "missing_evidence": missing}
 
@@ -826,7 +857,7 @@ def main():
     parser.add_argument("--harness-checkout-sha",
                         help="full caller-supplied revision when running a copied standalone harness without git; explicitly qualified in the receipt")
     parser.add_argument("--report", required=True, type=Path)
-    parser.add_argument("--runtime", action="store_true", help="also start and stop empty owned packaged daemons; needs tmux")
+    parser.add_argument("--runtime", action="store_true", help="also start and stop empty owned packaged daemons; schema2 denies tmux, schema1 keeps legacy prerequisite")
     args = parser.parse_args()
     need(bool(re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", args.version)), "invalid_version")
     need(bool(re.fullmatch(r"[a-f0-9]{40}", args.artifact_source_sha)), "invalid_artifact_source_sha")
