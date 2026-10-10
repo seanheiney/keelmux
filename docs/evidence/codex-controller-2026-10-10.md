@@ -1,6 +1,6 @@
 # Experimental Codex controller source evidence
 
-Clean source `01af8032bcbc019328c79e592982f06e41b4829d` passed
+Clean source `f4b0e22fbf668048be852d71c1af844aa8f840e2` passed
 `go test -race -json ./internal/codexcontroller -count=1` on Darwin 25.6.0 arm64,
 Go 1.26.6: 17 top-level groups, 47 passing test nodes, zero failures.
 `go vet ./internal/codexcontroller` and `git diff --check` also passed.

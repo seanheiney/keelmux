@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "tested_source_sha": "01af8032bcbc019328c79e592982f06e41b4829d",
+  "tested_source_sha": "f4b0e22fbf668048be852d71c1af844aa8f840e2",
   "tested_source_clean": true,
-  "recorded_at": "2026-10-10T21:22:15.489678+00:00",
+  "recorded_at": "2026-10-10T21:23:04.517503+00:00",
   "platform": "Darwin 25.6.0 arm64",
   "go_version": "go1.26.6 darwin/arm64",
   "scope": "experimental_controller_lifecycle_fixtures_only",
@@ -14,7 +14,7 @@
       "top_level_groups": 17,
       "passing_nodes": 47,
       "failing_nodes": 0,
-      "log_sha256": "f128bd5b2698be61b0d59a24a038584388cc2738d002cb4ef23341f2fceaadf0"
+      "log_sha256": "26871902dba89cbeaab0bfc4c0f200fd4db588aedee446614a0d6667e221b47c"
     },
     {
       "command": "go vet ./internal/codexcontroller",
@@ -27,8 +27,8 @@
   ],
   "source_sha256": {
     "internal/codexcontroller/contracts.go": "a34e5e310b160ae1f5b5489b6f03d84f1e08b67d5f2379899a702e0ab9ddc8b5",
-    "internal/codexcontroller/controller.go": "1594614171a24c26dc1481f18cc10aee3cf37fd6a17579489d5d09cb32c6d54a",
-    "internal/codexcontroller/controller_test.go": "f4ed1535e49e74482b1460df3af90ce5e7204ebbbbb6f66da53bde4967d747e9",
+    "internal/codexcontroller/controller.go": "927689332263ca620895fb0e1a28e20a2007d1811cfe8dadf08ca49e803d94ea",
+    "internal/codexcontroller/controller_test.go": "4c0ef965f478a1e21d6d9b67cc0cf00a504b1cc674ff712cd5ed2f1416a905a6",
     "internal/codexcontroller/journal.go": "c4bdd137b9197b95c383b3f9a7adb044fef11c9fce82486bb7e7f91d7c8c8c86"
   },
   "native_inspection": {
@@ -74,18 +74,18 @@
     "TestUnprovenAbsenceAndPIDReuseFence/boot_change",
     "TestUnprovenAbsenceAndPIDReuseFence/incarnation_change",
     "TestUnprovenAbsenceAndPIDReuseFence",
+    "TestWireEvidenceEveryIdentityComponentRequired/thread",
+    "TestWireEvidenceEveryIdentityComponentRequired/generation",
+    "TestWireEvidenceEveryIdentityComponentRequired/pid",
     "TestWireEvidenceEveryIdentityComponentRequired/boot",
     "TestWireEvidenceEveryIdentityComponentRequired/start",
-    "TestWireEvidenceEveryIdentityComponentRequired/host",
-    "TestWireEvidenceEveryIdentityComponentRequired/capability",
-    "TestWireEvidenceEveryIdentityComponentRequired/thread",
-    "TestWireEvidenceEveryIdentityComponentRequired/incarnation",
-    "TestWireEvidenceEveryIdentityComponentRequired/pid",
     "TestWireEvidenceEveryIdentityComponentRequired/session",
     "TestWireEvidenceEveryIdentityComponentRequired/execution",
+    "TestWireEvidenceEveryIdentityComponentRequired/capability",
+    "TestWireEvidenceEveryIdentityComponentRequired/incarnation",
+    "TestWireEvidenceEveryIdentityComponentRequired/host",
     "TestWireEvidenceEveryIdentityComponentRequired/version",
     "TestWireEvidenceEveryIdentityComponentRequired/socket",
-    "TestWireEvidenceEveryIdentityComponentRequired/generation",
     "TestWireEvidenceEveryIdentityComponentRequired",
     "TestStopRefusesUnquiescentOrUnknown/busy",
     "TestStopRefusesUnquiescentOrUnknown/queue",
