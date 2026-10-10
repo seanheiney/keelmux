@@ -59,7 +59,7 @@ func Open(path string) (*Store, error) {
 	db.SetMaxOpenConns(1)
 	s := &Store{db: db, lock: lock}
 	var schemaVersion int
-	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 3 {
+	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 4 {
 		s.Close()
 		if err != nil {
 			return nil, err
@@ -93,6 +93,15 @@ func Open(path string) (*Store, error) {
 	}
 	if err == nil {
 		err = validateChannelSchema(context.Background(), db)
+	}
+	if err == nil && schemaVersion < 4 {
+		err = migrateProjects(context.Background(), db)
+	}
+	if err == nil {
+		err = validateChannelSchema(context.Background(), db)
+	}
+	if err == nil {
+		err = validateProjectSchema(context.Background(), db)
 	}
 	if err != nil {
 		s.Close()

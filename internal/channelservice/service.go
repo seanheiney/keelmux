@@ -248,7 +248,7 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 		}
 	}
 	if existing, _, err := s.db.ChannelBinding(ctx, r.ID); err == nil {
-		if existing.SessionID != r.SessionID || existing.Provider != r.Provider || existing.Endpoint != r.Endpoint || existing.ChannelID != r.ChannelID || existing.RootID != r.RootID || existing.CredentialRef != r.CredentialRef || !reflect.DeepEqual(existing.Allowlist, r.Allowlist) {
+		if existing.SessionID != r.SessionID || existing.Provider != r.Provider || existing.Endpoint != r.Endpoint || existing.ChannelID != r.ChannelID || existing.RootID != r.RootID || existing.CredentialRef != r.CredentialRef || existing.ProjectID != r.ProjectID || existing.IRCAddressed != r.IRCAddressed || !reflect.DeepEqual(existing.Allowlist, r.Allowlist) {
 			return zero, domain.ConflictError{Reason: "binding ID already names a different immutable route"}
 		}
 		return s.status(existing), nil
@@ -275,7 +275,21 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 	if _, err = config.ReadPrivateSecret(r.CredentialRef); err != nil {
 		return zero, err
 	}
-	b := channels.Binding{ID: r.ID, SessionID: session.ID, ThreadID: session.ThreadID, WorkID: session.WorkID, HostID: session.HostID, Provider: r.Provider, Endpoint: r.Endpoint, ChannelID: r.ChannelID, RootID: r.RootID, CredentialRef: r.CredentialRef, Allowlist: r.Allowlist, ActivationCutoff: time.Now().UTC(), Active: true}
+	b := channels.Binding{ID: r.ID, SessionID: session.ID, ThreadID: session.ThreadID, WorkID: session.WorkID, HostID: session.HostID, Provider: r.Provider, Endpoint: r.Endpoint, ChannelID: r.ChannelID, RootID: r.RootID, CredentialRef: r.CredentialRef, Allowlist: r.Allowlist, ActivationCutoff: time.Now().UTC(), Active: true, ProjectID: r.ProjectID, IRCAddressed: r.IRCAddressed}
+	if b.IRCAddressed {
+		if b.Provider != channels.IRC {
+			return zero, channels.ErrInvalid
+		}
+		if _, err = s.db.BindProjectThread(ctx, b.ProjectID, session.ID); err != nil {
+			return zero, err
+		}
+		b.SelfID, err = channels.IRCThreadNick(b.ThreadID)
+		if err != nil {
+			return zero, err
+		}
+	} else if b.ProjectID != "" {
+		return zero, channels.ErrInvalid
+	}
 	a, err := s.adapter(b)
 	if err != nil {
 		return zero, err

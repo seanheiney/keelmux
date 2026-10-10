@@ -14,22 +14,29 @@ import (
 	"github.com/seanheiney/keelmux/internal/domain"
 )
 
-func validChannelBindingRow(b channels.Binding, id, sid, tid domain.ID, provider, endpoint, realm, channel, root string, active int) bool {
+func channelRecipient(b channels.Binding) string {
+	if b.IRCAddressed {
+		return b.SelfID
+	}
+	return ""
+}
+
+func validChannelBindingRow(b channels.Binding, id, sid, tid domain.ID, provider, endpoint, realm, channel, root string, active int, recipient string) bool {
 	n, err := channels.NormalizeBinding(b)
-	return err == nil && bytes.Equal(encoded(n), encoded(b)) && b.ID == id && b.SessionID == sid && b.ThreadID == tid && string(b.Provider) == provider && b.Endpoint == endpoint && b.RealmID == realm && b.ChannelID == channel && b.RootID == root && (active == 0 || active == 1) && b.Active == (active == 1)
+	return err == nil && bytes.Equal(encoded(n), encoded(b)) && b.ID == id && b.SessionID == sid && b.ThreadID == tid && string(b.Provider) == provider && b.Endpoint == endpoint && b.RealmID == realm && b.ChannelID == channel && b.RootID == root && (active == 0 || active == 1) && b.Active == (active == 1) && recipient == channelRecipient(b)
 }
 
 func channelBinding(ctx context.Context, q queryer, id domain.ID) (channels.Binding, error) {
 	var b channels.Binding
 	var sid, tid domain.ID
-	var provider, endpoint, realm, channel, root string
+	var provider, endpoint, realm, channel, root, recipient string
 	var active int
 	var data []byte
-	err := q.QueryRowContext(ctx, "SELECT session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data FROM channel_bindings WHERE id=?", id).Scan(&sid, &tid, &provider, &endpoint, &realm, &channel, &root, &active, &data)
+	err := q.QueryRowContext(ctx, "SELECT session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data,recipient_id FROM channel_bindings WHERE id=?", id).Scan(&sid, &tid, &provider, &endpoint, &realm, &channel, &root, &active, &data, &recipient)
 	if err != nil {
 		return b, missing(err)
 	}
-	if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || !validChannelBindingRow(b, id, sid, tid, provider, endpoint, realm, channel, root, active) {
+	if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || !validChannelBindingRow(b, id, sid, tid, provider, endpoint, realm, channel, root, active, recipient) {
 		return b, repair("invalid immutable channel binding")
 	}
 	return b, nil
@@ -141,6 +148,13 @@ func (s *Store) BindChannel(ctx context.Context, b channels.Binding, proof chann
 	if v.ThreadID != b.ThreadID || v.WorkID != b.WorkID || v.HostID != b.HostID {
 		return b, conflict("channel binding differs from exact seed session")
 	}
+	if b.IRCAddressed {
+		p, e := project(ctx, tx, b.ProjectID)
+		var projectID, seed domain.ID
+		if e != nil || p.HostID != v.HostID || p.Workspace != v.Workspace || tx.QueryRowContext(ctx, "SELECT project_id,session_id FROM project_threads WHERE thread_id=?", b.ThreadID).Scan(&projectID, &seed) != nil || projectID != b.ProjectID || seed != b.SessionID {
+			return b, conflict("addressed IRC binding requires exact project membership")
+		}
+	}
 	var work, host domain.ID
 	err = tx.QueryRowContext(ctx, "SELECT work_id,host_id FROM chat_threads WHERE thread_id=?", b.ThreadID).Scan(&work, &host)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -152,14 +166,16 @@ func (s *Store) BindChannel(ctx context.Context, b channels.Binding, proof chann
 		return b, err
 	}
 	var existing domain.ID
-	err = tx.QueryRowContext(ctx, "SELECT id FROM channel_bindings WHERE provider=? AND endpoint=? AND realm_id=? AND channel_id=? AND root_id=? AND active=1", b.Provider, b.Endpoint, b.RealmID, b.ChannelID, b.RootID).Scan(&existing)
+	// Addressed bots can share a project channel. An unaddressed route cannot
+	// coexist with them or consume the same source before its exact recipient.
+	err = tx.QueryRowContext(ctx, "SELECT id FROM channel_bindings WHERE provider=? AND endpoint=? AND realm_id=? AND channel_id=? AND root_id=? AND active=1 AND (recipient_id=? OR recipient_id='' OR ?='')", b.Provider, b.Endpoint, b.RealmID, b.ChannelID, b.RootID, channelRecipient(b), channelRecipient(b)).Scan(&existing)
 	if err == nil {
 		return b, conflict("external channel root already has an active binding")
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return b, err
 	}
-	_, err = tx.ExecContext(ctx, "INSERT INTO channel_bindings VALUES(?,?,?,?,?,?,?,?,?,?,?)", b.ID, b.SessionID, b.ThreadID, b.Provider, b.Endpoint, b.RealmID, b.ChannelID, b.RootID, 1, encoded(b), encoded(proof))
+	_, err = tx.ExecContext(ctx, "INSERT INTO channel_bindings VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", b.ID, b.SessionID, b.ThreadID, b.Provider, b.Endpoint, b.RealmID, b.ChannelID, b.RootID, 1, encoded(b), encoded(proof), channelRecipient(b))
 	if err != nil {
 		return b, err
 	}

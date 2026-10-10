@@ -39,28 +39,42 @@ func normalizedChannelSQL(s string) string {
 // Validate both schema and mirrored durable metadata. Missing receipts, source
 // dedup, immutable routes or claims require repair; never reconstruct authority.
 func validateChannelSchema(ctx context.Context, db *sql.DB) error {
+	var version int
+	if err := db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+		return err
+	}
 	for _, d := range channelDefinitions {
+		if version == 4 && d.name == "channel_bindings" {
+			d.sql = strings.TrimSuffix(d.sql, ")") + ", recipient_id TEXT NOT NULL DEFAULT '')"
+		}
+		if version == 4 && d.name == "channel_active_endpoint" {
+			d.sql = `CREATE UNIQUE INDEX channel_active_endpoint ON channel_bindings(provider,endpoint,realm_id,channel_id,root_id,recipient_id) WHERE active=1`
+		}
 		var kind, definition string
 		if err := db.QueryRowContext(ctx, "SELECT type,sql FROM sqlite_master WHERE name=?", d.name).Scan(&kind, &definition); err != nil || kind != d.kind || normalizedChannelSQL(definition) != normalizedChannelSQL(d.sql) {
 			return repair("missing or changed channel schema " + d.name)
 		}
 	}
 	bindings := map[domain.ID]channels.Binding{}
-	rows, err := db.QueryContext(ctx, "SELECT id,session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data,proof FROM channel_bindings")
+	recipientColumn := "''"
+	if version == 4 {
+		recipientColumn = "recipient_id"
+	}
+	rows, err := db.QueryContext(ctx, "SELECT id,session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data,proof,"+recipientColumn+" FROM channel_bindings")
 	if err != nil {
 		return err
 	}
 	for rows.Next() {
 		var id, sessionID, threadID domain.ID
-		var provider, endpoint, realm, channel, root string
+		var provider, endpoint, realm, channel, root, recipient string
 		var active int
 		var data, proof []byte
 		var b channels.Binding
 		var e channels.Evidence
-		if err = rows.Scan(&id, &sessionID, &threadID, &provider, &endpoint, &realm, &channel, &root, &active, &data, &proof); err != nil {
+		if err = rows.Scan(&id, &sessionID, &threadID, &provider, &endpoint, &realm, &channel, &root, &active, &data, &proof, &recipient); err != nil {
 			break
 		}
-		if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || json.Unmarshal(proof, &e) != nil || !bytes.Equal(encoded(e), proof) || !validChannelBindingRow(b, id, sessionID, threadID, provider, endpoint, realm, channel, root, active) || !e.Matches(b) || len(b.Allowlist) == 0 {
+		if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || json.Unmarshal(proof, &e) != nil || !bytes.Equal(encoded(e), proof) || !validChannelBindingRow(b, id, sessionID, threadID, provider, endpoint, realm, channel, root, active, recipient) || !e.Matches(b) || len(b.Allowlist) == 0 {
 			err = repair("invalid immutable channel binding")
 			break
 		}
@@ -101,6 +115,13 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 		v, e := session(ctx, db, b.SessionID)
 		if e != nil || v.HostID != b.HostID || v.WorkID != b.WorkID || v.ThreadID != b.ThreadID {
 			return repair("channel seed session provenance mismatch")
+		}
+		if b.IRCAddressed {
+			var projectID, seed domain.ID
+			p, e := project(ctx, db, b.ProjectID)
+			if e != nil || p.HostID != v.HostID || p.Workspace != v.Workspace || db.QueryRowContext(ctx, "SELECT project_id,session_id FROM project_threads WHERE thread_id=?", b.ThreadID).Scan(&projectID, &seed) != nil || projectID != b.ProjectID || seed != b.SessionID {
+				return repair("addressed IRC binding lost project membership")
+			}
 		}
 	}
 	messages := map[domain.ID]channels.Message{}

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 const (
@@ -39,6 +41,14 @@ func NormalizeBinding(b Binding) (Binding, error) {
 		}
 	}
 	if b.ActivationCutoff.IsZero() || len(b.Allowlist) > 256 || (b.Provider == IRC && b.RootID != "") || (b.Provider != IRC && !ValidID(b.RootID)) {
+		return b, ErrInvalid
+	}
+	if b.IRCAddressed {
+		nick, err := IRCThreadNick(b.ThreadID)
+		if b.Provider != IRC || !domain.ValidObjectID(b.ProjectID, "project") || err != nil || b.SelfID != nick {
+			return b, ErrInvalid
+		}
+	} else if b.ProjectID != "" {
 		return b, ErrInvalid
 	}
 	b.Allowlist = append([]string{}, b.Allowlist...)

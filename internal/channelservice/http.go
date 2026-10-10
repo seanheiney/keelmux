@@ -53,7 +53,7 @@ func request(w http.ResponseWriter, r *http.Request, dst any) bool {
 	fields := map[string]bool{}
 	switch dst.(type) {
 	case *protocol.ChannelBindRequest:
-		for _, k := range []string{"binding_id", "session_id", "provider", "endpoint", "channel_id", "root_id", "credential_file", "allow_users"} {
+		for _, k := range []string{"binding_id", "session_id", "provider", "endpoint", "channel_id", "root_id", "credential_file", "allow_users", "project_id", "irc_addressed"} {
 			fields[k] = true
 		}
 	case *protocol.ChannelIDRequest:

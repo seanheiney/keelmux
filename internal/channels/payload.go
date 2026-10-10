@@ -16,6 +16,8 @@ func PayloadHash(b Binding, m Message) [32]byte {
 		BindingID, MessageID, ThreadID                     domain.ID
 		Provider                                           Provider
 		Endpoint, Realm, Self, Channel, Root, Author, Text string
-	}{b.ID, m.ID, m.ThreadID, b.Provider, b.Endpoint, b.RealmID, b.SelfID, b.ChannelID, b.RootID, m.AuthorID, m.Text})
+		ProjectID                                          domain.ID `json:",omitempty"`
+		IRCAddressed                                       bool      `json:",omitempty"`
+	}{b.ID, m.ID, m.ThreadID, b.Provider, b.Endpoint, b.RealmID, b.SelfID, b.ChannelID, b.RootID, m.AuthorID, m.Text, b.ProjectID, b.IRCAddressed})
 	return sha256.Sum256(data)
 }
