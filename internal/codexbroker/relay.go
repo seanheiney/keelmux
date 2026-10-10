@@ -222,6 +222,23 @@ func (c *Channel) readUpstream() {
 				return
 			}
 			if pending.receipt.Intent.OperationID == "" {
+				if err := c.quarantine(frame.ID, encoded); err != nil {
+					c.finish(err)
+					return
+				}
+				continue
+			}
+			original := pending.receipt.Intent.Frame
+			output.OriginalRequest, output.OriginOperationID = &original, pending.receipt.Intent.OperationID
+			// Validate identity and the pinned body before an acknowledgement can
+			// become resolved quiescence evidence. This is not the live delivery
+			// check: projection is repeated under Deliver's common revoke gate.
+			if _, visible, err := c.relay.policy.NativeOutput(output, frame); err != nil || !visible {
+				if err := c.quarantine(frame.ID, encoded); err != nil {
+					c.finish(err)
+					return
+				}
+				c.detachClient()
 				continue
 			}
 			settlement := pending.receipt
@@ -233,8 +250,6 @@ func (c *Channel) readUpstream() {
 				c.finish(errors.New("upstream result could not settle its original durable intent"))
 				return
 			}
-			original := pending.receipt.Intent.Frame
-			output.OriginalRequest, output.OriginOperationID = &original, pending.receipt.Intent.OperationID
 			if err := c.deliver(output, frame, pending.receipt.Intent.DownstreamRequestID); err != nil {
 				// Client loss does not stop the authoritative upstream reader.
 				c.detachClient()
