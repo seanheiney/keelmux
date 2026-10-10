@@ -56,6 +56,13 @@ type LaunchResponse struct {
 type Error struct {
 	Message string `json:"error"`
 }
+type HTTPError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e *HTTPError) Error() string { return fmt.Sprintf("%d: %s", e.StatusCode, e.Message) }
+
 type Client struct {
 	HTTP    *http.Client
 	BaseURL string
@@ -88,7 +95,7 @@ func (c *Client) Call(ctx context.Context, method, path string, in, out any) err
 	if res.StatusCode >= 300 {
 		var e Error
 		_ = json.NewDecoder(res.Body).Decode(&e)
-		return fmt.Errorf("%s: %s", res.Status, e.Message)
+		return &HTTPError{StatusCode: res.StatusCode, Message: e.Message}
 	}
 	if out == nil {
 		return nil
