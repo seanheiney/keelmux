@@ -19,3 +19,5 @@ coverage.out
 .backplane/
 *.sock
 .consensus/
+__pycache__/
+*.py[cod]
