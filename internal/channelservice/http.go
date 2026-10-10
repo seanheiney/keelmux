@@ -42,7 +42,9 @@ func failed(w http.ResponseWriter, err error) {
 // Decode rejects duplicate, differently-cased and unknown object keys before
 // the typed decoder. Ambiguous JSON cannot alter a routing/operation identity.
 func request(w http.ResponseWriter, r *http.Request, dst any) bool {
-	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 32<<10))
+	// The text bound is in UTF-8 bytes. JSON can escape each byte into six
+	// characters, so bounded valid authored text needs additional wire room.
+	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 128<<10))
 	if err != nil {
 		failed(w, channels.ErrInvalid)
 		return false

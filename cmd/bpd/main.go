@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/seanheiney/keelmux/internal/adapters/tmux"
 	"github.com/seanheiney/keelmux/internal/buildinfo"
+	"github.com/seanheiney/keelmux/internal/channelservice"
+	"github.com/seanheiney/keelmux/internal/chatadapter"
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/daemon"
 	"github.com/seanheiney/keelmux/internal/domain"
@@ -78,6 +80,10 @@ func run() error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	chat, err := channelservice.New(ctx, db, chatadapter.New)
+	if err != nil {
+		return fmt.Errorf("channel delivery recovery: %w", err)
+	}
 	if err = svc.Reconcile(ctx); err != nil {
 		return fmt.Errorf("startup reconciliation: %w", err)
 	}
@@ -90,6 +96,8 @@ func run() error {
 	mux.Handle("/v1/daemon", lifecycle)
 	mux.Handle("/v1/daemon/stop", lifecycle)
 	mux.Handle("/v1/terminal", terminal.Handler())
+	mux.Handle("/v1/channels", chat.Handler())
+	mux.Handle("/v1/channels/", chat.Handler())
 	mux.Handle("/", svc.Handler())
 	l, err := p.Listen()
 	if err != nil {
@@ -97,6 +105,16 @@ func run() error {
 	}
 	defer l.Close()
 	srv := &http.Server{Handler: mux, BaseContext: func(net.Listener) context.Context { return ctx }, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 25 * time.Second, MaxHeaderBytes: 16 << 10}
+	chatDone := make(chan struct{})
+	go func() { defer close(chatDone); chat.Run(ctx) }()
+	defer func() {
+		cancel()
+		stop, c := context.WithTimeout(context.Background(), 10*time.Second)
+		defer c()
+		_ = srv.Shutdown(stop)
+		<-chatDone
+		_ = chat.Close()
+	}()
 	go func() {
 		for {
 			select {

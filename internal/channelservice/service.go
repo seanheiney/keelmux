@@ -71,6 +71,15 @@ func (s *Service) adapter(b channels.Binding) (channels.Adapter, error) {
 	}
 	return a, err
 }
+func (s *Service) discardAdapter(id domain.ID) {
+	s.mu.Lock()
+	a := s.adapters[id]
+	delete(s.adapters, id)
+	s.mu.Unlock()
+	if a != nil {
+		_ = a.Close()
+	}
+}
 func (s *Service) Wake(id domain.ID) {
 	select {
 	case s.wake <- id:
@@ -163,6 +172,16 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 	if !channels.ValidID(string(r.ID)) || len(r.Allowlist) == 0 || len(r.Allowlist) > 256 {
 		return zero, channels.ErrInvalid
 	}
+	for _, actor := range r.Allowlist {
+		if !channels.ValidID(actor) {
+			return zero, channels.ErrInvalid
+		}
+	}
+	canonical, err := channels.CanonicalEndpoint(r.Provider, r.Endpoint)
+	if err != nil {
+		return zero, channels.ErrInvalid
+	}
+	r.Endpoint = canonical
 	registry, err := s.gate(ctx, "channel-binding-registry")
 	if err != nil {
 		return zero, err
@@ -175,6 +194,11 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 	defer release()
 	r.Allowlist = append([]string{}, r.Allowlist...)
 	sort.Strings(r.Allowlist)
+	for i := 1; i < len(r.Allowlist); i++ {
+		if r.Allowlist[i] == r.Allowlist[i-1] {
+			return zero, channels.ErrInvalid
+		}
+	}
 	if existing, _, err := s.db.ChannelBinding(ctx, r.ID); err == nil {
 		if existing.SessionID != r.SessionID || existing.Provider != r.Provider || existing.Endpoint != r.Endpoint || existing.ChannelID != r.ChannelID || existing.RootID != r.RootID || existing.CredentialRef != r.CredentialRef || !reflect.DeepEqual(existing.Allowlist, r.Allowlist) {
 			return zero, domain.ConflictError{Reason: "binding ID already names a different immutable route"}
@@ -208,6 +232,12 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 	if err != nil {
 		return zero, err
 	}
+	committed := false
+	defer func() {
+		if !committed {
+			s.discardAdapter(b.ID)
+		}
+	}()
 	proof, err := a.Probe(ctx, b)
 	if err != nil {
 		return zero, errors.New("channel destination or bot identity could not be verified")
@@ -225,6 +255,7 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 	if err != nil {
 		return zero, err
 	}
+	committed = true
 	s.Wake(b.ID)
 	return protocol.ProjectChannel(b), nil
 }
@@ -243,13 +274,7 @@ func (s *Service) Disable(ctx context.Context, id domain.ID) error {
 	if err = s.db.DisableChannel(ctx, id); err != nil {
 		return err
 	}
-	s.mu.Lock()
-	a := s.adapters[id]
-	delete(s.adapters, id)
-	s.mu.Unlock()
-	if a != nil {
-		_ = a.Close()
-	}
+	s.discardAdapter(id)
 	return nil
 }
 func (s *Service) Send(ctx context.Context, r protocol.ChannelSendRequest) (protocol.ChannelSendResponse, error) {
