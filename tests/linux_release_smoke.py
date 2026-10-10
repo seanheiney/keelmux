@@ -202,6 +202,7 @@ class LinuxAcceptance:
         self.sessions = []
         self.owned_panes = {}
         self.owned_servers = {}
+        self.owned_daemon_instances = {}
         self.manifest = None
         self.binary = str(self.package / "keelmux")
         self.daemon_binary = str(self.package / "keelmuxd")
@@ -515,6 +516,7 @@ class LinuxAcceptance:
                 "operation_target_conflict_refused": True}
 
     def durability(self):
+        lifecycle = self.daemon_controls() if self.args.daemon_lifecycle else {"daemon_lifecycle_commands": "not_in_consumed_archive"}
         host = (self.state / "host-id").read_text()
         assert host == self.oracle["host_id"], "host identity differs"
         duplicate = subprocess.run([self.daemon_binary, "--state", str(self.state)],
@@ -539,7 +541,58 @@ class LinuxAcceptance:
         assert not (Path(os.environ["HOME"]) / ".codex").exists(), "native realm appeared in fixture HOME"
         return {"persisted_host_identity": True, "second_daemon_refused": True,
                 "events": len(rows), "threads": len(per_thread), "contiguous_per_thread": True,
-                "private_authority_and_client_state_modes": True, "native_auth_realm_untouched": True}
+                "private_authority_and_client_state_modes": True, "native_auth_realm_untouched": True,
+                **lifecycle}
+
+    def daemon_status(self):
+        reply = json.loads(command([self.binary, "--state", str(self.state), "daemon", "status"]))
+        assert reply["running"], "packaged daemon status says not running"
+        status = reply["daemon"]
+        assert status["protocol"] == "bp/1" and status["build"]["commit"] == self.args.source_sha, "daemon status identity or build differs"
+        lifetime = process_start(status["pid"])
+        assert lifetime and lifetime[1] != "Z", "daemon status names absent process"
+        self.owned_daemon_instances[status["instance"]] = (status["pid"], lifetime[0])
+        return status
+
+    def daemon_controls(self):
+        absent = self.temp / "absent"
+        status = json.loads(command([self.binary, "--state", str(absent), "daemon", "status"]))
+        assert status == {"running": False} and not absent.exists(), "status created a daemon or private state"
+        request = self.lease(self.oracle, "daemon-lifecycle-writer")
+        grant = self.api("attach", request)
+        before = self.daemon_status()
+        refused = subprocess.run([self.binary, "--state", str(self.state), "daemon", "stop", "--instance", "daemon_forged"],
+                                 capture_output=True, text=True, timeout=15)
+        assert refused.returncode != 0 and self.daemon_status()["instance"] == before["instance"], "forged daemon instance stopped current daemon"
+        command([self.binary, "--state", str(self.state), "daemon", "stop", "--instance", before["instance"]])
+        self.daemon.wait(timeout=5)
+        stopped = json.loads(command([self.binary, "--state", str(self.state), "daemon", "status"]))
+        assert stopped == {"running": False}, "explicit daemon stop left authority running"
+        ref = self.oracle["execution"]["runtime"]
+        assert process_start(ref["pid"])[0] == self.owned_panes[ref["pid"]], "daemon stop changed native fixture process"
+        command([self.binary, "--state", str(self.state), "daemon", "restart"])
+        current = self.daemon_status()
+        assert current["instance"] != before["instance"], "restart reused daemon incarnation"
+        self.stable(self.oracle)
+        assert self.api("attach", request)["lease"] == grant["lease"], "daemon restart changed exact saved writer grant"
+        stale = subprocess.run([self.binary, "--state", str(self.state), "daemon", "stop", "--instance", before["instance"]],
+                               capture_output=True, text=True, timeout=15)
+        assert stale.returncode != 0 and self.daemon_status()["instance"] == current["instance"], "stale stop intent affected replacement"
+        for _ in range(10):
+            command([self.binary, "--state", str(self.state), "daemon", "restart", "--instance", current["instance"]])
+            replacement = self.daemon_status()
+            assert replacement["instance"] != current["instance"], "restart reused current daemon incarnation"
+            current = replacement
+            self.stable(self.oracle)
+            assert self.api("attach", request)["lease"] == grant["lease"], "restart stress replaced durable writer grant"
+        command([self.binary, "--state", str(self.state), "daemon", "stop", "--instance", current["instance"]])
+        self.start_daemon()
+        self.stable(self.oracle)
+        assert self.api("attach", request)["lease"] == grant["lease"], "explicit daemon startup changed durable grant"
+        self.api("release", dict(request, token=grant["lease"]["token"]), status=204)
+        return {"daemon_status_without_autostart": True, "forged_and_stale_instance_stop_refused": True,
+                "daemon_stop_preserves_native_fixture": True, "packaged_daemon_restart_count": 11,
+                "restart_preserves_exact_work_runtime_and_writer_grant": True}
 
     def runtime_loss(self):
         self.tmux("kill-server")
@@ -561,6 +614,13 @@ class LinuxAcceptance:
         errors = []
         for terminal in self.terminals:
             terminal.close()
+        if self.owned_daemon_instances:
+            try:
+                current = self.api("daemon")
+                if current["instance"] in self.owned_daemon_instances:
+                    self.api("daemon/stop", {"instance": current["instance"]}, status=204)
+            except (OSError, http.client.HTTPException):
+                pass
         if self.daemon and self.daemon.poll() is None:
             self.daemon.terminate()
             try:
@@ -596,6 +656,10 @@ class LinuxAcceptance:
             current = process_start(pid)
             if current and current[0] == start and current[1] != "Z":
                 errors.append("owned tmux server remains live after cleanup")
+        for pid, start in self.owned_daemon_instances.values():
+            current = process_start(pid)
+            if current and current[0] == start and current[1] != "Z":
+                errors.append("owned daemon incarnation remains live after cleanup")
         if any(p.poll() is None for p in self.daemon_processes):
             errors.append("owned daemon remains live after cleanup")
         if self.original_home is not None:
@@ -640,6 +704,7 @@ def main():
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--environment", help="captain-supplied owned Docker environment metadata")
     parser.add_argument("--diagnostics", help="private fixture-only failure screen directory")
+    parser.add_argument("--daemon-lifecycle", action="store_true", help="require packaged daemon status/stop/restart controls")
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
     LinuxAcceptance(args).run()
