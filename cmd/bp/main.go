@@ -112,19 +112,10 @@ func run() error {
 		}
 		return printJSON(r)
 	case "link":
-		if len(args) > 1 && args[1] == "status" {
-			s, err := c.List(ctx)
-			if err != nil {
-				return err
-			}
-			for _, v := range s {
-				if string(v.ID) == os.Getenv("BP_SESSION_ID") {
-					return printJSON(v)
-				}
-			}
-			return errors.New("no exact managed context; attach intended terminal first")
+		if len(args) > 2 || (len(args) == 2 && args[1] != "status" && args[1] != "off") {
+			return errors.New("link accepts only status or off")
 		}
-		r := protocol.LinkRequest{SessionID: domain.ID(os.Getenv("BP_SESSION_ID")), ExecutionID: domain.ID(os.Getenv("BP_EXECUTION_ID")), OperationID: domain.ID(os.Getenv("BP_OPERATION_ID")), Token: os.Getenv("BP_LINK_TOKEN"), Off: len(args) > 1 && args[1] == "off"}
+		r := protocol.LinkRequest{SessionID: domain.ID(os.Getenv("BP_SESSION_ID")), ExecutionID: domain.ID(os.Getenv("BP_EXECUTION_ID")), OperationID: domain.ID(os.Getenv("BP_OPERATION_ID")), Token: os.Getenv("BP_LINK_TOKEN"), Status: len(args) > 1 && args[1] == "status", Off: len(args) > 1 && args[1] == "off"}
 		if r.SessionID == "" || r.ExecutionID == "" || r.OperationID == "" {
 			return errors.New("link requires verified managed context; use bp run, then invoke bp link inside that session")
 		}
@@ -158,21 +149,7 @@ func run() error {
 			return c.Stop(ctx, protocol.SessionRequest{SessionID: s.ID, ExecutionID: s.Execution.ID, Generation: s.Execution.Generation, OperationID: domain.NewID("op")})
 		}
 		ro := len(args) > 2 && args[2] == "--read-only"
-		req := protocol.LeaseRequest{SessionID: s.ID, ExecutionID: s.Execution.ID, Generation: s.Execution.Generation, OperationID: domain.NewID("attach"), ClientID: string(domain.NewID("client")), ReadOnly: ro}
-		a, err := c.Attach(ctx, req)
-		if err != nil {
-			return err
-		}
-		req.Token = a.Lease.Token
-		defer c.Release(ctx, req)
-		if len(a.Argv) == 0 {
-			return errors.New("backend returned no native attach path")
-		}
-		cmd := exec.Command(a.Argv[0], a.Argv[1:]...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
+		return directAttach(ctx, c, p, s, ro)
 	case "reconcile":
 		return c.Reconcile(ctx)
 	case "doctor":

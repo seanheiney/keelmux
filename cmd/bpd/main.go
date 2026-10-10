@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 )
@@ -22,6 +23,13 @@ func main() {
 	}
 }
 func run() error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	if err := os.Setenv("BP_HELPER_PATH", filepath.Join(filepath.Dir(self), "bp")); err != nil {
+		return err
+	}
 	state := flag.String("state", "", "private state directory")
 	flag.Parse()
 	p, err := config.Resolve(*state)

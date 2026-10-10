@@ -44,6 +44,7 @@ type LinkRequest struct {
 	ExecutionID domain.ID `json:"execution_id"`
 	OperationID domain.ID `json:"operation_id"`
 	Token       string    `json:"token"`
+	Status      bool      `json:"status"`
 	Off         bool      `json:"off"`
 }
 type Inventory struct {
