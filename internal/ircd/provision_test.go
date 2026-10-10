@@ -177,3 +177,27 @@ func TestRealPinnedInit(t *testing.T) {
 		t.Fatal("mutated scope accepted")
 	}
 }
+
+// All four distributions are verified as archives; only the native target is
+// executed by the real-server tests. Non-native compile/shape proof is separate.
+func TestPinnedDistributionArchives(t *testing.T) {
+	dir := os.Getenv("KEELMUX_ERGO_ASSET_DIR")
+	if dir == "" {
+		t.Skip("explicit pinned distribution directory required")
+	}
+	for target, p := range releasePins {
+		t.Run(target, func(t *testing.T) {
+			b, e := os.ReadFile(filepath.Join(dir, p.asset))
+			if e != nil || digest(b) != p.sha {
+				t.Fatal("distribution checksum", e)
+			}
+			files, e := unpack(b, strings.TrimSuffix(p.asset, ".tar.gz"))
+			if e != nil {
+				t.Fatal("distribution archive", e)
+			}
+			if len(files["ergo"]) < 1<<20 {
+				t.Fatal("missing executable")
+			}
+		})
+	}
+}

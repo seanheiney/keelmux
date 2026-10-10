@@ -44,7 +44,9 @@ type ChannelOperation struct {
 }
 
 // Supervisor is the owned persistent process boundary. Lookup absence never
-// permits retry of a launch whose acknowledgement was lost.
+// permits retry of a launch whose acknowledgement was lost. An observation with
+// Alive=false and nil error must prove an exited owned child; unavailable helper
+// or missing receipt is an error, never guessed process death.
 type Supervisor interface {
 	LaunchProcess(context.Context, domain.LaunchSpec) (domain.RuntimeRef, error)
 	Lookup(context.Context, domain.ID, domain.ID) (runtime.Observation, error)
