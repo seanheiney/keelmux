@@ -2,7 +2,7 @@
 
 Reviewed `e182d2c46c035f2cb4ecef4c1ac48a2fe84a8581` and its evidence commit
 `9111f1f04c6ec60606bc62909dbf2129300f46e0`. Corrected source:
-`bf4eb59123e954f168e9629293a2e6996608c6f2`, on
+`19630c795362f79eec0a155ce284f33929c07236`, on
 `codex/native-package-cleanup`. Native product files are unchanged since
 `812d6401790e2487e04136330e9d774dad9b3607`. This is local source qualification,
 not a release or renewed provider/archive qualification.
@@ -59,6 +59,17 @@ unwind its cleanup. Handlers are restored after the child is reaped, and even
 confirmed cleanup after cancellation leaves qualification failed. No signal is
 sent to a saved provider/helper PID.
 
+Commit `19630c7` closes the separate lost-launch-acknowledgement failure path.
+The harness records the exact operation ID before launch I/O. Session and
+execution IDs remain explicitly unknown until the daemon's reply binds them to
+that operation. Missing, mismatched or uncertain acknowledgements remain
+unresolved cleanup issues even when zero process identities have been observed.
+The existing exact stop path still handles acknowledged sessions; an unresolved
+launch retains its owned daemon/private state for reconciliation, without a
+guessed stop or replay. A provider-free regression invokes the real journey and
+cleanup path with an API timeout after a possible launch effect, and verifies
+the recorded intent, failed cleanup status and absence of guessed stop calls.
+
 Provider-free subprocess regressions use the real child's signal handler,
 main, cancellation checkpoints, `finally`, and cleanup functions with a fake
 authority. A cancellation arriving during simulated launch acknowledgement
@@ -76,7 +87,7 @@ Validation on Darwin 25.6.0 arm64, Apple M4 Max, Go 1.26.6:
 | --- | --- |
 | `go test -race ./internal/adapters/nativepty ./cmd/keelmux-supervisor -count=1 -timeout=90s` at `812d640` | Pass; native package 9.048 s; supervisor command has no test files |
 | `go vet ./internal/adapters/nativepty ./cmd/keelmux-supervisor` at `812d640` | Pass |
-| `python3 tests/native_package_acceptance_test.py -v` on the exact Python bytes committed as `bf4eb59` | 5/5 pass, including wrapper SIGINT and SIGTERM subcases, 5.613 s |
+| `python3 tests/native_package_acceptance_test.py -v` on the exact Python bytes committed as `19630c7` | 6/6 pass, including lost acknowledgement and wrapper SIGINT/SIGTERM subcases, 5.617 s |
 | Independent temporary-overlay differential probe, seed 918821, 2,000 token streams, widths 1–15 and heights 3–10, at `812d640` | Pass, 1.347 s; original `e182d2c` failed case 1222, subsequently minimized above |
 | `go test -race ./internal/adapters/nativepty -run '^$' -bench BenchmarkScreenASCIIBurst -benchtime=1x -count=1 -timeout=60s` at `812d640` | Pass; 2 MiB 3.100350500 s, 284,822,128 bytes allocated, 2,123,623 allocations |
 | `git diff --check` | Pass |
@@ -114,12 +125,12 @@ Native source integration remains held for a separate correction and explicit
 short-tail expected-cell tests. The package cancellation fixes and their
 provider-free test results are independent of that remaining native defect.
 
-Source SHA-256 at `bf4eb59`:
+Source SHA-256 at `19630c7`:
 
 ```text
 54e62b5cfb97b427ce619a6b26231395c5671125877ee0f23369bb9dffe755e9  internal/adapters/nativepty/filter.go
 1cbaafa2ca9af96d05f35ce4716c49514e5e8785dad200d605ce41a525526c1e  internal/adapters/nativepty/performance_test.go
 a756fe17ef2c4abfacf3169bad217dfdb368da9076d7eedea8a8475d45177cce  tests/native_package_acceptance.py
-ddd61ac22b4f66995a51a22946d1c36ec59b66c94862eaaa6238183684121b5e  tests/native_supervisor_acceptance.py
-145aeb00747a6b8f4b6646e807b256924e804245ce66f59996ff1e779cfaa1b9  tests/native_package_acceptance_test.py
+e9a4fdb2faab43e306ed1866409e5a4377a153f2019d9d688620e1b652565f02  tests/native_supervisor_acceptance.py
+34130c06cbede6e31dd793d8fcd75393421bfb6511d156b31cd3259e36ece288  tests/native_package_acceptance_test.py
 ```
