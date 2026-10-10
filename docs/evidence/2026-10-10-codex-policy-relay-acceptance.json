@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "kind": "independent_policy_and_real_authority_unix_websocket_acceptance",
+  "tested_head": "592895042e2ca97906582d888167919ba87f5820",
+  "tested_dirty_test_digest": "a4a06333df5a7ecba65de7d591c0946cd64bfefd5c523c95c3964cc281625635",
+  "final_acceptance_commit": "0d00f10634d49de515bd77a7f9ed121f24d7778b",
+  "captain_source_candidate": "0d35debb6498cffcde3aac7dc64c253c59f72c8e",
+  "source_equivalence": "cmd/internal implementation plus go.mod/go.sum/Makefile differ only in contracts.go package comment; no executable source difference. Native helper/tests and documentation are outside this scoped source comparison.",
+  "source_fingerprint": {
+    "algorithm": "sha256(path NUL bytes NUL) over sorted tracked implementation .go excluding _test.go plus go.mod/go.sum/Makefile",
+    "files": 44,
+    "sha256": "258376cc97f5304de622884c39a2b1a27e1cee412a843cbb61faa28a3d94c6a8"
+  },
+  "environment": {
+    "macos": "26.7.1",
+    "build": "25G309",
+    "architecture": "arm64",
+    "go": "go1.26.6 darwin/arm64"
+  },
+  "acceptance_file_digests": {
+    "internal/codexbroker/policy_acceptance_test.go": "d33df84bd8f830db11be1b2ca59c6a7617f0eea8fe97a8babcca422f5e151752",
+    "internal/codexbroker/testdata/codex_0159_bootstrap.json": "16ccbb29164440c093891779fff2b38a448a286efa0572bc4a1c0122831256cc",
+    "internal/daemon/codex_relay_acceptance_test.go": "a4a06333df5a7ecba65de7d591c0946cd64bfefd5c523c95c3964cc281625635"
+  },
+  "results": [
+    {
+      "command": "go test -race -json -count=1 ./internal/codexbroker ./internal/daemon ./internal/store",
+      "result": "pass",
+      "packages_passed": [
+        "github.com/seanheiney/agent-backplane/internal/codexbroker",
+        "github.com/seanheiney/agent-backplane/internal/store",
+        "github.com/seanheiney/agent-backplane/internal/daemon"
+      ],
+      "failed_nodes": 0,
+      "independent_acceptance_counts": {
+        "TestPolicyAcceptance": {
+          "groups": 20,
+          "passed_test_nodes": 312
+        },
+        "TestCodexRelayAcceptance": {
+          "groups": 10,
+          "passed_test_nodes": 27
+        }
+      },
+      "json_receipt_sha256": "d8df918198a6e9d277a8d979fdac89c251c11e17e30a661710426991a4f42387"
+    },
+    {
+      "command": "go vet ./internal/codexbroker ./internal/daemon ./internal/store",
+      "result": "pass",
+      "exit_code": 0
+    }
+  ],
+  "before_fix_receipts": [
+    "relay-malformed-source-repro.json",
+    "relay-late-native-before-fix.json",
+    "policy-marker-before-support.json",
+    "policy-trust-before-support.json"
+  ],
+  "preserved_harness_corrections": [
+    {
+      "receipt": "relay-acceptance-first-expanded.json",
+      "correction": "Compare complete source envelope after canonical key ordering, preserving typed IDs."
+    },
+    {
+      "receipt": "relay-acceptance-repaired-source.json",
+      "correction": "A nil host-only source RequestID serializes as JSON null; both represent absent native correlation."
+    },
+    {
+      "receipt": "relay-acceptance-after-absence-correction.json",
+      "correction": "Attached explicit Close positive must first observe actual read/ACK. Startup race became a separate deterministic closed-channel refusal regression."
+    }
+  ],
+  "qualification": "Policy tests are unit evidence. Relay tests use REAL Service.CodexAuthority, SQLite journal and Unix-WebSocket IO/counts, with explicitly registered fixture process provenance, runtime and quiescence. No fake Authority, fake delivery counters, paid/model turns, native CLI, auth/login changes, user terminals, remote machine or native approval forwarding tested by this reviewer.",
+  "missing_evidence": [
+    "independent native bootstrap/renderer compatibility run by this reviewer",
+    "actual provider process provenance in relay fixture",
+    "authenticated model work and nonempty live native history",
+    "native approval forwarding",
+    "native writer handover",
+    "actual broker app-server restart recovery",
+    "remote-machine broker transport"
+  ],
+  "receipt_storage": "Raw test logs and before-fix receipts retained privately; this file contains qualified counts and digests only."
+}
