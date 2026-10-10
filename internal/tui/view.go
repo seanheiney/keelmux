@@ -146,12 +146,7 @@ func runtimeLine(s domain.Session, stale bool) viewLine {
 	case "tmux":
 		backend = "legacy tmux"
 	}
-	state := s.Execution.State
-	if state == "" {
-		state = "unknown"
-	} else if state == "outcome_uncertain" {
-		state = "uncertain"
-	}
+	state := runtimeState(s.Execution.State)
 	style := muted
 	if state != "running" || backend == "unknown" || stale {
 		style = warning
@@ -160,6 +155,17 @@ func runtimeLine(s domain.Session, stale bool) viewLine {
 		state += " (stale)"
 	}
 	return line("Runtime: "+backend+" / "+state, style)
+}
+
+func runtimeState(state string) string {
+	switch state {
+	case "":
+		return "unknown"
+	case "outcome_uncertain":
+		return "uncertain"
+	default:
+		return state
+	}
 }
 
 func runtimeRepair(s domain.Session) string {
@@ -281,10 +287,7 @@ func (m *model) View() string {
 		if s.ID == p.SessionID {
 			marker, style = "› ", selected
 		}
-		state := s.Execution.State
-		if state == "" {
-			state = "unknown"
-		}
+		state := runtimeState(s.Execution.State)
 		if m.width < 52 && !s.Capabilities.NativeAttach {
 			// A narrow row still exposes an unavailable execution rather than
 			// hiding the state behind the provider column.

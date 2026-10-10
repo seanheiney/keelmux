@@ -50,13 +50,13 @@ func TestUnavailableRuntimeKeepsRepairStateAndNavigationOnSmallTerminal(t *testi
 		{"native", "stopped", "Attach unavailable; inspect this run."},
 	} {
 		m := testModel(t, clientstate.New())
-		s := fixtureSession("a", "Alpha")
+		s := fixtureSession("a", "api / tests")
 		s.Execution.Runtime.Backend, s.Execution.State = tc.backend, tc.state
 		s.Capabilities.NativeAttach, s.Capabilities.ReadOnlyAttach = false, false
 		m.Update(inventoryMsg{sessions: []domain.Session{s}})
 		m.Update(tea.WindowSizeMsg{Width: 40, Height: 14})
 		view := ansi.Strip(m.View())
-		if !strings.Contains(view, tc.repair) || !strings.Contains(view, "↑/↓ select") || strings.Contains(view, "Enter attach") {
+		if !strings.Contains(view, tc.repair) || !strings.Contains(view, "↑/↓ select") || !strings.Contains(view, "› api / tests") || strings.Contains(view, "Enter attach") {
 			t.Fatalf("unavailable %s/%s lost state or offered attachment: %q", tc.backend, tc.state, view)
 		}
 	}
