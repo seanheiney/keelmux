@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-10",
+  "native_version": "codex-cli 0.159.0",
+  "platform": "macOS arm64",
+  "repository_implementation_sha": "d097a39e8fbba6c7a56fa7f7ab38725c6cacf70f",
+  "scope": "owned zero-turn protocol research; adapter not implemented",
+  "upstream_socket_mode": "0o600",
+  "turns_submitted": 0,
+  "credentials_copied": false,
+  "existing_login_changed": false,
+  "native_thread_id": "01a126df-5b7b-75f3-a9ad-10ae1855eece",
+  "native_cli_resume_acknowledgements": [
+    {
+      "thread_id": "01a126df-5b7b-75f3-a9ad-10ae1855eece",
+      "same_thread": true,
+      "status": {
+        "type": "idle"
+      },
+      "turns_count": 0,
+      "can_accept_direct_input": null
+    }
+  ],
+  "client_methods": [
+    "initialize",
+    "initialized",
+    "account/read",
+    "thread/read",
+    "config/read",
+    "account/read",
+    "hooks/list",
+    "model/list",
+    "configRequirements/read",
+    "collaborationMode/list",
+    "thread/resume",
+    "thread/turns/list",
+    "thread/items/list",
+    "thread/loaded/list",
+    "thread/list",
+    "thread/list",
+    "thread/goal/get",
+    "thread/read",
+    "skills/list",
+    "skills/list",
+    "thread/turns/list"
+  ],
+  "rpc_error_count": 0,
+  "blocked_inference_request_count": 0,
+  "second_connection_metadata_mutation_succeeded": true,
+  "immediate_resume_error_code": -32600,
+  "idle_resume_after_server_restart_same_thread": true,
+  "native_cli_graceful_exit_confirmed": false,
+  "scripts_sha256": {
+    "probe.py": "ee1ba467e4b2e5080c404d0d689e7b37987b60b8dedc5b5e80f6ddde463bc1e0",
+    "native_cli.py": "02386393e84e26d45fd23ca0f0c5094ed1672edeb81d0c07f6bf310863632f21"
+  },
+  "missing_evidence": [
+    "authenticated model turn",
+    "nonempty paginated history",
+    "writer fencing",
+    "approval response handover",
+    "lost-turn-ack reconciliation",
+    "active-turn restart",
+    "host reboot",
+    "Mattermost/IRC delivery"
+  ]
+}
