@@ -134,3 +134,37 @@ a756fe17ef2c4abfacf3169bad217dfdb368da9076d7eedea8a8475d45177cce  tests/native_p
 e9a4fdb2faab43e306ed1866409e5a4377a153f2019d9d688620e1b652565f02  tests/native_supervisor_acceptance.py
 34130c06cbede6e31dd793d8fcd75393421bfb6511d156b31cd3259e36ece288  tests/native_package_acceptance_test.py
 ```
+
+## Independent review of the subsequent native correction
+
+The separate author correction
+`2397355a6ae9cbd0df742f6df0f8fa5788fe6766` resolves the short-tail hold above.
+Its explicit control tracking agrees with the pinned emulator's wrap reset
+operations. The post-write cursor reconciles short-glyph positions, while
+one- and two-column screens retain the exact delayed-wrap shadow where that
+cursor alone is ambiguous. Unicode Prepend followed by ASCII is retained
+through the emulator's public cell API after writing the spacing portion;
+the parser framing and strict query policy are unchanged.
+
+Independent checks on that exact clean author source:
+
+| Check | Result |
+| --- | --- |
+| Short-tail expected-cell matrix, reset/REP/restore/backtab/reverse-index/resize cases, and ASCII cases | Pass, 0.998 s |
+| Independent seeded 2,000-stream differential overlay described above | Pass, 1.303 s |
+| Independent temporary-overlay wrap oracle: 49 controls, five starting states, widths 1/2/7, comparing the shadow to the pinned emulator's actual internal wrap bit after every segment | All 735 combinations pass, 0.661 s |
+| `go test -race ./internal/adapters/nativepty ./cmd/keelmux-supervisor -count=1 -timeout=90s` | Pass, native package 8.534 s; supervisor command has no test files |
+| `go vet ./internal/adapters/nativepty ./cmd/keelmux-supervisor` | Pass |
+
+The review found a separate, pre-existing origin-margin bookkeeping defect.
+At width seven and height four, the exact input
+`\x1b[2;3r\x1b[?6h\x1b[2;1H1234567\x1b[3;1rA\u0301`
+must leave zero-based row one as `1234567`, row two with a single accented A
+at column zero, the cursor at `(1,2)`, and rows zero/three blank. The pinned
+emulator rejects the invalid `3;1r` margins and retains `2;3`; the existing
+screen callback nevertheless records top three/bottom one. The resulting
+accent rewrite instead writes an accented A into row one and leaves a plain A
+in row two, cursor `(1,1)`. The defect was reproduced independently on
+`2397355`; it was not introduced by that correction. The captain owns the
+narrow margin-validation follow-up and its final integrated source freeze.
+No source changes were made in the author's worktree by this reviewer.
