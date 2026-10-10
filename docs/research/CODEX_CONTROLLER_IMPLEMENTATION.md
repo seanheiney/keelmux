@@ -13,6 +13,12 @@ implement or certify the authenticated native `Upstream` adapter or the shared
 dependencies. Trusted options identify the reviewed native executable and its
 SHA-256, native HOME/CODEX_HOME paths, and authorized realm revision. No credential
 file is read or copied by the controller. The executable is hashed before spawn.
+Both native home directories must already exist and belong to the effective
+local user. Their symlinks are resolved, their opened directory descriptors are
+validated, and their canonical paths plus filesystem device/inode identities are
+persisted. Lifecycle and binding operations recheck those identities. A realm
+revision change or an alternate path to the same native home cannot bypass the
+live native-thread fence. These checks do not isolate the same local OS user.
 The caller must qualify that digest against the installed 0.159.0 CLI beforehand;
 the controller does not treat an arbitrary requested version string as evidence.
 
@@ -68,11 +74,23 @@ processes from concurrently owning this file; it is not an input lease. No broke
 grant table or `one_writer` constraint is duplicated. History/tombstones are not
 automatically deleted; reaching the bound refuses new records.
 
+Journal file opens use no-follow/nonblocking flags and validate the actual opened
+descriptor's owner, mode, regular-file type and single-link count. Reads and atomic
+writes are relative to the opened directory descriptor; a changed directory or
+lock-file identity refuses further operations. Version 2 accepts only the exact
+canonical JSON representation emitted by its writer, rejecting duplicate keys,
+case aliases, unknown fields and null/reset ambiguity. Earlier version 1 ledgers
+fail closed without deletion or automatic migration; retained attempts must not
+be bypassed by creating fresh state.
+
 Each record preserves original start request, randomized app-server incarnation,
 private per-launch capability, binary/realm references, exact supervisor process
 reference, observed socket identity and stop operation. Public `View` omits private
 paths, capability, process IDs, account/model inference and broker tokens.
 `Launch` refuses JSON serialization and redacts ordinary Go string formatting.
+The opaque `Journal` handle also refuses JSON serialization and redacts ordinary
+Go string formatting, including formatting that would otherwise expose private
+map entries.
 
 State transitions are `recorded → attempted → process_owned → resume_attempted →
 ready`, and `ready → stop_attempted → stopped`. Any invoked effect with unknown

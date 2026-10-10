@@ -15,14 +15,16 @@ import (
 
 	cb "github.com/seanheiney/keelmux/internal/codexbroker"
 	"github.com/seanheiney/keelmux/internal/domain"
+	"golang.org/x/sys/unix"
 )
 
 type Controller struct {
-	journal    *Journal
-	supervisor Supervisor
-	upstream   Upstream
-	gate       Gate
-	options    Options
+	journal                         *Journal
+	supervisor                      Supervisor
+	upstream                        Upstream
+	gate                            Gate
+	options                         Options
+	homeIdentity, codexHomeIdentity directoryIdentity
 }
 
 func absent(v any) bool {
@@ -49,12 +51,21 @@ func New(j *Journal, s Supervisor, u Upstream, g Gate, o Options) (*Controller, 
 	if o.Timeout < time.Second || o.Timeout > 30*time.Second {
 		return nil, ErrInvalid
 	}
+	canonicalHome, homeIdentity, err := ownedDirectory(o.Home)
+	if err != nil {
+		return nil, err
+	}
+	canonicalCodexHome, codexHomeIdentity, err := ownedDirectory(o.CodexHome)
+	if err != nil {
+		return nil, err
+	}
+	o.Home, o.CodexHome = canonicalHome, canonicalCodexHome
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if !j.available() {
 		return nil, ErrStorage
 	}
-	return &Controller{journal: j, supervisor: s, upstream: u, gate: g, options: o}, nil
+	return &Controller{journal: j, supervisor: s, upstream: u, gate: g, options: o, homeIdentity: homeIdentity, codexHomeIdentity: codexHomeIdentity}, nil
 }
 
 var identifier = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,256}$`)
@@ -74,7 +85,7 @@ func validRequest(r StartRequest) bool {
 	return validTarget(r.Target) && validText(string(r.OperationID)) && validText(r.NativeThreadID) && validText(r.RealmRevision) && cleanPath(r.Workspace)
 }
 func validEntry(e entry, dir string) bool {
-	if !validRequest(e.Request) || !validText(string(e.Incarnation)) || !digest(e.Capability) || !digest(e.BinarySHA256) || !cleanPath(e.Binary) || !cleanPath(e.Home) || !cleanPath(e.CodexHome) || e.Endpoint != filepath.Join(dir, "app-"+string(e.Incarnation)+".sock") {
+	if !validRequest(e.Request) || !validText(string(e.Incarnation)) || !digest(e.Capability) || !digest(e.BinarySHA256) || !cleanPath(e.Binary) || !cleanPath(e.Home) || !cleanPath(e.CodexHome) || e.HomeIdentity.Inode == 0 || e.CodexHomeIdentity.Inode == 0 || e.Endpoint != filepath.Join(dir, "app-"+string(e.Incarnation)+".sock") {
 		return false
 	}
 	if e.StopOperation != "" && !validText(string(e.StopOperation)) {
@@ -159,6 +170,9 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 		if !j.available() {
 			return ErrStorage
 		}
+		if !c.sameDirectories() {
+			return ErrConflict
+		}
 		if e, ok := j.entries[r.Target.ExecutionID]; ok {
 			out = e.view()
 			if e.Request != r || !c.sameOptions(e) {
@@ -174,7 +188,7 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 		}
 		// A different generation cannot replace a possibly surviving primary.
 		for _, e := range j.entries {
-			if e.State != Stopped && (e.Request.Target.SessionID == r.Target.SessionID || e.Request.NativeThreadID == r.NativeThreadID && (e.Request.RealmRevision == r.RealmRevision || e.CodexHome == c.options.CodexHome)) {
+			if e.State != Stopped && (e.Request.Target.SessionID == r.Target.SessionID || e.Request.NativeThreadID == r.NativeThreadID && (e.Request.RealmRevision == r.RealmRevision || e.CodexHome == c.options.CodexHome || e.CodexHomeIdentity == c.codexHomeIdentity)) {
 				return ErrConflict
 			}
 		}
@@ -190,6 +204,7 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 			return err
 		}
 		e := entry{Request: r, Incarnation: domain.ID(inc), Endpoint: filepath.Join(j.dir, "app-"+inc+".sock"), Binary: c.options.Binary, BinarySHA256: c.options.BinarySHA256, Home: c.options.Home, CodexHome: c.options.CodexHome, Capability: cap, State: Recorded, Reason: "intent_recorded", UpdatedAt: time.Now().UTC()}
+		e.HomeIdentity, e.CodexHomeIdentity = c.homeIdentity, c.codexHomeIdentity
 		if err = j.save(e); err != nil {
 			return err
 		}
@@ -238,10 +253,14 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 }
 
 func verifyBinary(path, want string) error {
-	f, err := os.Open(path)
+	// An executable replaced by a FIFO must not block the common lifecycle gate
+	// before we can inspect its type. Qualified executable symlinks remain valid;
+	// the upstream adapter must separately prove the image actually launched.
+	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return ErrUnavailable
 	}
+	f := os.NewFile(uintptr(fd), path)
 	defer f.Close()
 	i, err := f.Stat()
 	if err != nil || !i.Mode().IsRegular() || i.Mode().Perm()&0111 == 0 || i.Size() > 512<<20 {
@@ -267,7 +286,10 @@ func validEvidence(e entry, v Evidence) bool {
 	return validProcess(e, r) && a.HostID == t.HostID && a.SessionID == t.SessionID && a.ExecutionID == t.ExecutionID && a.Generation == t.Generation && a.AppServerIncarnation == e.Incarnation && a.AppServerPID == r.PID && a.AppServerBootID == r.BootID && a.AppServerProcessStart == r.ProcessStart && a.ProtocolVersion == ProtocolVersion && a.NativeThreadID == e.Request.NativeThreadID && v.CapabilitySHA256 == e.launch().CapabilitySHA256() && validText(v.SocketIdentity) && (e.Evidence.SocketIdentity == "" || e.Evidence.SocketIdentity == v.SocketIdentity)
 }
 func (c *Controller) sameOptions(e entry) bool {
-	return e.Binary == c.options.Binary && e.BinarySHA256 == c.options.BinarySHA256 && e.Home == c.options.Home && e.CodexHome == c.options.CodexHome && e.Request.RealmRevision == c.options.RealmRevision
+	return e.Binary == c.options.Binary && e.BinarySHA256 == c.options.BinarySHA256 && e.Home == c.options.Home && e.CodexHome == c.options.CodexHome && e.HomeIdentity == c.homeIdentity && e.CodexHomeIdentity == c.codexHomeIdentity && e.Request.RealmRevision == c.options.RealmRevision && c.sameDirectories()
+}
+func (c *Controller) sameDirectories() bool {
+	return sameDirectory(c.options.Home, c.homeIdentity) && sameDirectory(c.options.CodexHome, c.codexHomeIdentity)
 }
 func (c *Controller) transition(e *entry, state State, reason string) error {
 	e.State = state

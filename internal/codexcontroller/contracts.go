@@ -153,6 +153,8 @@ type StopRequest struct {
 // Options are trusted local installation configuration, not request parameters.
 // BinarySHA256 and ProtocolVersion must come from read-only installed-binary
 // qualification; version text or a caller supplied digest alone is not proof.
+// Home and CodexHome must be existing directories owned by the effective local
+// user. New canonicalizes their paths and pins their filesystem identities.
 type Options struct {
 	Binary, BinarySHA256, Home, CodexHome, RealmRevision string
 	Timeout                                              time.Duration

@@ -1,6 +1,7 @@
 package codexcontroller
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -16,17 +17,24 @@ import (
 
 const maxJournalBytes = 4 << 20
 const maxPrimaries = 1024
+const journalVersion = 2
 
 // Journal is a host-private lifecycle ledger, not writer authority. Its flock
 // protects the file from concurrent controller processes; grants remain solely
 // in the existing broker store. Open/Close never stop or respawn any process.
 type Journal struct {
-	mu       sync.Mutex
-	dir      string
-	lock     *os.File
-	entries  map[domain.ID]entry
-	poisoned bool
+	mu        sync.Mutex
+	dir       string
+	directory *os.File
+	lock      *os.File
+	entries   map[domain.ID]entry
+	poisoned  bool
 }
+
+// Journal is an opaque handle. Diagnostic logging must not reveal its ledger.
+func (*Journal) MarshalJSON() ([]byte, error) { return nil, ErrInvalid }
+func (*Journal) String() string               { return "[private Codex journal]" }
+func (*Journal) GoString() string             { return "[private Codex journal]" }
 
 // Private disk representation: unlike Launch it is intentionally serializable
 // only here. This ledger contains a local capability and must stay mode 0600.
@@ -34,6 +42,7 @@ type entry struct {
 	Request                                                     StartRequest
 	Incarnation                                                 domain.ID
 	Endpoint, Binary, BinarySHA256, Home, CodexHome, Capability string
+	HomeIdentity, CodexHomeIdentity                             directoryIdentity
 	Process                                                     domain.RuntimeRef
 	Evidence                                                    Evidence
 	State                                                       State
@@ -46,8 +55,8 @@ type disk struct {
 	Entries map[domain.ID]entry
 }
 
-func privateInfo(path string, directory bool) error {
-	i, err := os.Lstat(path)
+func privateInfo(f *os.File, directory bool) error {
+	i, err := f.Stat()
 	if err != nil {
 		return ErrStorage
 	}
@@ -56,10 +65,25 @@ func privateInfo(path string, directory bool) error {
 	if directory {
 		perm = 0700
 	}
-	if !ok || s.Uid != uint32(os.Geteuid()) || i.Mode().Perm() != perm || i.IsDir() != directory || (!directory && !i.Mode().IsRegular()) {
+	if !ok || s.Uid != uint32(os.Geteuid()) || i.Mode().Perm() != perm || i.IsDir() != directory || (!directory && (!i.Mode().IsRegular() || s.Nlink != 1)) {
 		return ErrStorage
 	}
 	return nil
+}
+
+// Validate the descriptor we use, without following a link or waiting on a FIFO.
+// The parent descriptor also keeps all journal IO in the directory we verified.
+func privateFileAt(dir *os.File, name string, flags int) (*os.File, error) {
+	fd, err := unix.Openat(int(dir.Fd()), name, flags|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0600)
+	if err != nil {
+		return nil, err
+	}
+	f := os.NewFile(uintptr(fd), name)
+	if err := privateInfo(f, false); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 func OpenJournal(dir string) (*Journal, error) {
@@ -69,32 +93,30 @@ func OpenJournal(dir string) (*Journal, error) {
 	if err := os.Mkdir(dir, 0700); err != nil && !os.IsExist(err) {
 		return nil, ErrStorage
 	}
-	if err := privateInfo(dir, true); err != nil {
-		return nil, err
-	}
-	fd, err := unix.Open(filepath.Join(dir, "controller.lock"), unix.O_CREAT|unix.O_RDWR|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0600)
+	fd, err := unix.Open(dir, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, ErrStorage
 	}
-	f := os.NewFile(uintptr(fd), "controller.lock")
-	if err := privateInfo(filepath.Join(dir, "controller.lock"), false); err != nil {
-		f.Close()
+	directory := os.NewFile(uintptr(fd), dir)
+	if err := privateInfo(directory, true); err != nil {
+		directory.Close()
 		return nil, err
 	}
-	if err := unix.Flock(fd, unix.LOCK_EX|unix.LOCK_NB); err != nil {
+	f, err := privateFileAt(directory, "controller.lock", unix.O_CREAT|unix.O_RDWR)
+	if err != nil {
+		directory.Close()
+		return nil, ErrStorage
+	}
+	if err := unix.Flock(int(f.Fd()), unix.LOCK_EX|unix.LOCK_NB); err != nil {
 		f.Close()
+		directory.Close()
 		return nil, ErrConflict
 	}
-	j := &Journal{dir: dir, lock: f, entries: map[domain.ID]entry{}}
-	path := filepath.Join(dir, "primaries.json")
-	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+	j := &Journal{dir: dir, directory: directory, lock: f, entries: map[domain.ID]entry{}}
+	r, err := privateFileAt(directory, "primaries.json", unix.O_RDONLY)
+	if errors.Is(err, os.ErrNotExist) {
 		return j, nil
 	}
-	if err := privateInfo(path, false); err != nil {
-		j.Close()
-		return nil, err
-	}
-	r, err := os.Open(path)
 	if err != nil {
 		j.Close()
 		return nil, ErrStorage
@@ -102,7 +124,15 @@ func OpenJournal(dir string) (*Journal, error) {
 	b, err := io.ReadAll(io.LimitReader(r, maxJournalBytes+1))
 	r.Close()
 	var d disk
-	if err != nil || len(b) > maxJournalBytes || json.Unmarshal(b, &d) != nil || d.Version != 1 || d.Entries == nil || len(d.Entries) > maxPrimaries {
+	if err != nil || len(b) > maxJournalBytes || json.Unmarshal(b, &d) != nil || d.Version != journalVersion || d.Entries == nil || len(d.Entries) > maxPrimaries {
+		j.Close()
+		return nil, ErrStorage
+	}
+	// This private ledger has a single canonical writer. Exact round-trip
+	// equality rejects duplicate keys, case aliases, unknown fields, null resets,
+	// and any representation that could discard or reinterpret a tombstone.
+	canonical, err := json.Marshal(d)
+	if err != nil || !bytes.Equal(b, canonical) {
 		j.Close()
 		return nil, ErrStorage
 	}
@@ -129,9 +159,23 @@ func (j *Journal) Close() error {
 	}
 	err := j.lock.Close()
 	j.lock = nil
+	if closeErr := j.directory.Close(); err == nil {
+		err = closeErr
+	}
+	j.directory = nil
 	return err
 }
-func (j *Journal) available() bool { return j.lock != nil && !j.poisoned }
+func (j *Journal) available() bool {
+	if j.lock == nil || j.directory == nil || j.poisoned {
+		return false
+	}
+	current, err := os.Lstat(j.dir)
+	opened, statErr := j.directory.Stat()
+	var lockPath, lockFD unix.Stat_t
+	return err == nil && statErr == nil && os.SameFile(current, opened) && privateInfo(j.directory, true) == nil && privateInfo(j.lock, false) == nil &&
+		unix.Fstatat(int(j.directory.Fd()), "controller.lock", &lockPath, unix.AT_SYMLINK_NOFOLLOW) == nil &&
+		unix.Fstat(int(j.lock.Fd()), &lockFD) == nil && lockPath.Dev == lockFD.Dev && lockPath.Ino == lockFD.Ino && lockPath.Mode&unix.S_IFMT == unix.S_IFREG
+}
 func (j *Journal) operationUsed(op domain.ID) bool {
 	for _, e := range j.entries {
 		if e.Request.OperationID == op || e.StopOperation == op {
@@ -156,16 +200,20 @@ func (j *Journal) save(e entry) error {
 	if len(next) > maxPrimaries {
 		return ErrStorage
 	}
-	b, err := json.Marshal(disk{Version: 1, Entries: next})
+	b, err := json.Marshal(disk{Version: journalVersion, Entries: next})
 	if err != nil || len(b) > maxJournalBytes {
 		return ErrStorage
 	}
-	f, err := os.CreateTemp(j.dir, ".primary-")
+	suffix, err := nonce(16)
 	if err != nil {
 		return ErrStorage
 	}
-	name := f.Name()
-	defer os.Remove(name)
+	name := ".primary-" + suffix
+	f, err := privateFileAt(j.directory, name, unix.O_CREAT|unix.O_EXCL|unix.O_WRONLY)
+	if err != nil {
+		return ErrStorage
+	}
+	defer unix.Unlinkat(int(j.directory.Fd()), name, 0)
 	fail := func() error { f.Close(); j.poisoned = true; return ErrStorage }
 	if err = f.Chmod(0600); err != nil {
 		return fail()
@@ -179,16 +227,10 @@ func (j *Journal) save(e entry) error {
 	if err = f.Close(); err != nil {
 		return fail()
 	}
-	if err = os.Rename(name, filepath.Join(j.dir, "primaries.json")); err != nil {
+	if err = unix.Renameat(int(j.directory.Fd()), name, int(j.directory.Fd()), "primaries.json"); err != nil {
 		return fail()
 	}
-	d, err := os.Open(j.dir)
-	if err != nil {
-		return fail()
-	}
-	err = d.Sync()
-	closeErr := d.Close()
-	if err != nil || closeErr != nil {
+	if err = j.directory.Sync(); err != nil {
 		return fail()
 	}
 	j.entries = next
