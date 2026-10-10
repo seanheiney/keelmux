@@ -12,6 +12,8 @@ The center stays the same: actual vendor terminals on user-owned machines, stabl
 
 The current terminal implementation and private entry experiment contribute to these stages. They do not complete every terminal-alpha release gate or the Bouncer MVP. Two local homes are not two independent servers. A local draft is not a chat message. A zero-turn native bootstrap is not authenticated model work.
 
+The channel development release adds authored inboxes and explicit replies attached to stable threads. This is useful communication without granting chat senders model or terminal authority. Mattermost is the first real-server qualification target; Slack and IRC retain their declared fixture/capability limits. Structured model dispatch, remote home enrollment and captains remain separate milestones.
+
 ## Current Codex work
 
 The internal broker explores an owned app-server, exact native thread, durable writer reservation, strict wire policy and scoped observation. Its next product integration is a private home controller separating durable primary process from disposable native UI. Product launch, verified restart/reboot, nonempty history, real prompts, exact callbacks and model/account/usage proof are separate gates.
