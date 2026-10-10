@@ -20,6 +20,7 @@ import urllib.request
 
 MM_IMAGE = "mattermost/mattermost-team-edition@sha256:14a2de6b71fe5f60660fb71ef2f020c5758d8559fdd35a3fca429d301b781154"
 PG_IMAGE = "postgres@sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229"
+RUNTIME_IMAGE = "golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36"
 LABEL = "io.keelmux.mattermost-acceptance"
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,17 +40,17 @@ class Harness:
         self.state = Path(tempfile.mkdtemp(prefix="keelmux-mm-", dir=ROOT / "work"))
         os.chmod(self.state, 0o700)
         self.nonce = secrets.token_hex(12)
-        self.names = {"network": "keelmux-mm-" + self.nonce, "postgres": "keelmux-mm-pg-" + self.nonce, "server": "keelmux-mm-server-" + self.nonce}
+        self.names = {"network": "keelmux-mm-" + self.nonce, "postgres": "keelmux-mm-pg-" + self.nonce, "server": "keelmux-mm-server-" + self.nonce, "runtime": "keelmux-mm-runtime-" + self.nonce}
         self.ids = {}
         self.allow_dirty = allow_dirty
         self.secrets = []
         self.receipt = {"schema": 1, "scope": "owned real Mattermost service/adapter acceptance", "passed": False, "failure_kind": None,
                         "mattermost_image": MM_IMAGE, "postgres_image": PG_IMAGE,
-                        "excluded": ["product bpd/TUI/customer deployment", "Slack/IRC live servers", "model dispatch", "native terminal input", "exactly-once posts", "database downgrade"], "cleanup": {}}
+                        "excluded": ["packaged release/TUI/customer deployment", "Slack/IRC live servers", "model dispatch", "native terminal input", "exactly-once posts", "database downgrade"], "cleanup": {}}
 
-    def run(self, argv, *, data=None, timeout=30):
+    def run(self, argv, *, data=None, timeout=30, env=None):
         try:
-            result = subprocess.run(argv, cwd=ROOT, input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+            result = subprocess.run(argv, cwd=ROOT, input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout, env=env)
         except (subprocess.TimeoutExpired, OSError) as exc:
             private(self.state / "command-exception.txt", repr(exc))
             raise Failure("owned_command_failed") from exc
@@ -257,10 +258,73 @@ class Harness:
         if proc.returncode or not self.receipt.get("acceptance", {}).get("passed"):
             raise Failure("acceptance_failed")
 
+    def daemon_phase(self):
+        # Linux Go honors SSL_CERT_FILE. Darwin uses system roots, so the
+        # production daemon runs in this separately owned Linux child instead
+        # of introducing an insecure product override or changing system trust.
+        image = self.metadata("image", RUNTIME_IMAGE)
+        if image.get("Os") != "linux" or image.get("Architecture") != "arm64":
+            raise Failure("source_runtime_image_mismatch")
+        self.remember("runtime", self.run(["docker", "create", "--pull", "never", "--name", self.names["runtime"], "--label", LABEL + "=" + self.nonce,
+                                             "--network", "container:" + self.ids["server"], RUNTIME_IMAGE, "sleep", "1200"]).decode())
+        self.run(["docker", "start", self.ids["runtime"]])
+        runtime = self.metadata("container", self.ids["runtime"])
+        if runtime.get("Mounts") or runtime["HostConfig"]["NetworkMode"] != "container:" + self.ids["server"]:
+            raise Failure("source_runtime_isolation_mismatch")
+        # Only this disposable fixture container receives a dependency. It has
+        # no user mounts, native credentials, or generated bot credentials yet.
+        self.run(["docker", "exec", self.ids["runtime"], "apt-get", "update", "-qq"], timeout=120)
+        self.run(["docker", "exec", "-e", "DEBIAN_FRONTEND=noninteractive", self.ids["runtime"], "apt-get", "install", "-y", "-qq", "--no-install-recommends", "tmux"], timeout=120)
+        tmux_version = self.run(["docker", "exec", self.ids["runtime"], "tmux", "-V"]).decode().strip()
+        if not re.fullmatch(r"tmux \d+\.\d+[a-z]?", tmux_version):
+            raise Failure("source_runtime_tmux_version_unknown")
+        outputs = self.state / "source-binaries"; outputs.mkdir(mode=0o700)
+        buildenv = dict(os.environ, CGO_ENABLED="0", GOOS="linux", GOARCH="arm64")
+        stamp = self.run(["git", "show", "-s", "--format=%cI", "HEAD"]).decode().strip()
+        flags = "-X github.com/seanheiney/keelmux/internal/buildinfo.Version=development -X github.com/seanheiney/keelmux/internal/buildinfo.Commit=" + self.receipt["source"] + " -X github.com/seanheiney/keelmux/internal/buildinfo.BuiltAt=" + stamp
+        for name, package in (("keelmux", "./cmd/bp"), ("keelmuxd", "./cmd/bpd")):
+            self.run(["go", "build", "-trimpath", "-ldflags", flags, "-o", str(outputs / name), package], timeout=120, env=buildenv)
+        self.run(["go", "test", "-c", "-trimpath", "-o", str(outputs / "acceptance.test"), "./internal/channelservice"], timeout=120, env=buildenv)
+        original = json.loads(self.fixture.read_text())
+        original.update(endpoint="https://127.0.0.1:8065", state="/tmp/keelmux-fixture", ca="/tmp/keelmux-fixture/ca.pem",
+                        root=original["other_root"], other_root=original["root"], token_paths={key: "/tmp/keelmux-fixture/" + key + "-token" for key in original["token_paths"]})
+        payload = io.BytesIO()
+        with tarfile.open(fileobj=payload, mode="w") as archive:
+            for name in ("keelmux-bin", "keelmux-fixture"):
+                info = tarfile.TarInfo(name); info.type = tarfile.DIRTYPE; info.mode = 0o700; archive.addfile(info)
+            files = [("keelmux-bin/" + name, path.read_bytes(), 0o700) for name, path in ((n, outputs / n) for n in ("keelmux", "keelmuxd", "acceptance.test"))]
+            files += [("keelmux-fixture/ca.pem", self.ca.read_bytes(), 0o600), ("keelmux-fixture/fixture.json", json.dumps(original).encode(), 0o600)]
+            files += [("keelmux-fixture/" + key + "-token", Path(path).read_bytes(), 0o600) for key, path in json.loads(self.fixture.read_text())["token_paths"].items()]
+            for name, data, mode in files:
+                info = tarfile.TarInfo(name); info.size = len(data); info.mode = mode; archive.addfile(info, io.BytesIO(data))
+        self.run(["docker", "cp", "-a", "-", self.ids["runtime"] + ":/tmp"], data=payload.getvalue())
+        self.receipt["source_daemon_runtime"] = {"image": RUNTIME_IMAGE, "os": "linux", "arch": "arm64", "uid": 0, "tmux": tmux_version,
+            "network_namespace": "exact owned Mattermost container", "endpoint": "https://127.0.0.1:8065", "ssl_cert_file_child_only": True,
+            "no_host_mounts": True, "binary_sha256": {name: hashlib.sha256((outputs / name).read_bytes()).hexdigest() for name in ("keelmux", "keelmuxd", "acceptance.test")},
+            "functional_test_not_race_instrumented": True}
+        command = ["docker", "exec", "-e", "KEELMUX_MM_ACCEPTANCE_FIXTURE=/tmp/keelmux-fixture/fixture.json", "-e", "KEELMUX_MM_ACCEPTANCE_BIN_DIR=/tmp/keelmux-bin", "-e", "KEELMUX_MM_ACCEPTANCE_SOURCE=" + self.receipt["source"], self.ids["runtime"],
+                   "/tmp/keelmux-bin/acceptance.test", "-test.run", "^(TestMattermostOwnedDaemonAcceptance|TestMMAcceptancePrivateFixtureFiles)$", "-test.timeout", "120s", "-test.v"]
+        try:
+            private(self.state / "daemon-test-private.log", self.run(command, timeout=150))
+        finally:
+            # Never extract a provider-controlled tree on the host. Preserve the
+            # whole owned runtime diagnostics as a private opaque tar instead.
+            raw = self.run(["docker", "cp", self.ids["runtime"] + ":/tmp/keelmux-fixture", "-"])
+            private(self.state / "daemon-private.tar", raw)
+            with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+                result = [entry for entry in archive.getmembers() if entry.name == "keelmux-fixture/daemon-result.json" and entry.isfile() and entry.size <= 32768]
+                if len(result) == 1:
+                    self.receipt["source_daemon_acceptance"] = json.loads(archive.extractfile(result[0]).read())
+        result = self.receipt.get("source_daemon_acceptance", {})
+        if not result.get("passed") or result.get("stable_source_commit") != self.receipt["source"]:
+            raise Failure("source_daemon_acceptance_failed")
+        if self.run(["git", "rev-parse", "HEAD"]).decode().strip() != self.receipt["source"] or hashlib.sha256(self.run(["git", "diff", "HEAD", "--", "cmd", "internal", "go.mod", "go.sum", "scripts/mattermost-acceptance.py"])).hexdigest() != self.receipt["dirty_diff_sha256"]:
+            raise Failure("source_changed_during_acceptance")
+
     def cleanup(self):
         # Only exact recorded handles whose immutable label/name still match.
         failures = []
-        for kind in ("server", "postgres"):
+        for kind in ("runtime", "server", "postgres"):
             ident = self.ids.get(kind)
             if not ident:
                 continue
@@ -314,7 +378,7 @@ def main():
         raise Failure("interrupted")
     signal.signal(signal.SIGTERM, interrupted); signal.signal(signal.SIGINT, interrupted)
     try:
-        h.start(); h.fixtures(); h.acceptance(); h.receipt["passed"] = True
+        h.start(); h.fixtures(); h.acceptance(); h.daemon_phase(); h.receipt["passed"] = True
     except Failure as exc:
         h.receipt["failure_kind"] = str(exc)
     except Exception as exc:

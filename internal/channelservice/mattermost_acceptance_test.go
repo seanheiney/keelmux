@@ -14,15 +14,18 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/chatadapter"
+	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/store"
@@ -35,6 +38,69 @@ type mmAcceptanceFixture struct {
 	OtherRoot            string `json:"other_root"`
 	Bot, Human, Outsider string
 	TokenPaths           map[string]string `json:"token_paths"`
+}
+
+func mmAcceptancePrivateFile(path string) ([]byte, error) {
+	info, err := os.Lstat(filepath.Dir(path))
+	if err != nil || !info.IsDir() || info.Mode().Perm() != 0700 {
+		return nil, errors.New("owned fixture directory invalid")
+	}
+	st, ok := info.Sys().(*syscall.Stat_t)
+	if !ok || st.Uid != uint32(os.Geteuid()) {
+		return nil, errors.New("owned fixture directory owner invalid")
+	}
+	return config.ReadPrivateSecret(path)
+}
+
+func TestMMAcceptancePrivateFixtureFiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Chmod(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	regular := filepath.Join(dir, "regular")
+	if err := os.WriteFile(regular, []byte("owned"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := mmAcceptancePrivateFile(regular); err != nil || string(data) != "owned" {
+		t.Fatal("private positive control failed")
+	}
+	symlink := filepath.Join(dir, "symlink")
+	if err := os.Symlink(regular, symlink); err != nil {
+		t.Fatal(err)
+	}
+	fifo := filepath.Join(dir, "fifo")
+	if err := syscall.Mkfifo(fifo, 0600); err != nil {
+		t.Fatal(err)
+	}
+	public := filepath.Join(dir, "public")
+	if err := os.WriteFile(public, []byte("public"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	for name, path := range map[string]string{"symlink": symlink, "fifo": fifo, "public": public} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := mmAcceptancePrivateFile(path); err == nil {
+				t.Fatal("unsafe fixture file accepted")
+			}
+		})
+	}
+	if os.Geteuid() == 0 {
+		foreign := filepath.Join(dir, "foreign")
+		if err := os.WriteFile(foreign, []byte("foreign"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chown(foreign, 65534, 65534); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := mmAcceptancePrivateFile(foreign); err == nil {
+			t.Fatal("foreign fixture file accepted")
+		}
+	}
+	if err := os.Chmod(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mmAcceptancePrivateFile(regular); err == nil {
+		t.Fatal("public fixture directory accepted")
+	}
 }
 
 type mmAcceptancePost struct {
@@ -141,7 +207,7 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 		t.Skip("requires scripts/mattermost-acceptance.py owned fixture")
 	}
 	var fixture mmAcceptanceFixture
-	data, err := os.ReadFile(fixturePath)
+	data, err := mmAcceptancePrivateFile(fixturePath)
 	if err != nil || json.Unmarshal(data, &fixture) != nil || fixture.Schema != 1 {
 		t.Fatal("owned_fixture_invalid")
 	}
@@ -151,15 +217,15 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 	if err != nil || u.Scheme != "https" || !net.ParseIP(u.Hostname()).IsLoopback() || u.Path != "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		t.Fatal("owned_endpoint_invalid")
 	}
-	info, err := os.Stat(fixturePath)
+	info, err := os.Lstat(fixturePath)
 	if err != nil || info.Mode().Perm() != 0600 || filepath.Dir(fixturePath) != fixture.State {
 		t.Fatal("owned_fixture_permissions_invalid")
 	}
-	stateInfo, err := os.Stat(fixture.State)
+	stateInfo, err := os.Lstat(fixture.State)
 	if err != nil || stateInfo.Mode().Perm() != 0700 {
 		t.Fatal("owned_state_permissions_invalid")
 	}
-	ca, err := os.ReadFile(fixture.CA)
+	ca, err := mmAcceptancePrivateFile(fixture.CA)
 	pool := x509.NewCertPool()
 	if err != nil || !pool.AppendCertsFromPEM(ca) {
 		t.Fatal("owned_ca_invalid")
@@ -175,7 +241,7 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 	defer cancel()
 	tokens := map[string]string{}
 	for _, who := range []string{"admin", "human", "outsider", "bot"} {
-		secret, e := os.ReadFile(fixture.TokenPaths[who])
+		secret, e := mmAcceptancePrivateFile(fixture.TokenPaths[who])
 		if e != nil || len(secret) == 0 || filepath.Dir(fixture.TokenPaths[who]) != fixture.State {
 			t.Fatal("owned_secret_invalid")
 		}
@@ -447,4 +513,309 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 		t.Fatal("readonly_reconcile_posted_again")
 	}
 	checks["disabled_historical_reconcile_is_readonly"] = true
+}
+
+// A separate phase runs exact source-built product binaries in the Python
+// owner's fresh Linux container. SSL_CERT_FILE applies only to these children.
+func TestMattermostOwnedDaemonAcceptance(t *testing.T) {
+	fixturePath, binDir := os.Getenv("KEELMUX_MM_ACCEPTANCE_FIXTURE"), os.Getenv("KEELMUX_MM_ACCEPTANCE_BIN_DIR")
+	if fixturePath == "" || binDir == "" {
+		t.Skip("requires owned Linux source-binary fixture")
+	}
+	data, err := mmAcceptancePrivateFile(fixturePath)
+	var f mmAcceptanceFixture
+	if err != nil || json.Unmarshal(data, &f) != nil || f.Schema != 1 || f.Endpoint != "https://127.0.0.1:8065" || f.State != filepath.Dir(fixturePath) {
+		t.Fatal("owned_daemon_fixture_invalid")
+	}
+	ca, err := mmAcceptancePrivateFile(f.CA)
+	pool := x509.NewCertPool()
+	if err != nil || !pool.AppendCertsFromPEM(ca) {
+		t.Fatal("owned_daemon_ca_invalid")
+	}
+	transport := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}, Proxy: nil}
+	defer transport.CloseIdleConnections()
+	adminClient := &http.Client{Transport: transport, Timeout: 10 * time.Second}
+	tokens := map[string]string{}
+	for _, name := range []string{"admin", "human", "outsider", "bot"} {
+		b, e := mmAcceptancePrivateFile(f.TokenPaths[name])
+		if e != nil || filepath.Dir(f.TokenPaths[name]) != f.State {
+			t.Fatal("owned_daemon_secret_invalid")
+		}
+		tokens[name] = string(b)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	for _, name := range []string{"keelmux", "keelmuxd"} {
+		info, e := os.Lstat(filepath.Join(binDir, name))
+		if e != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0022 != 0 || info.Mode().Perm()&0100 == 0 || info.Sys().(*syscall.Stat_t).Uid != uint32(os.Geteuid()) {
+			t.Fatal("owned_source_binary_invalid")
+		}
+	}
+	home, state, emptyCA := filepath.Join(f.State, "private-home"), filepath.Join(f.State, "daemon-state"), filepath.Join(f.State, "empty-ca-dir")
+	for _, dir := range []string{home, state, emptyCA} {
+		if err = os.Mkdir(dir, 0700); err != nil {
+			t.Fatal("owned_daemon_directory_failed")
+		}
+	}
+	paths, err := config.Resolve(state)
+	if err != nil {
+		t.Fatal("owned_daemon_paths_failed")
+	}
+	host, err := paths.HostID()
+	if err != nil {
+		t.Fatal("owned_daemon_host_failed")
+	}
+	db, err := store.Open(paths.DB)
+	if err != nil {
+		t.Fatal("owned_daemon_seed_open_failed")
+	}
+	seed := domain.NewSession(host, "Owned daemon channel fixture", home, "fixture", "no-native-process")
+	if _, _, err = db.Record(ctx, domain.Operation{ID: domain.NewID("op"), Kind: "launch", SessionID: seed.ID, ExecutionID: seed.Execution.ID}, []byte("owned stable-session fixture; no native process"), &seed); err != nil {
+		t.Fatal("owned_daemon_seed_record_failed")
+	}
+	if err = db.Close(); err != nil {
+		t.Fatal("owned_daemon_seed_close_failed")
+	}
+	childEnv := []string{"PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin", "HOME=" + home, "SSL_CERT_FILE=" + f.CA, "SSL_CERT_DIR=" + emptyCA, "KEELMUX_STATE_DIR=" + state}
+	checks := map[string]bool{}
+	result := map[string]any{"passed": false, "scope": "source-built Linux arm64 product daemon and CLI through actual Unix control socket and ordinary production HTTP client", "checks": checks, "fixture_session_has_no_native_process": true, "global_ca_changed": false, "processes_joined": true}
+	var daemon *exec.Cmd
+	var wait chan error
+	var instance string
+	stop := func() bool {
+		if daemon == nil {
+			return true
+		}
+		select {
+		case <-wait:
+			daemon = nil
+			return false // Unexpected loss before this owned stop was admitted.
+		default:
+		}
+		pgid, e := syscall.Getpgid(daemon.Process.Pid)
+		if e != nil || pgid != daemon.Process.Pid {
+			return false
+		}
+		_ = syscall.Kill(-pgid, syscall.SIGTERM)
+		select {
+		case <-wait:
+			daemon = nil
+			return true
+		case <-time.After(8 * time.Second):
+			_ = syscall.Kill(-pgid, syscall.SIGKILL)
+			select {
+			case <-wait:
+				daemon = nil
+				return true
+			case <-time.After(2 * time.Second):
+				return false
+			}
+		}
+	}
+	t.Cleanup(func() {
+		joined := stop()
+		result["processes_joined"] = joined
+		result["passed"] = !t.Failed() && joined && len(checks) == 7
+		b, _ := json.MarshalIndent(result, "", "  ")
+		if e := os.WriteFile(filepath.Join(f.State, "daemon-result.json"), append(b, '\n'), 0600); e != nil {
+			t.Error("owned_daemon_result_failed")
+		}
+	})
+	client := protocol.NewClient(paths.Control)
+	start := func() protocol.DaemonStatus {
+		t.Helper()
+		log, e := config.OpenPrivateLog(filepath.Join(f.State, "daemon-private.log"))
+		if e != nil {
+			t.Fatal("owned_daemon_log_failed")
+		}
+		defer log.Close()
+		daemon = exec.Command(filepath.Join(binDir, "keelmuxd"), "-state", state)
+		daemon.Env, daemon.Stdout, daemon.Stderr = childEnv, log, log
+		daemon.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		if e = daemon.Start(); e != nil {
+			t.Fatal("owned_daemon_launch_failed")
+		}
+		wait = make(chan error, 1)
+		owned := daemon
+		ownedWait := wait
+		go func() { ownedWait <- owned.Wait() }()
+		for i := 0; i < 100; i++ {
+			var status protocol.DaemonStatus
+			e = client.Call(ctx, http.MethodGet, "/v1/daemon", nil, &status)
+			if e == nil && status.PID == owned.Process.Pid && status.Instance != "" && status.Protocol == protocol.Version {
+				instance = status.Instance
+				return status
+			}
+			select {
+			case <-wait:
+				daemon = nil
+				t.Fatal("owned_daemon_exited_before_ready")
+			case <-time.After(100 * time.Millisecond):
+			}
+		}
+		t.Fatal("owned_daemon_ready_timeout")
+		return protocol.DaemonStatus{}
+	}
+	cli := func(expectSuccess bool, args ...string) []byte {
+		t.Helper()
+		verifyForeground := func() {
+			var current protocol.DaemonStatus
+			if daemon == nil || client.Call(ctx, http.MethodGet, "/v1/daemon", nil, &current) != nil || current.PID != daemon.Process.Pid || current.Instance != instance {
+				t.Fatal("source_cli_lost_owned_foreground_daemon")
+			}
+		}
+		verifyForeground()
+		cmd := exec.CommandContext(ctx, filepath.Join(binDir, "keelmux"), append([]string{"-state", state}, args...)...)
+		cmd.Env = childEnv
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		out, e := cmd.Output()
+		log, le := config.OpenPrivateLog(filepath.Join(f.State, "cli-private.log"))
+		if le == nil {
+			_, _ = log.Write(stderr.Bytes())
+			_ = log.Close()
+		}
+		if (e == nil) != expectSuccess || le != nil {
+			t.Fatal("owned_cli_command_outcome_failed")
+		}
+		verifyForeground()
+		return out
+	}
+	request := func(who, method, path string, body any, into any) {
+		t.Helper()
+		var reader io.Reader
+		if body != nil {
+			b, _ := json.Marshal(body)
+			reader = bytes.NewReader(b)
+		}
+		r, e := http.NewRequestWithContext(ctx, method, f.Endpoint+"/api/v4"+path, reader)
+		if e != nil {
+			t.Fatal("owned_daemon_fixture_request_invalid")
+		}
+		r.Header.Set("Authorization", "Bearer "+tokens[who])
+		r.Header.Set("Content-Type", "application/json")
+		response, e := adminClient.Do(r)
+		if e != nil {
+			t.Fatal("owned_daemon_fixture_request_failed")
+		}
+		defer response.Body.Close()
+		b, e := io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
+		if e != nil || len(b) > 1<<20 || response.StatusCode < 200 || response.StatusCode >= 300 || (into != nil && json.Unmarshal(b, into) != nil) {
+			t.Fatal("owned_daemon_fixture_response_failed")
+		}
+	}
+	status := start()
+	if source := os.Getenv("KEELMUX_MM_ACCEPTANCE_SOURCE"); len(source) != 40 || status.Build.Commit != source {
+		t.Fatal("source_daemon_build_commit_mismatch")
+	}
+	if !bytes.Contains(cli(true, "channels", "--help"), []byte("semantic dispatch")) {
+		t.Fatal("channel_cli_help_missing_scope")
+	}
+	checks["source_foreground_daemon_identity_and_cli_help"] = true
+	bindID := domain.NewID("binding")
+	var bound protocol.ChannelStatus
+	if json.Unmarshal(cli(true, "channels", "bind", "--binding", string(bindID), "--provider", "mattermost", "--session", string(seed.ID), "--server", f.Endpoint, "--channel", f.Channel, "--root", f.Root, "--credential-file", f.TokenPaths["bot"], "--allow-user", f.Human), &bound) != nil || bound.ID != bindID || bound.ThreadID != seed.ThreadID || bound.RealmID != f.Team || bound.SelfID != f.Bot || bound.RootID != f.Root || bound.SemanticDispatch {
+		t.Fatal("source_cli_exact_bind_failed")
+	}
+	var bindings []protocol.ChannelStatus
+	if json.Unmarshal(cli(true, "channels", "list"), &bindings) != nil || len(bindings) != 1 || bindings[0].ID != bound.ID {
+		t.Fatal("source_cli_list_failed")
+	}
+	checks["source_cli_bind_list_exact_route"] = true
+	time.Sleep(20 * time.Millisecond)
+	post := func(who, root, text string) mmAcceptancePost {
+		var p mmAcceptancePost
+		request(who, http.MethodPost, "/posts", map[string]string{"channel_id": f.Channel, "root_id": root, "message": text}, &p)
+		return p
+	}
+	allowed := post("human", f.Root, "Owned source daemon inbound café 🐚")
+	outsider, self, other := post("outsider", f.Root, "Owned source excluded outsider"), post("bot", f.Root, "Owned source bot echo"), post("human", f.OtherRoot, "Owned source other-root note")
+	var history protocol.ChannelHistory
+	intakeOK := false
+	for i := 0; i < 70; i++ {
+		cli(true, "channels", "sync", string(bound.ID))
+		if json.Unmarshal(cli(true, "channels", "history", string(bound.ThreadID)), &history) != nil || !history.SnapshotOnly || history.SemanticDispatch {
+			t.Fatal("source_cli_history_scope_failed")
+		}
+		seen := map[string]bool{}
+		for _, m := range history.Messages {
+			seen[m.RemoteID] = true
+		}
+		if seen[outsider.ID] || seen[self.ID] || seen[other.ID] {
+			t.Fatal("source_daemon_inbound_scope_failed")
+		}
+		if seen[allowed.ID] {
+			intakeOK = true
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !intakeOK {
+		t.Fatal("source_daemon_inbound_timeout")
+	}
+	checks["source_daemon_actual_scoped_inbound_history"] = true
+	operation := domain.NewID("message")
+	text := "Owned source daemon outgoing café 🐚"
+	cli(true, "channels", "send", "--binding", string(bound.ID), "--operation", string(operation), "--text", text)
+	var delivery channels.Delivery
+	for i := 0; i < 70; i++ {
+		if json.Unmarshal(cli(true, "channels", "delivery", string(operation)), &delivery) != nil {
+			t.Fatal("source_daemon_delivery_decode_failed")
+		}
+		if delivery.State == channels.Delivered {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	var posted mmAcceptancePost
+	if delivery.State != channels.Delivered || delivery.RemoteID == "" {
+		t.Fatal("source_daemon_actual_post_not_delivered")
+	}
+	request("admin", http.MethodGet, "/posts/"+delivery.RemoteID, nil, &posted)
+	if posted.ID != delivery.RemoteID || posted.RootID != f.Root || posted.UserID != f.Bot || posted.ChannelID != f.Channel || posted.Message != text || posted.Props["keelmux_delivery_id"] != string(operation) || posted.Props["keelmux_payload_hash"] != hex.EncodeToString(delivery.PayloadHash[:]) {
+		t.Fatal("source_daemon_get_did_not_match_post")
+	}
+	checks["source_cli_actual_post_ack_and_get"] = true
+	count := func() int {
+		var page struct {
+			Posts map[string]mmAcceptancePost `json:"posts"`
+		}
+		request("admin", http.MethodGet, "/posts/"+f.Root+"/thread?perPage=100&direction=up", nil, &page)
+		n := 0
+		for _, p := range page.Posts {
+			if p.Props["keelmux_delivery_id"] == string(operation) {
+				n++
+			}
+		}
+		return n
+	}
+	cli(true, "channels", "send", "--binding", string(bound.ID), "--operation", string(operation), "--text", text)
+	var reconciled channels.Delivery
+	if json.Unmarshal(cli(true, "channels", "reconcile", string(operation)), &reconciled) != nil || reconciled.State != channels.Delivered || reconciled.RemoteID != delivery.RemoteID || count() != 1 {
+		t.Fatal("source_cli_retry_or_readonly_reconcile_failed")
+	}
+	checks["source_cli_same_operation_retry_and_reconcile_no_duplicate"] = true
+	if !stop() {
+		t.Fatal("source_daemon_first_process_not_joined")
+	}
+	newStatus := start()
+	if newStatus.Instance == status.Instance {
+		t.Fatal("source_daemon_restart_reused_instance")
+	}
+	if json.Unmarshal(cli(true, "channels", "delivery", string(operation)), &reconciled) != nil || reconciled.State != channels.Delivered || reconciled.RemoteID != delivery.RemoteID {
+		t.Fatal("source_daemon_restart_lost_receipt")
+	}
+	cli(true, "channels", "send", "--binding", string(bound.ID), "--operation", string(operation), "--text", text)
+	if count() != 1 {
+		t.Fatal("source_daemon_restart_replayed_post")
+	}
+	checks["source_daemon_restart_preserves_binding_and_receipt"] = true
+	cli(true, "channels", "disable", string(bound.ID))
+	cli(false, "channels", "send", "--binding", string(bound.ID), "--operation", string(domain.NewID("message")), "--text", "Owned disabled intent must fail")
+	if json.Unmarshal(cli(true, "channels", "reconcile", string(operation)), &reconciled) != nil || reconciled.State != channels.Delivered || count() != 1 {
+		t.Fatal("source_daemon_disabled_historical_receipt_failed")
+	}
+	checks["source_cli_disable_refuses_new_intent"] = true
+	result["actual_operation_posts"] = 1
+	result["stable_source_commit"] = newStatus.Build.Commit
 }
