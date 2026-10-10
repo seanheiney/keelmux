@@ -213,6 +213,7 @@ class Acceptance:
         self.bin = self.temp / 'bin'
         self.bin.mkdir(mode=0o700)
         self.terminals, self.sessions, self.owned = [], [], {}
+        self.launches = {}
         self.daemon = None
         self.metadata = {}
         for name in ('keelmux', 'keelmuxd', 'keelmux-supervisor'):
@@ -399,10 +400,23 @@ class Acceptance:
         request = {'operation_id': 'op_'+uuid.uuid4().hex, 'name': provider+' native qualification',
                    'workspace': self.args.workspace, 'provider': provider,
                    'provider_version': self.report['providers'][provider], 'argv': argv}
+        # The daemon allocates session/execution IDs. Until its authenticated
+        # response binds those IDs to this exact operation, do not guess them
+        # from paths, PIDs, or a later inventory entry.
+        attempt = {'operation_id': request['operation_id'], 'session_id': None,
+                   'execution_id': None, 'generation': None, 'confirmed': False}
+        self.launches[request['operation_id']] = attempt
         launched = self.api('launch', request)
-        assert launched['operation']['outcome'] == 'completed', 'native launch was not confirmed'
         s = launched['session']
+        operation = launched['operation']
+        assert (operation['id'] == request['operation_id'] and operation['kind'] == 'launch'
+                and operation['session_id'] == s['id']
+                and operation['execution_id'] == s['execution']['id']), 'native launch acknowledgement identity differs'
+        attempt.update(session_id=s['id'], execution_id=s['execution']['id'],
+                       generation=s['execution']['generation'])
         self.sessions.append(s)
+        assert operation['outcome'] == 'completed', 'native launch was not confirmed'
+        attempt['confirmed'] = True
         r = self.receipt(s)
         assert r['ref']['backend'] == 'native', 'default backend was not native'
         for pid in (r['ref']['pid'], r['supervisor_pid']):
@@ -521,6 +535,10 @@ class Acceptance:
 
     def cleanup(self):
         issues = []
+        unresolved_launches = [{k: v for k, v in launch.items() if k != 'confirmed'}
+                               for launch in self.launches.values() if not launch['confirmed']]
+        if unresolved_launches:
+            issues.append('owned_launch_effect_unresolved')
         for terminal in self.terminals:
             try:
                 terminal.close()
@@ -538,7 +556,8 @@ class Acceptance:
                 self.api('stop', body, expected=204)
             except Exception:
                 issues.append('owned_native_exact_stop_failed')
-        if self.daemon and self.daemon.poll() is None:
+        daemon_retained = bool(unresolved_launches and self.daemon and self.daemon.poll() is None)
+        if self.daemon and self.daemon.poll() is None and not daemon_retained:
             try:
                 status = self.api('daemon')
                 self.api('daemon/stop', {'instance': status['instance']}, expected=204)
@@ -553,7 +572,9 @@ class Acceptance:
         if any(alive(pid, original) for pid, original in self.owned.items()):
             issues.append('owned_native_process_remains_live')
         self.report['cleanup'] = {'owned_process_count': len(self.owned), 'owned_processes_no_longer_live': not issues,
-                                  'exact_product_stop_requested': True, 'no_saved_pid_signals': True,
+                                  'exact_product_stop_requested': bool(self.sessions), 'no_saved_pid_signals': True,
+                                  'unresolved_launches': unresolved_launches,
+                                  'daemon_retained_for_reconciliation': daemon_retained,
                                   'private_captures_retained': True, 'issues': issues}
         self.report['result'] = 'pass' if self.report['checks'] and all(c['result'] == 'pass' for c in self.report['checks']) and not issues else 'fail'
         self.args.report.parent.mkdir(parents=True, exist_ok=True)

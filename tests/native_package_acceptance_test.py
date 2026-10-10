@@ -34,9 +34,11 @@ class Fixture(native.Acceptance):
         self.terminals = []
         self.sessions = []
         self.owned = {}
+        self.launches = {}
+        self.providers = {'codex': '/unused-provider-fixture'}
         self.daemon = Daemon()
         self.requests = []
-        self.report = {'checks': []}
+        self.report = {'checks': [], 'providers': {'codex': 'provider-free fixture'}}
     def start(self):
         return {'instance': 'owned-daemon-instance'}
     def journey(self, provider):
@@ -56,6 +58,19 @@ sys.argv = ['fixture', '--bin-dir', '.', '--workspace', sys.argv[2],
             '--expected-source', 'fixture', '--providers', 'codex', '--report', sys.argv[3]]
 raise SystemExit(native.main())
 '''
+
+LOST_ACK_FIXTURE = CANCELLABLE_FIXTURE.replace('native.Acceptance = Fixture', r'''
+Fixture.journey = native.Acceptance.journey
+original_api = Fixture.api
+def lost_ack(self, path, body=None, expected=200):
+    if path == 'launch':
+        assert body['operation_id'] in self.launches
+        (self.temp / 'launch-intent.json').write_text(json.dumps(self.launches[body['operation_id']]))
+        raise TimeoutError('simulated acknowledgement loss after possible effect')
+    return original_api(self, path, body, expected)
+Fixture.api = lost_ack
+native.Acceptance = Fixture
+''')
 
 
 class PackageAcceptanceTest(unittest.TestCase):
@@ -97,6 +112,31 @@ class PackageAcceptanceTest(unittest.TestCase):
         self.assertTrue(result['cleanup_wait_expired'])
         self.assertEqual(result['returncode'], -9)
         self.assertFalse((self.root / 'native.json').exists())
+
+    def test_lost_launch_ack_cannot_claim_zero_process_cleanup(self):
+        report = self.root / 'native.json'
+        result = run_native(self.harness,
+                            [sys.executable, '-c', LOST_ACK_FIXTURE,
+                             str(Path(__file__).parent), str(self.root), str(report)],
+                            dict(os.environ), timeout=3, cleanup_timeout=1)
+        self.assertEqual(result['returncode'], 1)
+        self.assertFalse(result['timed_out'])
+        intent = json.loads((self.root / 'launch-intent.json').read_text())
+        self.assertFalse(intent.pop('confirmed'))
+        self.assertTrue(intent['operation_id'].startswith('op_'))
+        self.assertIsNone(intent['session_id'])
+        self.assertIsNone(intent['execution_id'])
+        receipt = json.loads(report.read_text())
+        self.assertEqual(receipt['result'], 'fail')
+        cleanup = receipt['cleanup']
+        self.assertEqual(cleanup['owned_process_count'], 0)
+        self.assertFalse(cleanup['owned_processes_no_longer_live'])
+        self.assertEqual(cleanup['unresolved_launches'], [intent])
+        self.assertIn('owned_launch_effect_unresolved', cleanup['issues'])
+        self.assertTrue(cleanup['daemon_retained_for_reconciliation'])
+        self.assertFalse(cleanup['exact_product_stop_requested'])
+        self.assertTrue(cleanup['private_captures_retained'])
+        self.assertFalse((self.root / 'requests.json').exists(), 'unknown identity must not trigger guessed stops')
 
     def test_completed_child_needs_no_signal(self):
         result = run_native(self.harness, [sys.executable, '-c', 'print("finite fixture")'],
