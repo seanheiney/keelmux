@@ -65,6 +65,7 @@ type ChannelHistory struct {
 	ThreadID         domain.ID          `json:"thread_id"`
 	Messages         []channels.Message `json:"messages"`
 	SemanticDispatch bool               `json:"semantic_dispatch"`
+	SnapshotOnly     bool               `json:"snapshot_only"`
 }
 
 func (c *Client) Channels(ctx context.Context) ([]ChannelStatus, error) {

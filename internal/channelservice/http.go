@@ -211,7 +211,7 @@ func (s *Service) Handler() http.Handler {
 			failed(w, err)
 			return
 		}
-		reply(w, 200, protocol.ChannelHistory{ThreadID: thread, Messages: messages})
+		reply(w, 200, protocol.ChannelHistory{ThreadID: thread, Messages: messages, SnapshotOnly: true})
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Backplane-Protocol", protocol.Version)
