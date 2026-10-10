@@ -14,9 +14,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/seanheiney/agent-backplane/internal/clientstate"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/clientstate"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
 )
 
 // Run reuses the caller's sole daemon connection. Navigation has no model cost.
@@ -592,14 +592,14 @@ func (m *model) View() string {
 		return m.groupsView()
 	}
 	if m.screen == "newgroup" {
-		return m.fit([]string{"BACKPLANE / new group", "Name: " + m.input + "_", "Groups are optional local navigation.", ""}, []string{m.status, "Enter create  Esc cancel"})
+		return m.fit([]string{"KEELMUX / new group", "Name: " + m.input + "_", "Groups are optional local navigation.", ""}, []string{m.status, "Enter create  Esc cancel"})
 	}
 	if m.screen == "draft" {
 		return m.draftView()
 	}
 	p := m.place()
 	rows := m.visible()
-	lines := []string{"BACKPLANE / " + m.groupName(), fmt.Sprintf("%d in view / %d total   g groups", len(rows), len(m.sessions)), "Search / " + p.Filter}
+	lines := []string{"KEELMUX / " + m.groupName(), fmt.Sprintf("%d in view / %d total   g groups", len(rows), len(m.sessions)), "Search / " + p.Filter}
 	unreachable := 0
 	for _, home := range m.places {
 		if home.State != "reachable" {
@@ -669,7 +669,7 @@ func (m *model) View() string {
 	return m.fit(lines, footer)
 }
 func (m *model) groupsView() string {
-	lines := []string{"BACKPLANE / groups", "Optional collections; All work includes ungrouped sessions."}
+	lines := []string{"KEELMUX / groups", "Optional collections; All work includes ungrouped sessions."}
 	labels := []string{"All work"}
 	for _, g := range m.state.Groups {
 		name := g.Name
@@ -690,7 +690,7 @@ func (m *model) groupsView() string {
 	return m.fit(lines, []string{m.status, "Enter open  n new  c child  a add project  s pin session", "d remove group  Esc return"})
 }
 func (m *model) draftView() string {
-	lines := []string{"BACKPLANE / local draft", "Thread: " + string(m.draft.ThreadID), "Recipient: " + string(m.draft.RecipientID), "Delivery unavailable; no prompt is submitted."}
+	lines := []string{"KEELMUX / local draft", "Thread: " + string(m.draft.ThreadID), "Recipient: " + string(m.draft.RecipientID), "Delivery unavailable; no prompt is submitted."}
 	for _, s := range m.sessions {
 		if s.ThreadID == m.draft.ThreadID && s.LaneID == m.draft.RecipientID {
 			lines = append(lines, "Current target: "+s.Execution.Provider+" / "+evidence(s.Execution.ActualModel))

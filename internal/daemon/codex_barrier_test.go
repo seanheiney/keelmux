@@ -11,7 +11,7 @@ import (
 	"time"
 	"unsafe"
 
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
 )
 
 func waitCodexStack(t *testing.T, name string) {

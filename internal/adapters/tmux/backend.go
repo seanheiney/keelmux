@@ -20,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	bpruntime "github.com/seanheiney/agent-backplane/internal/runtime"
+	"github.com/seanheiney/keelmux/internal/domain"
+	bpruntime "github.com/seanheiney/keelmux/internal/runtime"
 )
 
 const commandTimeout = 5 * time.Second

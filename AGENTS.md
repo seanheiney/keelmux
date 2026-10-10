@@ -1,6 +1,6 @@
-# Agent Backplane contributor contract
+# Keelmux contributor contract
 
-This is the dedicated Agent Backplane product repository. It is separate from Cheers and must not change Cheers source, tracking, deployment, or running sessions.
+This is the dedicated Keelmux product repository (formerly Agent Backplane). It is separate from Cheers and must not change Cheers source, tracking, deployment, or running sessions.
 
 ## Product invariants
 

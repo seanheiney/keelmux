@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 func repair(detail string) error {

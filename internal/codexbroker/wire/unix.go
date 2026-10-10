@@ -14,7 +14,7 @@ import (
 	"syscall"
 
 	"github.com/coder/websocket"
-	"github.com/seanheiney/agent-backplane/internal/config"
+	"github.com/seanheiney/keelmux/internal/config"
 )
 
 const MaxFrameBytes = 1 << 20

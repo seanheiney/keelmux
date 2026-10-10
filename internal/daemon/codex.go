@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"time"
 
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/store"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/store"
 )
 
 const codexWriteLimit = 2 * time.Second

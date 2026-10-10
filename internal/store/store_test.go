@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 func openTest(t *testing.T) *Store {

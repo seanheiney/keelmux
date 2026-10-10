@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
 )
 
 // The fixture proves ownership from private host registrations, rather than

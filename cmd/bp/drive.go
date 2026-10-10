@@ -10,16 +10,16 @@ import (
 	"syscall"
 
 	"github.com/charmbracelet/x/term"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
-	"github.com/seanheiney/agent-backplane/internal/transport"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/transport"
 )
 
 func driveNative(entry string, args []string) error {
 	if !filepath.IsAbs(entry) {
 		return errors.New("native drive requires an explicit absolute --entry socket")
 	}
-	fs := flag.NewFlagSet("bp drive", flag.ContinueOnError)
+	fs := flag.NewFlagSet("keelmux drive", flag.ContinueOnError)
 	host := fs.String("host", "", "exact execution home")
 	session := fs.String("session", "", "stable session")
 	execution := fs.String("execution", "", "current execution")

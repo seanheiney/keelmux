@@ -1,4 +1,4 @@
-module github.com/seanheiney/agent-backplane
+module github.com/seanheiney/keelmux
 
 go 1.26.0
 

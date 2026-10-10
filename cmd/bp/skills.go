@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/seanheiney/agent-backplane/internal/skills"
+	"github.com/seanheiney/keelmux/internal/skills"
 )
 
 func skillFlags(name string, args []string, installing bool) (string, string, []string, bool, error) {
@@ -51,7 +51,7 @@ func skillFlags(name string, args []string, installing bool) (string, string, []
 }
 
 func setupSkills(args []string) error {
-	root, scope, selected, apply, err := skillFlags("bp setup", args, true)
+	root, scope, selected, apply, err := skillFlags("keelmux setup", args, true)
 	if err != nil {
 		return err
 	}
@@ -71,9 +71,9 @@ func setupSkills(args []string) error {
 
 func manageSkills(args []string) error {
 	if len(args) == 0 || args[0] != "remove" {
-		return errors.New("skills accepts remove; use bp setup for an installation preview")
+		return errors.New("skills accepts remove; use keelmux setup for an installation preview")
 	}
-	root, scope, selected, _, err := skillFlags("bp skills remove", args[1:], false)
+	root, scope, selected, _, err := skillFlags("keelmux skills remove", args[1:], false)
 	if err != nil {
 		return err
 	}

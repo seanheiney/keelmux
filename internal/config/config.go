@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	"github.com/seanheiney/keelmux/internal/domain"
 	"io"
 	"net"
 	"os"
@@ -17,6 +17,9 @@ type Paths struct{ Dir, Control, Tmux, DB, Place string }
 
 func Resolve(dir string) (Paths, error) {
 	if dir == "" {
+		dir = os.Getenv("KEELMUX_STATE_DIR")
+	}
+	if dir == "" {
 		dir = os.Getenv("BP_STATE_DIR")
 	}
 	if dir == "" {
@@ -24,7 +27,17 @@ func Resolve(dir string) (Paths, error) {
 		if err != nil {
 			return Paths{}, err
 		}
-		dir = filepath.Join(home, ".local", "state", "agent-backplane")
+		// Keep a prior installation's authority in its original directory.
+		// Ensure validates it; an invalid legacy path must never cause a
+		// second registry to be created under the new product name.
+		legacy := filepath.Join(home, ".local", "state", "agent-backplane")
+		if _, err := os.Lstat(legacy); err == nil {
+			dir = legacy
+		} else if !os.IsNotExist(err) {
+			return Paths{}, err
+		} else {
+			dir = filepath.Join(home, ".local", "state", "keelmux")
+		}
 	}
 	abs, err := filepath.Abs(dir)
 	if err != nil {

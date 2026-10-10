@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/seanheiney/agent-backplane/internal/codexbroker/wire"
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	"github.com/seanheiney/keelmux/internal/codexbroker/wire"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 // Relay connects verified private channels. It implements Sender; the common

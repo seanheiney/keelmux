@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
-	"github.com/seanheiney/agent-backplane/internal/transport"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/transport"
 )
 
 type fetchSource struct {

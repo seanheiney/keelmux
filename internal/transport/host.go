@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/creack/pty"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
-	"github.com/seanheiney/agent-backplane/internal/store"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/store"
 	"golang.org/x/sys/unix"
 )
 

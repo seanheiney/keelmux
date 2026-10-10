@@ -1,56 +1,80 @@
-# Agent Backplane
+# Keelmux
 
-A terminal-first, user-owned bouncer for agent work: keep real model CLIs running on your machines, reach permitted sessions through one connection, and continue work across terminals and supported chat clients.
+**Keep your agents running. Keep your place.**
 
-The local terminal core and private entry experiment are runnable on the tested macOS arm64 setup. Independent acceptance entered real Codex and Claude programs locally and through one entry, detached and reconnected, and checked adverse lifecycle states. Owned skill setup, acquisition recovery and bounded partial-home inventory are integrated. See [current evidence and gaps](docs/build/STATUS.md).
+Keelmux is a terminal bouncer for real Codex and Claude Code sessions. Launch work on your machine, leave the terminal, and return to the same running process from a fast session switcher. Your native CLI keeps its login, workspace, permissions and conversation.
 
-## Product contract
-
-- Real native CLI sessions are the center. The main interface is a TUI; a future dedicated graphical client must be native.
-- Company/product groups organize stable work and remember your place.
-- Vendor logins and native conversations remain authoritative. Unknown account/model identity remains unknown.
-- Threads persist across supported execution changes; native resume and context handoff are distinct.
-- Execution servers retain their terminals, environments, resources, and credentials. One authorized entry connection routes to the owners.
-- Skills, tools, account readiness, shared repairs, usage, and optional captains support this workflow.
-- Herdr is optional and must earn adoption through actual lifecycle evidence.
-
-## Build status and ownership
-
-The build captain is GPT-6.1 Sol at ultra effort. It owns task assignment, shared contracts, integration, evidence, and honest completion reporting. See [the build queue](docs/build/TASKS.md) and [captain instructions](docs/build/CAPTAIN.md).
-
-Start with two real CLIs and launch → link → attach → detach → reconnect, then demonstrate one client reaching two execution servers. No fake sessions or web dashboard substitute for these journeys.
-
-## Documents
-
-- [Full product specification](docs/product/PRODUCT_SPEC.md)
-- [Reviewed first-release build plan](docs/build/BUILD_PLAN.md)
-- [Parallel build operating plan](docs/build/CAPTAIN.md)
-- [Implementation acceptance](docs/build/ACCEPTANCE.md)
-- [Independent runtime and TUI review](docs/research/BOOTSTRAP_REVIEW.md)
-
-## Development
-
-The implementation uses Go, a per-user daemon, SQLite, tmux on a dedicated socket, and Bubble Tea. Dependencies are pinned in `go.mod` and `go.sum`.
-
-```sh
-make build
-make check
-./bin/bp doctor
-./bin/bp run --workspace /path/to/project codex
-./bin/bp run --workspace /path/to/project claude
-./bin/bp
+```text
+keelmux run codex       →  work keeps running
+keelmux                 →  find it, open it, continue
+Ctrl-G d                →  return to your switcher
 ```
 
-Use arrows or `j`/`k` to select work, `/` to search, Enter to open its native terminal, and `v` for a read-only attachment. In the native terminal, **Ctrl-G d** returns to the switcher; **Ctrl-G Ctrl-G** sends a literal Ctrl-G. `g` cycles optional local group views; `p` edits a local draft without sending it to a model.
+[Get started](docs/user/quickstart.md) · [Documentation](docs/README.md) · [CLI reference](docs/user/cli.md) · [Recovery](docs/user/recovery.md) · [Security](SECURITY.md)
 
-`bp --state DIR` selects an isolated private state directory. The default is `~/.local/state/agent-backplane`. Run in a terminal with a valid `TERM` such as `xterm-256color`. The daemon starts automatically and keeps native sessions running when the TUI exits. `bp list`, `bp inspect SESSION`, and `bp reconcile` expose current evidence. Launch and stop retries must preserve the printed operation ID.
+## Install
 
-The current tmux backend supports cooperating managed writers. The same OS user can reach its own tmux socket directly. Semantic chat input, native resume, model/account attribution, and cross-host execution movement are not yet implemented.
+With tmux and your chosen native CLI installed:
 
-`bp providers` reports qualified native installation/login evidence. `bp setup` previews an owned bundle without installing it; `bp setup --scope project --root /path/to/project --providers codex,claude --apply` installs only the selected bundle after checking for collisions. `bp skills remove` archives the matching owned bundle and retains its bytes. These actions preserve existing native skills and settings. See [setup and private entry usage](docs/build/RUNNING.md).
+```sh
+curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | sh
+```
 
-Run provider processes using existing authorized native logins. Automated fixtures must use isolated temporary state and a dedicated test tmux socket. Authenticated model turns, live remote resources, and external mutations require separate evidence and are never implied by fixture success.
+The installer verifies the release checksum, installs into your own directory, and switches versions atomically. It leaves native logins, running sessions, shell configuration and user data intact. It prints the PATH command if `~/.local/bin` is not already available. [Pinned, manual and verified installation](docs/user/install.md).
 
-## License
+## Start working
 
-MIT. The initial GitHub repository is private while bootstrap and credential hygiene are verified. A public open-source release is a separate delivery milestone.
+```sh
+keelmux doctor
+keelmux run --workspace /path/to/project codex
+keelmux run --workspace /path/to/another/project claude
+keelmux
+```
+
+Use **arrows** or **j/k** to select work, **Enter** to open its native terminal, **/** to find a session, and **v** to view without taking input control. **Ctrl-G d** returns to the switcher. Selection, optional project groups and local drafts are remembered.
+
+The daemon starts automatically. Closing the switcher keeps native processes running. A daemon restart reconciles surviving sessions; missing processes remain visible rather than silently launching replacements. A machine reboot is a different event and cannot preserve running processes.
+
+## What you get
+
+- **Real native terminals.** Unicode, resize, alternate screens and native keyboard behavior pass through the owned tmux session.
+- **Durable control.** Stable work identity, execution generations, exact operation receipts and one cooperating managed writer keep reconnect and uncertain outcomes explicit.
+- **A focused switcher.** Find work quickly; groups are optional, and drafts stay local until you use the native CLI.
+- **Owned skill setup.** Preview provider-specific connection skills, apply only selected bundles, and archive matching owned bundles on removal.
+- **Private local control.** User-owned state and Unix sockets; credentials remain with the native provider.
+
+The current native runtime evidence covers **macOS arm64, Codex 0.159.0 and Claude Code 2.1.296**. Linux and other architectures need their own runtime acceptance; see the [support matrix](SUPPORT.md) for exact release artifacts and qualifications.
+
+A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Independent remote enrollment, semantic Mattermost/IRC delivery, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
+
+## Operate with confidence
+
+| Need | Guide |
+| --- | --- |
+| First session and daily navigation | [Quickstart](docs/user/quickstart.md), [TUI](docs/user/tui.md) |
+| Install, upgrade, rollback or uninstall | [Installation](docs/user/install.md) |
+| Provider readiness and connection skills | [Providers](docs/user/providers.md), [Setup](docs/user/setup.md) |
+| Backups, permissions and daemon operation | [Operations](docs/user/operations.md) |
+| Lost replies, crashed clients or missing sessions | [Recovery](docs/user/recovery.md), [Troubleshooting](docs/user/troubleshooting.md) |
+| Trust boundaries and private reporting | [Security](SECURITY.md), [Architecture](docs/user/architecture.md) |
+| Supported combinations and known gaps | [Support](SUPPORT.md), [Release evidence](docs/build/STATUS.md) |
+
+Keelmux enforces one input owner among cooperating managed clients. The same OS user can access their own terminals directly; this is not an OS sandbox. A successful terminal attachment does not establish a model's entitlement, account identity, quota or accepted turn.
+
+## Existing Backplane installations
+
+`bp`, `bpd` and `bpg` remain compatibility aliases. Existing private `~/.local/state/agent-backplane` state is reused in place; no live socket, session or registry is renamed. A fresh installation uses `~/.local/state/keelmux`. Explicit `--state`, then `KEELMUX_STATE_DIR`, then `BP_STATE_DIR` take precedence. Unsafe prior state is refused, preserving its bytes. The current owned `$backplane` and `/backplane` skill names remain compatible. [Migration guide](docs/user/migration.md).
+
+## Build and contribute
+
+```sh
+git clone https://github.com/seanheiney/keelmux.git
+cd keelmux
+make build
+make check
+./bin/keelmux version --json
+```
+
+Go 1.26+, SQLite, Bubble Tea and pinned Go dependencies; tmux is required at runtime. [Contributing](CONTRIBUTING.md) explains the contracts and isolated tests. The [full specification](docs/product/PRODUCT_SPEC.md) and [build plan](docs/build/BUILD_PLAN.md) retain the longer-term product vision.
+
+[MIT](LICENSE). No telemetry service or model API key is required by the local switcher.

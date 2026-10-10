@@ -4,11 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/seanheiney/agent-backplane/internal/adapters/tmux"
-	"github.com/seanheiney/agent-backplane/internal/config"
-	"github.com/seanheiney/agent-backplane/internal/daemon"
-	"github.com/seanheiney/agent-backplane/internal/store"
-	"github.com/seanheiney/agent-backplane/internal/transport"
+	"github.com/seanheiney/keelmux/internal/adapters/tmux"
+	"github.com/seanheiney/keelmux/internal/buildinfo"
+	"github.com/seanheiney/keelmux/internal/config"
+	"github.com/seanheiney/keelmux/internal/daemon"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/store"
+	"github.com/seanheiney/keelmux/internal/transport"
 	"net"
 	"net/http"
 	"os"
@@ -19,8 +21,12 @@ import (
 )
 
 func main() {
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+		fmt.Println(buildinfo.String(protocol.Version))
+		return
+	}
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "bpd:", err)
+		fmt.Fprintln(os.Stderr, filepath.Base(os.Args[0])+":", err)
 		os.Exit(1)
 	}
 }
@@ -29,7 +35,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := os.Setenv("BP_HELPER_PATH", filepath.Join(filepath.Dir(self), "bp")); err != nil {
+	helper := filepath.Join(filepath.Dir(self), "keelmux")
+	if _, err := os.Stat(helper); os.IsNotExist(err) {
+		helper = filepath.Join(filepath.Dir(self), "bp")
+	} else if err != nil {
+		return err
+	}
+	if err := os.Setenv("BP_HELPER_PATH", helper); err != nil {
 		return err
 	}
 	state := flag.String("state", "", "private state directory")

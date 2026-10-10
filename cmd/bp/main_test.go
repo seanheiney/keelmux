@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/seanheiney/agent-backplane/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/protocol"
 )
 
 func TestEntryDirectoryFetchesOnceAndManagementStaysLocal(t *testing.T) {

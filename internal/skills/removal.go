@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 // Removal receipts outlive active installations. An archive is retained even

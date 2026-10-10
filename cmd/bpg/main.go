@@ -18,10 +18,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/seanheiney/agent-backplane/internal/config"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/federation"
-	"github.com/seanheiney/agent-backplane/internal/transport"
+	"github.com/seanheiney/keelmux/internal/buildinfo"
+	"github.com/seanheiney/keelmux/internal/config"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/federation"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/transport"
 )
 
 type configuration struct {
@@ -37,8 +39,12 @@ type configuration struct {
 }
 
 func main() {
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+		fmt.Println(buildinfo.String(protocol.Version))
+		return
+	}
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "bpg:", err)
+		fmt.Fprintln(os.Stderr, filepath.Base(os.Args[0])+":", err)
 		os.Exit(1)
 	}
 }
@@ -74,10 +80,10 @@ func readConfiguration(path string) (configuration, error) {
 func run() error {
 	state := flag.String("state", "", "explicit private entry state directory")
 	file := flag.String("config", "", "owned mode-0600 peer/session grant configuration")
-	companion := flag.String("companion", "", "client-local bp executable; defaults beside bpg")
+	companion := flag.String("companion", "", "client-local Keelmux executable; defaults beside entry")
 	flag.Parse()
 	if *state == "" || *file == "" || len(flag.Args()) != 0 {
-		return errors.New("use bpg --state ENTRYDIR --config PRIVATE_JSON [--companion CLIENT_LOCAL_BP]")
+		return errors.New("use keelmux-entry --state ENTRYDIR --config PRIVATE_JSON [--companion CLIENT_LOCAL_KEELMUX]")
 	}
 	conf, err := readConfiguration(*file)
 	if err != nil {
@@ -100,7 +106,12 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		*companion = filepath.Join(filepath.Dir(self), "bp")
+		*companion = filepath.Join(filepath.Dir(self), "keelmux")
+		if _, err := os.Stat(*companion); os.IsNotExist(err) {
+			*companion = filepath.Join(filepath.Dir(self), "bp")
+		} else if err != nil {
+			return err
+		}
 	}
 	if !filepath.IsAbs(*companion) {
 		return errors.New("entry companion must be an absolute client-local executable")

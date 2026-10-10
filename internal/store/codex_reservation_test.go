@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 func codexReservationFixture(t *testing.T, s *Store) (domain.Session, cb.Grant, cb.ConnectionBinding, cb.Intent) {

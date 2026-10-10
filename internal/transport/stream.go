@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
 )
 
 const MaxFrame = 32 << 10

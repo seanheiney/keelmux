@@ -6,11 +6,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/seanheiney/agent-backplane/internal/adapters/providers"
-	"github.com/seanheiney/agent-backplane/internal/config"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
-	"github.com/seanheiney/agent-backplane/internal/tui"
+	"github.com/seanheiney/keelmux/internal/adapters/providers"
+	"github.com/seanheiney/keelmux/internal/buildinfo"
+	"github.com/seanheiney/keelmux/internal/config"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/tui"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,8 +20,8 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "bp:", err)
+	if err := run(); err != nil && !errors.Is(err, flag.ErrHelp) {
+		fmt.Fprintln(os.Stderr, filepath.Base(os.Args[0])+":", err)
 		os.Exit(1)
 	}
 }
@@ -30,20 +31,45 @@ func printJSON(v any) error {
 	return e.Encode(v)
 }
 func run() error {
-	fs := flag.NewFlagSet("bp", flag.ContinueOnError)
+	fs := flag.NewFlagSet("keelmux", flag.ContinueOnError)
+	fs.Usage = func() { fmt.Fprint(fs.Output(), help) }
 	state := fs.String("state", "", "private state directory")
 	entry := fs.String("entry", "", "private entry socket; do not start a local daemon")
+	version := fs.Bool("version", false, "print exact executable version")
 	if err := fs.Parse(os.Args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 	args := fs.Args()
+	if *version {
+		if len(args) != 0 {
+			return errors.New("--version accepts no arguments; use version --json for metadata")
+		}
+		fmt.Println(buildinfo.String(protocol.Version))
+		return nil
+	}
 	if len(args) > 0 && args[0] == "version" {
-		fmt.Println("bp development (protocol", protocol.Version+")")
+		if len(args) == 2 && args[1] == "--json" {
+			return printJSON(buildinfo.Current(protocol.Version))
+		}
+		if len(args) != 1 {
+			return errors.New("version accepts only --json")
+		}
+		fmt.Println(buildinfo.String(protocol.Version))
 		return nil
 	}
 	if len(args) > 0 && (args[0] == "help" || args[0] == "--help") {
 		fmt.Print(help)
 		return nil
+	}
+	if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
+		switch args[0] {
+		case "run", "attach", "stop", "inspect", "list", "directory", "link", "reconcile", "doctor", "providers":
+			fmt.Print(help)
+			return nil
+		}
 	}
 	if len(args) > 0 && args[0] == "setup" {
 		return setupSkills(args[1:])
@@ -103,7 +129,7 @@ func run() error {
 		}
 		return printJSON(s)
 	case "run":
-		rfs := flag.NewFlagSet("bp run", flag.ContinueOnError)
+		rfs := flag.NewFlagSet("keelmux run", flag.ContinueOnError)
 		name := rfs.String("name", "", "session name")
 		workspace := rfs.String("workspace", "", "exact workspace path")
 		operation := rfs.String("operation", "", "retry the same launch operation ID")
@@ -146,7 +172,7 @@ func run() error {
 		}
 		r := protocol.LinkRequest{SessionID: domain.ID(os.Getenv("BP_SESSION_ID")), ExecutionID: domain.ID(os.Getenv("BP_EXECUTION_ID")), OperationID: domain.ID(os.Getenv("BP_OPERATION_ID")), Token: os.Getenv("BP_LINK_TOKEN"), Status: len(args) > 1 && args[1] == "status", Off: len(args) > 1 && args[1] == "off"}
 		if r.SessionID == "" || r.ExecutionID == "" || r.OperationID == "" {
-			return errors.New("link requires verified managed context; use bp run, then invoke bp link inside that session")
+			return errors.New("link requires verified managed context; use keelmux run, then invoke keelmux link inside that session")
 		}
 		s, err := c.Link(ctx, r)
 		if err != nil {
@@ -203,12 +229,14 @@ func run() error {
 			return err
 		}
 		if *entry != "" {
-			fmt.Println("Private entry reachable. Use bp directory for execution-home availability; native credentials remain at each home.")
+			fmt.Println("Private entry reachable. Use keelmux directory for execution-home availability; native credentials remain at each home.")
 			return nil
 		}
+		ready := true
 		for _, binary := range []string{"tmux"} {
 			path, e := exec.LookPath(binary)
 			if e != nil {
+				ready = false
 				fmt.Println(binary + ": unavailable")
 			} else {
 				fmt.Println(binary + ": " + path)
@@ -218,26 +246,37 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		providerInstalled := false
 		for _, r := range records {
+			providerInstalled = providerInstalled || (r.Installed && r.NativeTerminal)
 			fmt.Printf("%s: installed=%t version=%s credentials=%s method=%s native-terminal=%t\n", r.Name, r.Installed, r.Version.Value, r.Auth.State.Value, r.Auth.Method.Value, r.NativeTerminal)
 		}
-		fmt.Println("Private daemon reachable. Native credential status does not establish account identity, model access, quota, or subscription eligibility. Use bp providers for source-qualified details; bp setup previews connection skills.")
+		fmt.Println("Private daemon reachable. Native credential status does not establish account identity, model access, quota, or subscription eligibility. Use keelmux providers for source-qualified details; keelmux setup previews connection skills.")
+		if !ready || !providerInstalled {
+			return errors.New("local prerequisites missing; install tmux and at least one supported native CLI, then run keelmux doctor")
+		}
 		return nil
 	default:
-		return fmt.Errorf("unknown command %q; bp help", args[0])
+		return fmt.Errorf("unknown command %q; keelmux help", args[0])
 	}
 }
 func ensureDaemon(ctx context.Context, c *protocol.Client, p config.Paths) error {
 	if _, err := c.List(ctx); err == nil {
 		return nil
+	} else if !errors.Is(err, syscall.ENOENT) && !errors.Is(err, syscall.ECONNREFUSED) {
+		return fmt.Errorf("existing daemon could not be verified: %w; refusing to start a second daemon", err)
 	}
 	self, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	binary := filepath.Join(filepath.Dir(self), "bpd")
-	if _, err = os.Stat(binary); err != nil {
-		return errors.New("bpd unavailable beside bp; run make build or start bpd --state explicitly")
+	binary := filepath.Join(filepath.Dir(self), "keelmuxd")
+	if _, err = os.Stat(binary); os.IsNotExist(err) {
+		binary = filepath.Join(filepath.Dir(self), "bpd")
+		_, err = os.Stat(binary)
+	}
+	if err != nil {
+		return errors.New("daemon unavailable beside keelmux; reinstall the complete distribution or start keelmuxd --state explicitly")
 	}
 	log, err := os.OpenFile(filepath.Join(p.Dir, "daemon.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
@@ -262,22 +301,23 @@ func ensureDaemon(ctx context.Context, c *protocol.Client, p config.Paths) error
 	return fmt.Errorf("daemon did not become ready; inspect %s", filepath.Join(p.Dir, "daemon.log"))
 }
 
-const help = `Agent Backplane — native terminal switcher
-bp [--state DIR]                 Open remembered work
-bp --state CLIENTDIR --entry SOCKET
+const help = `Keelmux — keep your agents running, keep your place
+keelmux [--state DIR]                 Open remembered work
+keelmux --state CLIENTDIR --entry SOCKET
                                  Open permitted work through a private entry
-bp run [--name NAME] [--workspace PATH] [--operation ID] codex|claude [native args]
-bp list                          Inspect registered work as JSON
-bp directory                     Inspect home availability and permitted inventory
-bp attach SESSION [--read-only]   Enter native terminal; Ctrl-G d returns
-bp link [status|off]              Link exact inherited managed context
-bp inspect SESSION               Inspect capabilities and unknown evidence
-bp stop SESSION [--operation ID]  Stop current execution; preserve ID on retry
-bp reconcile                     Recheck surviving executions
-bp doctor                        Check local binaries and daemon
-bp providers                     Inspect qualified native status without model work
-bp setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
+keelmux run [--name NAME] [--workspace PATH] [--operation ID] codex|claude [native args]
+keelmux list                          Inspect registered work as JSON
+keelmux directory                     Inspect home availability and permitted inventory
+keelmux attach SESSION [--read-only]   Enter native terminal; Ctrl-G d returns
+keelmux link [status|off]              Link exact inherited managed context
+keelmux inspect SESSION               Inspect capabilities and unknown evidence
+keelmux stop SESSION [--operation ID]  Stop current execution; preserve ID on retry
+keelmux reconcile                     Recheck surviving executions
+keelmux doctor                        Check local binaries and daemon
+keelmux version [--json]              Print release and protocol provenance
+keelmux providers                     Inspect qualified native status without model work
+keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
-bp skills remove --root DIR [--scope user|project] [--providers codex,claude]
+keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]
                                  Remove matching owned skill files
 `

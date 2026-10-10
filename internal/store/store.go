@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/seanheiney/agent-backplane/internal/config"
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	"github.com/seanheiney/keelmux/internal/config"
+	"github.com/seanheiney/keelmux/internal/domain"
 	_ "modernc.org/sqlite"
 )
 

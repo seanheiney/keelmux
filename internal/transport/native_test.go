@@ -17,11 +17,11 @@ import (
 
 	"github.com/charmbracelet/x/term"
 	"github.com/creack/pty"
-	"github.com/seanheiney/agent-backplane/internal/adapters/tmux"
-	"github.com/seanheiney/agent-backplane/internal/daemon"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
-	"github.com/seanheiney/agent-backplane/internal/store"
+	"github.com/seanheiney/keelmux/internal/adapters/tmux"
+	"github.com/seanheiney/keelmux/internal/daemon"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	"github.com/seanheiney/keelmux/internal/store"
 	"golang.org/x/sys/unix"
 )
 

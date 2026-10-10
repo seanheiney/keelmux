@@ -28,13 +28,13 @@ import (
 	"time"
 
 	"github.com/creack/pty"
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
-	"github.com/seanheiney/agent-backplane/internal/codexbroker/wire"
-	"github.com/seanheiney/agent-backplane/internal/daemon"
-	"github.com/seanheiney/agent-backplane/internal/domain"
-	"github.com/seanheiney/agent-backplane/internal/protocol"
-	bpruntime "github.com/seanheiney/agent-backplane/internal/runtime"
-	"github.com/seanheiney/agent-backplane/internal/store"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
+	"github.com/seanheiney/keelmux/internal/codexbroker/wire"
+	"github.com/seanheiney/keelmux/internal/daemon"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/protocol"
+	bpruntime "github.com/seanheiney/keelmux/internal/runtime"
+	"github.com/seanheiney/keelmux/internal/store"
 	"golang.org/x/sys/unix"
 )
 

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	cb "github.com/seanheiney/agent-backplane/internal/codexbroker"
-	"github.com/seanheiney/agent-backplane/internal/domain"
+	cb "github.com/seanheiney/keelmux/internal/codexbroker"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 func legacyFixture(t *testing.T, failMigration bool) (string, domain.Lease, map[string][]byte) {
