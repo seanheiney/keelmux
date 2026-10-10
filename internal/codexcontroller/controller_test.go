@@ -573,6 +573,13 @@ func TestSameNativeThreadCannotGetSecondLivePrimary(t *testing.T) {
 	if _, err := f.c.Start(context.Background(), r); !errors.Is(err, ErrConflict) || f.s.launches != 1 {
 		t.Fatal("same native thread launched twice", err)
 	}
+	// Rotating authorization metadata for the same native home cannot permit
+	// a second primary to load the still-owned conversation.
+	f.c.options.RealmRevision = "realm-2"
+	r.RealmRevision = "realm-2"
+	if _, err := f.c.Start(context.Background(), r); !errors.Is(err, ErrConflict) || f.s.launches != 1 {
+		t.Fatal("realm revision rotated around live primary", err)
+	}
 }
 
 func TestBindingRequiresFreshExactPrimary(t *testing.T) {

@@ -174,7 +174,7 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 		}
 		// A different generation cannot replace a possibly surviving primary.
 		for _, e := range j.entries {
-			if e.State != Stopped && (e.Request.Target.SessionID == r.Target.SessionID || e.Request.NativeThreadID == r.NativeThreadID && e.Request.RealmRevision == r.RealmRevision) {
+			if e.State != Stopped && (e.Request.Target.SessionID == r.Target.SessionID || e.Request.NativeThreadID == r.NativeThreadID && (e.Request.RealmRevision == r.RealmRevision || e.CodexHome == c.options.CodexHome)) {
 				return ErrConflict
 			}
 		}
