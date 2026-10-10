@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "scope": "owned real Mattermost service/adapter acceptance",
+  "passed": true,
+  "failure_kind": null,
+  "mattermost_image": "mattermost/mattermost-team-edition@sha256:14a2de6b71fe5f60660fb71ef2f020c5758d8559fdd35a3fca429d301b781154",
+  "postgres_image": "postgres@sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229",
+  "excluded": [
+    "packaged release/TUI/customer deployment",
+    "Slack/IRC live servers",
+    "model dispatch",
+    "native terminal input",
+    "exactly-once posts",
+    "database downgrade"
+  ],
+  "cleanup": {
+    "runtime_absent": true,
+    "runtime_anonymous_volumes_absent": true,
+    "server_absent": true,
+    "server_anonymous_volumes_absent": true,
+    "postgres_absent": true,
+    "postgres_anonymous_volumes_absent": true,
+    "network_absent": true,
+    "host_secret_files_removed": true,
+    "failures": []
+  },
+  "source": "cb828b8a588f0ce6d49f36f696de5da78b08f66b",
+  "source_clean": true,
+  "dirty_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "harness_sha256": "417e4cca7558277e16037a70bb22b0140955cb6cb9f964733c9ffe1d094297eb",
+  "test_sha256": "82b6f425e2e8f3a7089b3dec568be1fb06f4db945cf04c2a65a9386bc8aa422b",
+  "go": "go version go1.26.6 darwin/arm64",
+  "docker": {
+    "version": "29.2.1",
+    "os": "linux",
+    "arch": "arm64"
+  },
+  "ca_sha256": "1ecb3badbc5d04bdb08040975c0ba00302a2c17254fdf98dd890db49564c08d3",
+  "mattermost_version": "11.11.1",
+  "runtime": {
+    "image_os": "linux",
+    "image_arch": "amd64",
+    "engine_arch": "arm64",
+    "emulated": true,
+    "server_uid": 2000,
+    "tls_verified": true,
+    "network_internal": false,
+    "egress_isolation_proven": false
+  },
+  "acceptance": {
+    "actual_adapter_posts": 2,
+    "ca_sha256": "1ecb3badbc5d04bdb08040975c0ba00302a2c17254fdf98dd890db49564c08d3",
+    "checks": {
+      "allowed_inbound_self_outsider_other_root_exclusion": true,
+      "bounded_thread_pagination": true,
+      "disabled_historical_reconcile_is_readonly": true,
+      "discarded_actual_post_ack_is_uncertain": true,
+      "edited_receipt_with_same_markers_remains_uncertain": true,
+      "exact_verified_bot_team_root_binding": true,
+      "explicit_post_ack_get_and_idempotent_retry": true,
+      "nested_reply_is_not_root": true,
+      "remote_edit_preserves_first_snapshot": true,
+      "reopen_and_retry_never_resend_uncertain": true,
+      "verified_tls_and_no_global_ca_change": true
+    },
+    "dropped_actual_acknowledgements": 1,
+    "passed": true,
+    "scope": "actual Mattermost REST v4, injected trusted TLS client, real local channel service and SQLite",
+    "verified_tls_responses": 54
+  },
+  "source_daemon_runtime": {
+    "image": "golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36",
+    "os": "linux",
+    "arch": "arm64",
+    "uid": 0,
+    "tmux": "tmux 3.3a",
+    "network_namespace": "exact owned Mattermost container",
+    "endpoint": "https://127.0.0.1:8065",
+    "ssl_cert_file_child_only": true,
+    "no_host_mounts": true,
+    "binary_sha256": {
+      "keelmux": "2982dcc6f25c5c2a7b004aadc73f74715b63ff657bfeec41f8ac65342320456d",
+      "keelmuxd": "72d99f473a8b34083c56b019d91678dbf6468f8603bb4fe16293eceb3b4a2a1b",
+      "acceptance.test": "6935c4d4d9661c46f69c5e6c150513542582991d9f9050717fe24f578d6f5a26"
+    },
+    "functional_test_not_race_instrumented": true
+  },
+  "source_daemon_acceptance": {
+    "actual_operation_posts": 1,
+    "checks": {
+      "source_cli_actual_post_ack_and_get": true,
+      "source_cli_bind_list_exact_route": true,
+      "source_cli_disable_refuses_new_intent": true,
+      "source_cli_same_operation_retry_and_reconcile_no_duplicate": true,
+      "source_daemon_actual_scoped_inbound_history": true,
+      "source_daemon_restart_preserves_binding_and_receipt": true,
+      "source_foreground_daemon_identity_and_cli_help": true
+    },
+    "fixture_session_has_no_native_process": true,
+    "global_ca_changed": false,
+    "passed": true,
+    "processes_joined": true,
+    "scope": "source-built Linux arm64 product daemon and CLI through actual Unix control socket and ordinary production HTTP client",
+    "stable_source_commit": "cb828b8a588f0ce6d49f36f696de5da78b08f66b"
+  }
+}
