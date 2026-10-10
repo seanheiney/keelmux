@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "utc": "2026-10-10T21:29:39Z",
+  "source_commit": "e182d2c46c035f2cb4ecef4c1ac48a2fe84a8581",
+  "base_commit": "5e8d3e93ed942accd7bb9e6eb0ebd26dc4bef2e3",
+  "hosted_failure": {
+    "source": "5772ad21155ce163dcfe95d07c7031abcde17dbc",
+    "run_id": 38086615176,
+    "native_base_identical": true,
+    "slow_reader_failed_platforms": [
+      "macos-latest",
+      "ubuntu-latest"
+    ],
+    "ctrl_c_fixture_failed_platforms": [
+      "ubuntu-latest"
+    ]
+  },
+  "source_sha256": {
+    "internal/adapters/nativepty/filter.go": "67761971bbcf8649d5cdd69a155a230a5136c7b0da8e0d1e1c84aa0d88268bc8",
+    "internal/adapters/nativepty/backend_test.go": "3e762355989c631c6dd788448a8cc71bef6818fbeab9eed0a3e66843928e66ab",
+    "internal/adapters/nativepty/performance_test.go": "a590a40c272f51a603e4bbed3e426cec658043e70616176eaf4532383c6d81f1"
+  },
+  "deadline_seconds": 8,
+  "deadline_unchanged": true,
+  "product_signal_handling_changed": false,
+  "macos": {
+    "os": "Darwin25.6.0",
+    "arch": "arm64",
+    "cpu": "Apple M4 Max",
+    "go": "go1.26.6",
+    "race_count": 3,
+    "race_result": "pass",
+    "race_package_seconds": 19.49,
+    "vet_result": "pass",
+    "slow_reader_single_run_seconds": 3.66,
+    "ascii_2mib_before": {
+      "ns_per_op": 8695227250,
+      "allocated_bytes_per_op": 359732360,
+      "allocations_per_op": 6319033
+    },
+    "ascii_2mib_after": {
+      "ns_per_op": 3046747125,
+      "allocated_bytes_per_op": 284806056,
+      "allocations_per_op": 2123604
+    }
+  },
+  "linux": {
+    "os": "Linux6.8.0-100-generic",
+    "arch": "arm64",
+    "go": "go1.26.6",
+    "shell": "dash",
+    "image": "golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36",
+    "network": "none",
+    "root_filesystem": "read-only",
+    "user": "65534:65534",
+    "capabilities": "all dropped",
+    "source_delivery": "finite source and generated vendor archive through stdin; no bind mounts",
+    "race_count": 3,
+    "race_result": "pass",
+    "race_package_seconds": 20.736,
+    "vet_result": "pass",
+    "baseline_ctrl_c_result": "reproduced failure: child no longer available after trapped SIGINT",
+    "baseline_slow_reader_seconds": 6.09,
+    "slow_reader_single_run_seconds": 4.45,
+    "ascii_2mib_after": {
+      "ns_per_op": 3687137293,
+      "allocated_bytes_per_op": 284790352,
+      "allocations_per_op": 2123587
+    }
+  },
+  "commands": [
+    "go test -race ./internal/adapters/nativepty ./cmd/keelmux-supervisor -count=3",
+    "go vet ./internal/adapters/nativepty ./cmd/keelmux-supervisor",
+    "go test -race ./internal/adapters/nativepty -run ^$ -bench BenchmarkScreenASCIIBurst -benchtime=1x"
+  ],
+  "coverage": [
+    "exact native lifecycle and ownership",
+    "real PTY SIGINT and reconnect",
+    "8-second 2MiB slow-consumer drain",
+    "ASCII batch versus bytewise streaming",
+    "partial CSI/OSC/DCS/APC and C0/C1 framing",
+    "Unicode Prepend, decomposed accents, variation selectors and ZWJ",
+    "cursor pending wrap, alternate buffers, origin and vertical margins",
+    "actual combining-tail position at bottom scroll margin"
+  ],
+  "missing_evidence": [
+    "Hosted CI rerun on integrated repair commit",
+    "Linux amd64 runtime of this repair",
+    "Native Codex/Claude acceptance rerun on this repair",
+    "Release archive/installer publication"
+  ],
+  "cleanup": {
+    "container_name": "keelmux-native-ci-repair",
+    "container_removed": true,
+    "only_owned_test_processes": true,
+    "native_model_turns": 0
+  }
+}
