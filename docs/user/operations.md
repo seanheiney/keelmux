@@ -18,7 +18,7 @@ After a lost launch or stop response, retry only the same operation and request.
 
 The tested daemon-restart journey preserves surviving tmux executions. It does not prove native conversation resume after provider exit or host reboot. If the native CLI exits, keep the registry and its native history and use that provider's supported recovery workflow separately. Keelmux's product native-resume command is unfinished.
 
-## Run the daemon in a foreground terminal
+## Operate the daemon
 
 For an explicitly operated instance:
 
@@ -28,7 +28,23 @@ keelmuxd --state /absolute/private/keelmux
 
 Stop that exact foreground daemon with Ctrl-C in its own terminal. This closes the control service; it is different from `keelmux stop SESSION`, which stops a native execution. The next local client reconciles state when starting the daemon again.
 
-The current CLI has no daemon-shutdown command. For an auto-started daemon, identify and verify its exact state path and process before an operator sends a signal. Do not kill by program name or a stale saved PID. A supported lifecycle command is a release-onboarding improvement, not a command to invent in instructions.
+For an automatically started daemon:
+
+```sh
+keelmux daemon status
+keelmux daemon restart
+keelmux daemon stop
+```
+
+Status reports its live random instance and loaded build. Stop posts that exact instance to the private socket. Restart waits for socket closure and private lock release, then reconciles surviving terminals. It never signals a saved PID, clears grants or stops a native execution. Active managed attachments can lose their control connection; detach before a planned restart.
+
+The stop intent prints an instance. If its acknowledgement is uncertain, inspect status and retry only that instance:
+
+```sh
+keelmux daemon stop --instance daemon_ORIGINAL_INSTANCE
+```
+
+A changed instance is preserved. Protocol, authorization and unknown transport failures refuse automatic replacement. A previous daemon without `/v1/daemon` reports lifecycle unavailable; stop its verified foreground instance with Ctrl-C, or have its operator verify the exact state/process before stopping it. Do not kill by program name or a stale saved PID.
 
 ## Back up state
 
@@ -37,6 +53,8 @@ A database backup preserves registry and journal records, not running processes,
 Use SQLite's online backup operation for a consistent database snapshot. Copying a live database file with `cp` is not the documented database backup method. The following example requires the external `sqlite3` command; replace the selected paths:
 
 ```sh
+(
+set -eu
 umask 077
 KEELMUX_STATE=/absolute/private/keelmux
 KEELMUX_BACKUP=/absolute/private/keelmux-backup
@@ -45,11 +63,12 @@ sqlite3 -readonly "$KEELMUX_STATE/registry.sqlite" ".backup \"$KEELMUX_BACKUP/re
 sqlite3 -readonly "$KEELMUX_BACKUP/registry.sqlite" 'PRAGMA quick_check;'
 cp "$KEELMUX_STATE/host-id" "$KEELMUX_BACKUP/host-id"
 chmod 600 "$KEELMUX_BACKUP/registry.sqlite" "$KEELMUX_BACKUP/host-id"
+)
 ```
 
 `quick_check` should return `ok`. A snapshot made during live work is consistent at its capture point; later operations are outside that snapshot.
 
-Close the switcher before copying `place.json` to keep its saved navigation and drafts. For a full coordinated authority bundle, also preserve the private `tmux.sock.bp/` receipts and any entry receipts. Those files are not in SQLite and are captured at a separate instant during an online backup. Stop the exact owned daemon/entry through its verified lifecycle before taking a coordinated offline bundle. Copy owned regular state files and directories, excluding live sockets and lock files. Treat the whole backup as private: runtime receipts can contain launch correlation.
+Close the switcher before copying `place.json` to keep its saved navigation and drafts. For a full coordinated authority bundle, also preserve the private `tmux.sock.bp/` receipts and any entry receipts. Those files are not in SQLite and are captured at a separate instant during an online backup. For a custom home, inspect and stop `keelmux --state "$KEELMUX_STATE" daemon status` and `keelmux --state "$KEELMUX_STATE" daemon stop`; default-state commands can address a different home. Stop the exact owned entry through its verified foreground lifecycle before taking a coordinated offline bundle. Copy owned regular state files and directories, excluding live sockets and lock files. Treat the whole backup as private: runtime receipts can contain launch correlation.
 
 ## Restore conservatively
 
@@ -65,11 +84,11 @@ Keep the previous release and a private backup, read the release's schema/runtim
 
 The installer contract uses an atomic `current` link and unchanged owned command links. A checksum failure leaves the existing installation available. Do not replace a custom `bp` command or edit shell profiles to hide a collision.
 
-The planned removal command is:
+The removal command is:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | \
   sh -s -- --uninstall --prefix "$HOME/.local/share/keelmux" --bin-dir "$HOME/.local/bin"
 ```
 
-It requires the implemented release installer described in [Installation](install.md). Uninstall retains state, drafts, native history, logins and skills. Remove matching skills separately with `skills remove`; their owned bundles remain archived. Removing a command while work runs can impair reconnection, so detach and plan daemon/client lifecycle first.
+Use the reviewed installer described in [Installation](install.md). Uninstall retains state, drafts, native history, logins and skills. Remove matching skills separately with `skills remove`; their owned bundles remain archived. Removing a command while work runs can impair reconnection, so detach and plan daemon/client lifecycle first.

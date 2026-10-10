@@ -1,50 +1,82 @@
 # Installation
 
-Keelmux is a per-user application. It needs no product account or root service. You bring tmux and your selected provider's native CLI and login.
+Keelmux is a per-user application. Bring tmux and your selected provider's native CLI and login. It needs no product account or root service.
 
-The one-line installer is the release entry point:
+## One-line installation
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | sh
 ```
 
-**Release integration pending:** this URL and installer contract are planned at the documentation's base source. Do not treat this command as an available release until the repository contains the installer, a published release and passing installation receipts. A source build is available now.
+The installer selects your OS/architecture, downloads a published release over HTTPS, verifies its checksum and manifest, and installs into `~/.local/share/keelmux`. Commands live in `~/.local/bin`. It refuses root, unsupported assets, unsafe directories and unowned command collisions. It never edits your shell profile, installs tmux/providers, changes native authentication or installs skills.
 
-## Build the current source
-
-Install the Go version declared in `go.mod`, tmux and the selected native CLI through their normal installation methods. From the repository:
+If needed, use the PATH command printed by the installer:
 
 ```sh
+export PATH="$HOME/.local/bin:$PATH"
+keelmux version --json
+keelmux doctor
+```
+
+`doctor` requires tmux and at least one launchable native provider. It can start the private daemon; it does not submit a model turn or sign in. See the [support matrix](support-matrix.md) for tested combinations.
+
+## Pin and review
+
+For managed machines, download and review the script before running it, and select an exact release:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/v0.1.0/install.sh -o keelmux-install.sh
+# Review keelmux-install.sh using your normal software-review process.
+sh keelmux-install.sh --version v0.1.0 \
+  --prefix "$HOME/.local/share/keelmux" --bin-dir "$HOME/.local/bin"
+```
+
+The script supports `--version vX.Y.Z`, `--prefix ABSOLUTE_PATH`, `--bin-dir ABSOLUTE_PATH`, `--uninstall` and `--help`. Environment equivalents are `KEELMUX_VERSION`, `KEELMUX_INSTALL_DIR` and `KEELMUX_BIN_DIR`. Custom directories must be owned by you and satisfy the script's permission checks. Keep the installation prefix private; command links can live in your owned bin directory.
+
+Version directories remain separate. The atomic `current` link selects the installed release. A failed download, checksum, manifest or collision check leaves the existing installation in place. There is no force-overwrite mode.
+
+## Release verification
+
+[Release assets](https://github.com/seanheiney/keelmux/releases) include four archives and `SHA256SUMS`. Each archive includes `RELEASE.json` with its exact source commit, toolchain, target and per-file hashes. The installer verifies archive and content hashes before switching versions. Checksums delivered with the archive detect corruption; they are not an independent publisher signature.
+
+Where the release has GitHub provenance attestations, verify a downloaded asset with the GitHub CLI before your organization's installation workflow:
+
+```sh
+gh attestation verify keelmux_v0.1.0_darwin_arm64.tar.gz \
+  --repo seanheiney/keelmux \
+  --signer-workflow seanheiney/keelmux/.github/workflows/release.yml \
+  --source-ref refs/tags/v0.1.0 --deny-self-hosted-runners
+```
+
+Choose the filename matching your target. Compare the attested source digest with the release's recorded commit. The one-line installer checks HTTPS downloads, checksums and manifests; it does not invoke GitHub attestation verification for you.
+
+## Upgrade and rollback
+
+Keep a consistent [state backup](operations.md#back-up-state), read the release's schema notes and preserve the same state path. Run the reviewed installer with the new exact `--version`. Reinstalling the same version verifies its owned bytes. Selecting an earlier compatible version changes application files; it does not downgrade a database.
+
+An already-running daemon continues using its loaded version. Detach active managed clients, then use `keelmux daemon status` and `keelmux daemon restart` to load the installed daemon. This preserves surviving native terminals and reconciles their original identity. An old daemon without the lifecycle endpoint is refused; follow [daemon operation](operations.md#operate-the-daemon) rather than launching another authority.
+
+For rollback, run the same installer with the previous compatible `--version`, then verify loaded daemon metadata. Restore a compatible offline snapshot if the older binary cannot read the newer schema. There is no automatic schema downgrade or state merge.
+
+## Uninstall
+
+```sh
+sh keelmux-install.sh --uninstall \
+  --prefix "$HOME/.local/share/keelmux" --bin-dir "$HOME/.local/bin"
+```
+
+Uninstall removes only unchanged installer-owned application files and matching links. It retains registry, drafts, native histories, credentials, skills and unrelated files. Modified owned files cause refusal. Skill removal is a separate [owned operation](skills.md#remove-a-skill); state deletion is separate and has no automatic purge. Stop the owned daemon through its lifecycle and plan reconnection before removing commands while native work is running.
+
+## Build from source
+
+Install the Go version declared in `go.mod`, tmux and your selected native CLI through their normal workflows:
+
+```sh
+git clone https://github.com/seanheiney/keelmux.git
+cd keelmux
 make build
 make check
-./bin/bp version
-./bin/bp providers
-./bin/bp doctor
+./bin/keelmux version --json
 ```
 
-The pre-rename build produces `bp`, `bpd` and `bpg` in `bin/`. Keep the companion executables beside the CLI: the client resolves its daemon there, and the private entry uses a client companion. The release packaging must provide `keelmux` as the primary command and retain the legacy `bp` alias.
-
-## Installer contract
-
-The release installer must identify the OS and architecture, resolve an exact release, download its matching archive over HTTPS, verify the archive against release checksums and install only its owned files. The normal destination is a writable per-user directory. A failed checksum, unsupported asset or unowned collision stops installation without replacing the existing program.
-
-The selected installer contract supports `--version vX.Y.Z`, `--prefix ABSOLUTE_PATH`, `--bin-dir ABSOLUTE_PATH`, `--uninstall` and `--help`. It also accepts `KEELMUX_VERSION`, `KEELMUX_INSTALL_DIR` and `KEELMUX_BIN_DIR`. Version directories remain separate and an atomic `current` link selects the installed release. These options require implementation and installation evidence before release.
-
-For a pinned release, the planned command is:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | \
-  sh -s -- --version v0.1.0 --prefix "$HOME/.local/share/keelmux" --bin-dir "$HOME/.local/bin"
-```
-
-The installer must not change provider authentication, silently upgrade CLIs, install skills, edit shell configuration or enable remote exposure. It prints the exact PATH step and `keelmux setup` command needed next. An unowned executable or symlink collision is preserved; there is no force-overwrite mode.
-
-The supported release platforms must match runtime evidence. Cross-compilation alone does not establish Linux support. A successful install proves application placement and its recorded smoke checks, not native account access.
-
-## Upgrade and removal
-
-Keep a consistent [state backup](operations.md#back-up-state) and the previous release before upgrading. Preserve the same explicit state path. Database format compatibility and any required daemon restart belong in that release's notes.
-
-Uninstall removes only unchanged installer-owned application files. It retains registry, drafts, native histories, credentials and installed skills. Skill removal is a separate [owned operation](skills.md#remove-a-skill). State deletion is separate from uninstall and has no automatic purge in the current source.
-
-For managed machines, review the pinned installer source and install a pinned release using the documented destination option once available. A shell pipeline is a convenience, not a replacement for your organization's software review.
+Keep `keelmux`, `keelmuxd` and `keelmux-entry` beside each other. The build also creates `bp`, `bpd` and `bpg` compatibility links. Cross-compilation establishes a build; it does not establish native provider runtime support.

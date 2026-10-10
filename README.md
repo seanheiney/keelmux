@@ -10,7 +10,7 @@ keelmux                 →  find it, open it, continue
 Ctrl-G d                →  return to your switcher
 ```
 
-[Get started](docs/user/quickstart.md) · [Documentation](docs/README.md) · [CLI reference](docs/user/cli.md) · [Recovery](docs/user/recovery.md) · [Security](SECURITY.md)
+[Online documentation](https://github.com/seanheiney/keelmux/tree/main/docs) · [Get started](docs/user/quickstart.md) · [Documentation](docs/README.md) · [CLI reference](docs/user/cli.md) · [Recovery](docs/user/operations.md#recover-a-session) · [Security](SECURITY.md)
 
 ## Install
 
@@ -43,7 +43,7 @@ The daemon starts automatically. Closing the switcher keeps native processes run
 - **Owned skill setup.** Preview provider-specific connection skills, apply only selected bundles, and archive matching owned bundles on removal.
 - **Private local control.** User-owned state and Unix sockets; credentials remain with the native provider.
 
-The current native runtime evidence covers **macOS arm64, Codex 0.159.0 and Claude Code 2.1.296**. Linux and other architectures need their own runtime acceptance; see the [support matrix](SUPPORT.md) for exact release artifacts and qualifications.
+The current native runtime evidence covers **macOS arm64, Codex 0.159.0 and Claude Code 2.1.296**. Linux terminal-backend checks use explicit fixtures; native Linux providers and other architectures need their own acceptance; see the [support matrix](docs/user/support-matrix.md) for exact release artifacts and qualifications.
 
 A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Independent remote enrollment, semantic Mattermost/IRC delivery, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
 
@@ -51,11 +51,11 @@ A private entry can expose explicitly permitted sessions from multiple execution
 
 | Need | Guide |
 | --- | --- |
-| First session and daily navigation | [Quickstart](docs/user/quickstart.md), [TUI](docs/user/tui.md) |
+| First session and daily navigation | [Quickstart](docs/user/quickstart.md), [TUI](docs/user/daily-use.md) |
 | Install, upgrade, rollback or uninstall | [Installation](docs/user/install.md) |
-| Provider readiness and connection skills | [Providers](docs/user/providers.md), [Setup](docs/user/setup.md) |
+| Provider readiness and connection skills | [Providers](docs/user/configuration.md#native-configuration), [Setup](docs/user/skills.md) |
 | Backups, permissions and daemon operation | [Operations](docs/user/operations.md) |
-| Lost replies, crashed clients or missing sessions | [Recovery](docs/user/recovery.md), [Troubleshooting](docs/user/troubleshooting.md) |
+| Lost replies, crashed clients or missing sessions | [Recovery](docs/user/operations.md#recover-a-session), [Troubleshooting](docs/user/troubleshooting.md) |
 | Trust boundaries and private reporting | [Security](SECURITY.md), [Architecture](docs/user/architecture.md) |
 | Supported combinations and known gaps | [Support](SUPPORT.md), [Release evidence](docs/build/STATUS.md) |
 
@@ -63,7 +63,7 @@ Keelmux enforces one input owner among cooperating managed clients. The same OS 
 
 ## Existing Backplane installations
 
-`bp`, `bpd` and `bpg` remain compatibility aliases. Existing private `~/.local/state/agent-backplane` state is reused in place; no live socket, session or registry is renamed. A fresh installation uses `~/.local/state/keelmux`. Explicit `--state`, then `KEELMUX_STATE_DIR`, then `BP_STATE_DIR` take precedence. Unsafe prior state is refused, preserving its bytes. The current owned `$backplane` and `/backplane` skill names remain compatible. [Migration guide](docs/user/migration.md).
+`bp`, `bpd` and `bpg` remain compatibility aliases. Existing private `~/.local/state/agent-backplane` state is reused in place; no live socket, session or registry is renamed. A fresh installation uses `~/.local/state/keelmux`. Explicit `--state`, then `KEELMUX_STATE_DIR`, then `BP_STATE_DIR` take precedence. Unsafe prior state is refused, preserving its bytes. The current owned `$backplane` and `/backplane` skill names remain compatible. [Migration guide](docs/user/configuration.md#select-a-state-directory).
 
 ## Build and contribute
 

@@ -66,6 +66,11 @@ func privateFile(path string, flags int) (*os.File, error) {
 	return f, nil
 }
 
+// OpenPrivateLog refuses links, special files and unsafe existing permissions.
+func OpenPrivateLog(path string) (*os.File, error) {
+	return privateFile(path, syscall.O_CREAT|syscall.O_WRONLY|syscall.O_APPEND)
+}
+
 // HostID accepts only the product-generated host_<32 lowercase hex> identity.
 // Malformed legacy or interrupted writes require explicit repair; they remain
 // untouched rather than silently assigning a different execution authority.

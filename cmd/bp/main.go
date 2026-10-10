@@ -66,7 +66,7 @@ func run() error {
 	}
 	if len(args) == 2 && (args[1] == "--help" || args[1] == "-h") {
 		switch args[0] {
-		case "run", "attach", "stop", "inspect", "list", "directory", "link", "reconcile", "doctor", "providers":
+		case "run", "attach", "stop", "inspect", "list", "directory", "link", "reconcile", "doctor", "providers", "daemon":
 			fmt.Print(help)
 			return nil
 		}
@@ -90,6 +90,12 @@ func run() error {
 	p, err := config.Resolve(*state)
 	if err != nil {
 		return err
+	}
+	if len(args) > 0 && args[0] == "daemon" {
+		if *entry != "" {
+			return errors.New("daemon lifecycle belongs to the local execution home")
+		}
+		return manageDaemon(p, args[1:])
 	}
 	if err = p.Ensure(); err != nil {
 		return err
@@ -278,7 +284,7 @@ func ensureDaemon(ctx context.Context, c *protocol.Client, p config.Paths) error
 	if err != nil {
 		return errors.New("daemon unavailable beside keelmux; reinstall the complete distribution or start keelmuxd --state explicitly")
 	}
-	log, err := os.OpenFile(filepath.Join(p.Dir, "daemon.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	log, err := config.OpenPrivateLog(filepath.Join(p.Dir, "daemon.log"))
 	if err != nil {
 		return err
 	}
@@ -313,6 +319,7 @@ keelmux link [status|off]              Link exact inherited managed context
 keelmux inspect SESSION               Inspect capabilities and unknown evidence
 keelmux stop SESSION [--operation ID]  Stop current execution; preserve ID on retry
 keelmux reconcile                     Recheck surviving executions
+keelmux daemon status|stop|restart    Inspect or restart only the owned daemon
 keelmux doctor                        Check local binaries and daemon
 keelmux version [--json]              Print release and protocol provenance
 keelmux providers                     Inspect qualified native status without model work

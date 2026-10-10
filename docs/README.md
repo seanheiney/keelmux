@@ -24,6 +24,6 @@ Start with [your first session](user/quickstart.md). The current release candida
 
 ## Release status
 
-These pages use the selected product name and `keelmux` command. At their base source, `8259b648d7f92c5b8c4c27c41524f23b61ac6795`, the executable is still `bp`. Branding, installer and release packaging are being integrated separately. Use the matching `bp` command in a pre-rename checkout. A public `v0.1.0` release and installation assets are not established by this documentation.
+The canonical commands are `keelmux`, `keelmuxd` and `keelmux-entry`; compatibility aliases remain available. [Release assets and qualification receipts](https://github.com/seanheiney/keelmux/releases) identify the tagged source, installed bytes and actual tested combinations.
 
 Every release must link its own exact source and runtime receipts in the [support matrix](user/support-matrix.md). Evidence from an earlier source remains historical evidence.

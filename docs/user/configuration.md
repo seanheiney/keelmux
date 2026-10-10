@@ -12,7 +12,7 @@ The release selection order is:
 4. Existing `~/.local/state/agent-backplane` for legacy installations.
 5. Fresh-install default `~/.local/state/keelmux`.
 
-An existing legacy path must pass the same ownership and directory checks. An invalid legacy path refuses startup instead of creating a second authority. No automatic database copy or path move occurs. Both CLI names use the same resolution rules. At the pre-rename base, only `--state` and `BP_STATE_DIR` plus the legacy default exist; the release integration adds the new-name behavior.
+An existing legacy path must pass the same ownership and directory checks. An invalid legacy path refuses startup instead of creating a second authority. No automatic database copy or path move occurs. Both CLI names use the same resolution rules.
 
 Use a short absolute path for an isolated instance:
 

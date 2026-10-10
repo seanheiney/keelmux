@@ -11,7 +11,7 @@ make build
 make check
 ```
 
-`make check` runs Go race tests and `go vet`. Current pre-rename source produces `bin/bp`, `bin/bpd` and `bin/bpg`; release integration supplies the Keelmux command names and compatible aliases. Keep companion binaries together. Use an explicit temporary private state path for experiments so development work cannot accidentally address your daily home.
+`make check` runs Go race tests and `go vet`. The source build produces `bin/keelmux`, `bin/keelmuxd` and `bin/keelmux-entry`, with `bp`, `bpd` and `bpg` compatibility aliases. Keep companion binaries together. Use an explicit temporary private state path for experiments so development work cannot accidentally address your daily home.
 
 Do not run native login, model turns, provider upgrades, destructive tool actions or external publication as part of an implicit test. Native prompts and approvals need explicit test scope. Fake providers and loopback model backends belong only in fixtures; product defaults must launch real supported CLIs.
 

@@ -8,6 +8,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/buildinfo"
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/daemon"
+	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/store"
 	"github.com/seanheiney/keelmux/internal/transport"
@@ -85,6 +86,9 @@ func run() error {
 		return err
 	}
 	mux := http.NewServeMux()
+	lifecycle := daemon.LifecycleHandler(protocol.DaemonStatus{Instance: string(domain.NewID("daemon")), PID: os.Getpid(), Protocol: protocol.Version, Build: buildinfo.Current(protocol.Version)}, cancel)
+	mux.Handle("/v1/daemon", lifecycle)
+	mux.Handle("/v1/daemon/stop", lifecycle)
 	mux.Handle("/v1/terminal", terminal.Handler())
 	mux.Handle("/", svc.Handler())
 	l, err := p.Listen()

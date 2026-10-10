@@ -2,7 +2,7 @@
 
 Keelmux declares support per provider, version, platform, authentication mode and scenario. An installed CLI, a successful build and a working model turn establish different things.
 
-The current runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6 and tmux 3.7b, with installed **Codex CLI 0.159.0** and **Claude Code 2.1.296**. Linux amd64 cross-compilation passed; Linux runtime remains untested. Other versions and platforms need their own receipts.
+The current runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6 and tmux 3.7b, with installed **Codex CLI 0.159.0** and **Claude Code 2.1.296**. Four archive targets build: macOS/Linux, arm64/amd64. Independent macOS arm64 packaged installation and authority-refusal acceptance passed on source `0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44`: [package receipt](../evidence/keelmux-release-macos-independent.md). Linux arm64 terminal-backend acceptance runs actual packaged binaries in a pinned Debian container with explicit fixture programs; it does not prove native Linux Codex or Claude behavior. Other provider versions and build-only targets need their own receipts. The tagged release attaches its final exact-source qualification separately.
 
 ## Terminal core
 
@@ -19,6 +19,10 @@ The current runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6
 | Owned selected skills | Installation/removal source tests; native Codex and Claude discovery observed | No skill invocation or model instruction loading was submitted in discovery checks |
 
 The original accepted implementation is `4b36f4d773a31388c7ec8ade146eb1929a8d2a19`: [independent native receipt](../evidence/2026-10-10-independent-repaired-native.md). A later independent legacy-terminal regression at `a0787357dc8c8cb3749deca43074fd4beafff1ca` passed all eight local groups and three native gateway groups: [regression receipt](../evidence/2026-10-10-broker-core-regression.md). Later source changes require their own release qualification; these receipts do not automatically certify a renamed or packaged release.
+
+## Release qualification
+
+The [tagged release](https://github.com/seanheiney/keelmux/releases/tag/v0.1.0) supplies machine receipts for the final archives, loaded versions, actual installation and supported runtime checks. Compare their artifact source commit and archive digest with `RELEASE.json` and `SHA256SUMS`; historical receipts above qualify only their own source. macOS amd64 and Linux amd64 are build targets until an actual runtime receipt establishes more. Native authenticated turns, independent remote servers and host reboot remain outside the initial terminal-runtime claim.
 
 ## Private entry
 

@@ -2,7 +2,7 @@
 
 Start with [Quickstart](docs/user/quickstart.md), [Troubleshooting](docs/user/troubleshooting.md) and the [support matrix](docs/user/support-matrix.md). Those pages distinguish tested behavior from the roadmap.
 
-The Keelmux repository is reserved at [seanheiney/keelmux](https://github.com/seanheiney/keelmux). It remains private while publication and release checks finish. Once public, use repository issues for reproducible bugs and feature requests. This is a community project without a paid support SLA.
+Use [seanheiney/keelmux issues](https://github.com/seanheiney/keelmux/issues) for reproducible bugs and feature requests. This is a community project without a paid support SLA.
 
 ## Useful bug reports
 

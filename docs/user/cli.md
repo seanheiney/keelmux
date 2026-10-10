@@ -1,6 +1,6 @@
 # CLI reference
 
-`keelmux` is the primary command. `bp` is the compatibility alias. Examples use the release name; a pre-rename development checkout provides `./bin/bp`.
+`keelmux` is the primary command. `bp` is the compatibility alias. The build also provides the three compatibility names alongside the canonical commands.
 
 Global flags precede the command. Flags belonging to `run` precede the provider name. A session argument is its exact `session_…` ID from inventory or a receipt.
 
@@ -9,10 +9,13 @@ Global flags precede the command. Flags belonging to `run` precede the provider 
 | `keelmux` | Open the local remembered switcher, starting its daemon when appropriate |
 | `keelmux --state DIR` | Use the selected private state directory |
 | `keelmux --state CLIENTDIR --entry SOCKET` | Connect to an explicit private entry; do not start a local daemon |
-| `keelmux version` | Display application/protocol version; the development base prints a development version |
+| `keelmux version` | Display application version, source commit and protocol |
 | `keelmux help` | Show command help |
 | `keelmux providers` | Probe native installation/version and qualified login status |
-| `keelmux doctor` | Report daemon and dependency checks; no model turn or sign-in |
+| `keelmux doctor` | Check tmux, native providers and daemon; missing prerequisites exit nonzero |
+| `keelmux daemon status` | Inspect the live daemon instance and loaded build without starting one |
+| `keelmux daemon stop [--instance INSTANCE]` | Stop only that live daemon; preserve native sessions |
+| `keelmux daemon restart [--instance INSTANCE]` | Restart the daemon and reconcile surviving native terminals |
 | `keelmux list` | Return registered sessions as JSON |
 | `keelmux directory` | Return inventory and execution-home availability |
 | `keelmux inspect SESSION` | Return exact session capabilities and evidence |
@@ -24,7 +27,7 @@ Global flags precede the command. Flags belonging to `run` precede the provider 
 | `keelmux setup [--root DIR] [--scope user\|project] [--providers codex,claude] [--apply]` | Preview or apply the selected owned skill bundle |
 | `keelmux skills remove [--root DIR] [--scope user\|project] [--providers codex,claude]` | Archive only matching owned skill bundles |
 
-The selected release contract also provides `keelmux --version` and `keelmux version --json`. Version metadata identifies the application version, source commit and `bp/1` protocol; help and version return before state or daemon access. The pre-rename base supports the text `version` command; the new metadata and clean `--help` exits are being integrated for release.
+The CLI also provides `keelmux --version` and `keelmux version --json`. Version metadata identifies the application version, source commit and `bp/1` protocol; help and version return before state or daemon access. `daemon status` on absent state reports `running: false` without creating it. Use the exact `--instance` from a stop intent when retrying an uncertain stop; a replacement instance is preserved.
 
 ## Native arguments
 
@@ -62,4 +65,4 @@ The configuration and scope are described in the [private entry guide](private-e
 
 ## Commands still on the roadmap
 
-There are no implemented `join`, `connect`, `continue`, `subscriptions`, `usage`, daemon-shutdown, backup or semantic-message commands at this source. Proposed syntax in the product specification must not be mistaken for an available command. Structured Codex prompt and approval control remains experimental and has no product launcher.
+There are no implemented `join`, `connect`, `continue`, `subscriptions`, `usage`, backup or semantic-message commands at this source. Proposed syntax in the product specification must not be mistaken for an available command. Structured Codex prompt and approval control remains experimental and has no product launcher.

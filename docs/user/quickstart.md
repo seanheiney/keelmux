@@ -12,7 +12,7 @@ keelmux providers
 keelmux doctor
 ```
 
-`providers` probes native version and login status without a model turn. A credential status is narrower than verified account identity, model access or quota. `doctor` reports local dependencies and daemon reachability; read its checks, not just its exit status.
+`providers` probes native version and login status without a model turn. A credential status is narrower than verified account identity, model access or quota. `doctor` checks tmux, at least one launchable native provider and daemon reachability. Missing prerequisites return a nonzero exit status; a passing check does not establish account or model access.
 
 ## Launch work
 

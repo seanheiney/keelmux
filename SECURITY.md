@@ -20,10 +20,10 @@ Use the [documented backup and recovery procedure](docs/user/operations.md). A s
 
 ## Report a vulnerability
 
-Do not publish credentials, exploit details or private work in a public issue. After the public repository enables GitHub private vulnerability reporting, use its **Security → Report a vulnerability** flow. Availability of that private reporting channel is a publication gate; it is not established by this document. Until the channel is enabled, withhold sensitive details and contact a maintainer through an existing private channel.
+Do not publish credentials, exploit details or private work in a public issue. Use [GitHub private vulnerability reporting](https://github.com/seanheiney/keelmux/security/advisories/new). If GitHub does not offer that private form, withhold sensitive details; do not substitute a public issue.
 
 Include the affected version and source commit, OS and architecture, a minimal reproduction, the violated trust boundary and the expected behavior. Use synthetic paths and data. Maintainers will assess the report; the project currently makes no response-time or compliance certification commitments.
 
 ## Release handling
 
-No public release is established at this documentation's base source. Release assets must identify an exact source commit and matching checksums. A checksum verifies that the downloaded archive matches the published release manifest; it is not an independent signature or an audit of its contents. Keep third-party native CLIs updated through their own supported channels.
+[Release assets](https://github.com/seanheiney/keelmux/releases) identify an exact source commit and matching checksums. A checksum verifies that the downloaded archive matches the published release manifest; it is not an independent signature or an audit of its contents. Keep third-party native CLIs updated through their own supported channels.

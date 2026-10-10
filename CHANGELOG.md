@@ -1,21 +1,22 @@
 # Changelog
 
-Release notes describe implemented behavior and the evidence for that release. The full [roadmap](docs/user/roadmap.md) remains separate.
+Release notes describe implemented behavior and exact evidence. The [roadmap](docs/user/roadmap.md) records the broader product vision separately.
 
-## Unreleased
+## 0.1.0
 
-- Product name selected as **Keelmux**; repository reserved at `seanheiney/keelmux` and still private while publication checks finish.
-- User documentation for terminal workflows, owned skills, private state, recovery, backup and the tested support matrix.
-- Keelmux command names, compatible `bp` aliases, version metadata, state selection and a per-user release installer are being integrated separately. Their final behavior needs validation on the release source.
+- **Keelmux:** native terminal switching for Codex and Claude Code, with canonical commands and compatible `bp`, `bpd` and `bpg` aliases.
+- Owned launch/link, inspect, attach, detach, stop and reconcile; optional groups, remembered navigation and unsent local drafts.
+- Durable operation receipts, exact execution generations and one cooperating managed writer. Uncertain effects are retained for inspection rather than blindly replayed.
+- Per-user one-line installer, checksummed four-target archives, per-file manifests, atomic version selection, collision refusal and state-preserving uninstall.
+- Read-only build metadata; fresh-state selection with in-place legacy-state reuse and unsafe-state refusal.
+- Exact-instance daemon status/stop/restart, surviving-terminal reconciliation and private daemon-log validation.
+- Owned skill preview, selected application and matching-bundle archive removal.
+- User, operator, security, contributor and support documentation.
 
-## 0.1.0 — Draft release notes
+The [release](https://github.com/seanheiney/keelmux/releases/tag/v0.1.0) records its exact commit, asset digests and final installation/runtime receipts. Earlier source receipts remain historical qualifications, not substitutes for the tagged artifact's acceptance.
 
-**Status:** not a published release. Populate the final tag, source commit, asset checksums and installation/runtime receipts before publishing these notes.
+Native runtime acceptance covers the declared macOS arm64 Codex/Claude versions. Linux terminal-backend tests use explicit fixtures; cross-compiled architectures and native Linux providers remain separately qualified in the [support matrix](docs/user/support-matrix.md). Authentication stays native. No model turn was submitted without separate authorization.
 
-The intended first release provides a local terminal switcher over real Codex and Claude Code CLIs: launch, list, inspect, attach, detach, stop and reconcile owned executions; workspace groups and local drafts; explicit connection skills; and durable operation records that retain uncertain outcomes without blind replay.
+The private entry has local same-computer, two-home evidence. Independent-server enrollment is unfinished. The Codex broker is an internal zero-turn experiment without a product launcher or general structured prompt/approval capability. Shared chat, account/model/usage routing, provider-exit/reboot continuity and optional captains remain on the roadmap.
 
-The private entry path is experimental and has evidence for explicitly configured local homes on one machine. It does not establish remote enrollment or multi-server operation. The Codex broker's scoped zero-turn controller is internal experimental work, with no shipped product launcher or general structured prompt/approval support at this documentation's base source.
-
-Current historical native runtime evidence is macOS arm64 only. Linux cross-compilation does not establish Linux runtime support. Provider authentication stays native; verified account/model routing, cross-server federation, shared chat and continuity after provider exit or host reboot remain unfinished. See the [support matrix](docs/user/support-matrix.md) for exact historical source receipts and limitations.
-
-The final release must describe installation destinations, upgrade/schema compatibility, daemon restart requirements and state-preserving uninstall. It must not inherit an earlier source's runtime receipt as proof of the new tag.
+The installer retains user state, logins and skills. Upgrades preserve the selected state directory; restart the owned daemon to load the installed version. Rollback changes application files and requires a schema-compatible state or offline backup. No automatic database downgrade occurs. The existing MIT license applies.
