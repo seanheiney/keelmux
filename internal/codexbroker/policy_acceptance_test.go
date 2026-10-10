@@ -861,3 +861,63 @@ func TestPolicyAcceptanceUpstreamErrorsCannotLeakNativeRealm(t *testing.T) {
 	f.ID = json.RawMessage(`"unmatched-upstream"`)
 	acceptanceWithheld(t, cb.NewPolicy(), c, f)
 }
+
+func TestPolicyAcceptanceNotificationTimestampCannotAuthorizeOrDisclose(t *testing.T) {
+	// A source-observed additive notification envelope marker is disposable
+	// metadata. Supporting it must not widen effect classes or output scope.
+	for _, role := range []cb.Role{cb.NativeLocal, cb.TypedObserver} {
+		for _, stamp := range []string{"0", "1760120506228"} {
+			t.Run(string(role)+"/known_scoped/"+stamp, func(t *testing.T) {
+				p := cb.NewPolicy()
+				f := acceptanceDecode(t, p, `{"method":"thread/status/changed","params":{"threadId":"native_A","status":{"type":"idle"}},"emittedAtMs":`+stamp+`}`)
+				if f.Kind != cb.Notification || len(f.ID) != 0 {
+					t.Fatal("timestamp marker changed notification identity")
+				}
+				c := cb.OutputContext{Recipient: acceptanceBinding(role), UpstreamChannelID: "marker_source_fixture"}
+				out := acceptanceOutput(t, p, c, f)
+				encoded, err := cb.Encode(out)
+				if err != nil || bytes.Contains(encoded, []byte("emittedAtMs")) || bytes.Contains(encoded, []byte("1760120506228")) {
+					t.Fatal("discarded source timestamp reached a projected frame")
+				}
+				if !bytes.Contains(encoded, []byte("native_A")) || !bytes.Contains(encoded, []byte("idle")) {
+					t.Fatal("known scoped control lost useful identity or status")
+				}
+			})
+		}
+		for _, method := range []string{"remoteControl/status/changed", "account/updated", "future/notification", "thread/status/changed"} {
+			t.Run(string(role)+"/withheld/"+method, func(t *testing.T) {
+				p := cb.NewPolicy()
+				f := acceptanceDecode(t, p, string(acceptanceJSON(t, map[string]any{"method": method, "emittedAtMs": 1760120506228, "params": map[string]any{"threadId": "native_B", "status": map[string]any{"type": "idle"}, "installationId": "PRIVATE_MARKER_INSTALL", "workspaceRouting": "PRIVATE_MARKER_ROUTE"}})))
+				c := cb.OutputContext{Recipient: acceptanceBinding(role), UpstreamChannelID: "marker_source_fixture"}
+				acceptanceAllowed(t, p, c.Recipient, acceptanceRequest(t, "thread/read", map[string]any{"threadId": "native_A"}), acceptanceBaseline())
+				acceptanceWithheld(t, p, c, f)
+				class, err := p.Classify(c.Recipient, f, acceptanceBaseline())
+				if err == nil && class != cb.Denied {
+					t.Fatal("source timestamp converted global/unknown event into a client effect")
+				}
+			})
+		}
+	}
+	for _, stamp := range []string{"-1", "9223372036854775808", "1.5", "1e3", "null", `"1760120506228"`, "true", "[]", "{}"} {
+		t.Run("invalid_marker/"+stamp, func(t *testing.T) {
+			if _, err := cb.NewPolicy().Decode([]byte(`{"method":"thread/status/changed","params":{"threadId":"native_A","status":{"type":"idle"}},"emittedAtMs":` + stamp + `}`)); err == nil {
+				t.Fatal("invalid notification timestamp marker accepted")
+			}
+		})
+	}
+	for _, raw := range []string{
+		`{"id":1,"method":"thread/read","params":{"threadId":"native_A"},"emittedAtMs":1760120506228}`,
+		`{"id":1,"result":{"thread":{"id":"native_A"}},"emittedAtMs":1760120506228}`,
+		`{"id":1,"error":{"code":-32000,"message":"fixture"},"emittedAtMs":1760120506228}`,
+		`{"method":"thread/status/changed","params":{},"result":{},"emittedAtMs":1760120506228}`,
+		`{"method":"thread/status/changed","params":{},"emittedAtMs":1,"emittedAtMs":2}`,
+		`{"method":"thread/status/changed","params":{},"emittedAtMs":1,"emittedAt\u004ds":2}`,
+		`{"method":"thread/status/changed","params":{},"emittedAtMs":1760120506228,"futureMarker":true}`,
+	} {
+		t.Run("nonnotification_or_ambiguous/"+raw, func(t *testing.T) {
+			if _, err := cb.NewPolicy().Decode([]byte(raw)); err == nil {
+				t.Fatal("timestamp support widened strict envelope acceptance")
+			}
+		})
+	}
+}
