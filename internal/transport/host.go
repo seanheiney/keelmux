@@ -86,7 +86,11 @@ func (h *Host) Open(ctx context.Context, request Request) (*Stream, error) {
 		unclaim()
 		return nil, terminalError("owned native client could not start")
 	}
-	if err := unix.SetNonblock(int(terminal.Fd()), true); err != nil {
+	terminalFD, _, err := descriptor(terminal)
+	if err == nil {
+		err = unix.SetNonblock(terminalFD, true)
+	}
+	if err != nil {
 		_ = cmd.Process.Kill()
 		_ = terminal.Close()
 		_ = cmd.Wait()
@@ -97,7 +101,7 @@ func (h *Host) Open(ctx context.Context, request Request) (*Stream, error) {
 	serverConn, clientConn := net.Pipe()
 	server := newStream(ctx, serverConn, nil)
 	client := newStream(ctx, clientConn, nil)
-	go h.run(ctx, request, release, cmd, terminal, server, unclaim)
+	go h.run(ctx, request, release, cmd, terminal, terminalFD, server, unclaim)
 	if err := readReady(client, request); err != nil {
 		_ = client.Close()
 		return nil, terminalError("owned native stream did not confirm acquisition")
@@ -121,7 +125,7 @@ func (h *Host) validateGrant(ctx context.Context, lease protocol.LeaseRequest) e
 	return nil
 }
 
-func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseRequest, cmd *exec.Cmd, terminal *os.File, stream *Stream, unclaim func()) {
+func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseRequest, cmd *exec.Cmd, terminal *os.File, terminalFD int, stream *Stream, unclaim func()) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer unclaim()
 	var workers sync.WaitGroup
@@ -159,7 +163,7 @@ func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseR
 		defer workers.Done()
 		buffer := make([]byte, MaxFrame)
 		for {
-			n, err := readTerminal(ctx, int(terminal.Fd()), buffer)
+			n, err := readTerminal(ctx, terminalFD, buffer)
 			if n > 0 {
 				if e := stream.WriteFrame(Frame{Output, buffer[:n]}); e != nil {
 					done <- e
@@ -196,7 +200,7 @@ func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseR
 					done <- errors.New("read-only stream rejects input")
 					return
 				}
-				if err := writeTerminal(ctx, int(terminal.Fd()), frame.Data); err != nil {
+				if err := writeTerminal(ctx, terminalFD, frame.Data); err != nil {
 					done <- err
 					return
 				}
@@ -214,7 +218,7 @@ func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseR
 					done <- errors.New("invalid resize dimensions")
 					return
 				}
-				if err := pty.Setsize(terminal, &pty.Winsize{Rows: rows, Cols: cols}); err != nil {
+				if err := unix.IoctlSetWinsize(terminalFD, unix.TIOCSWINSZ, &unix.Winsize{Row: rows, Col: cols}); err != nil {
 					done <- err
 					return
 				}
@@ -327,71 +331,4 @@ func terminalEnv(term string) []string {
 		term = "xterm-256color"
 	}
 	return append(env, "TERM="+term)
-}
-
-func pollTerminal(ctx context.Context, fd int, events int16) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-		fds := []unix.PollFd{{Fd: int32(fd), Events: events}}
-		_, err := unix.Poll(fds, 100)
-		if err == unix.EINTR {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if fds[0].Revents != 0 {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				return nil
-			}
-		}
-	}
-}
-
-func readTerminal(ctx context.Context, fd int, data []byte) (int, error) {
-	for {
-		if err := pollTerminal(ctx, fd, unix.POLLIN); err != nil {
-			return 0, err
-		}
-		n, err := unix.Read(fd, data)
-		if err == unix.EIO {
-			return 0, io.EOF
-		} // Exited Unix PTY client.
-		if err == unix.EAGAIN || err == unix.EINTR {
-			continue
-		}
-		if n == 0 && err == nil {
-			return 0, io.EOF
-		}
-		return n, err
-	}
-}
-
-func writeTerminal(ctx context.Context, fd int, data []byte) error {
-	ctx, cancel := context.WithTimeout(ctx, ioTimeout)
-	defer cancel()
-	for len(data) > 0 {
-		if err := pollTerminal(ctx, fd, unix.POLLOUT); err != nil {
-			return err
-		}
-		n, err := unix.Write(fd, data)
-		if err == unix.EAGAIN || err == unix.EINTR {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if n <= 0 {
-			return io.ErrShortWrite
-		}
-		data = data[n:]
-	}
-	return nil
 }

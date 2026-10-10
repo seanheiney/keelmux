@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 
@@ -16,47 +17,70 @@ import (
 // Drive preserves the native writer's bytes. It restores terminal state and
 // joins its input reader before returning, so the calling TUI can resume safely.
 // A read-only viewer consumes no pane input; Ctrl-G d closes that viewer locally.
-func Drive(ctx context.Context, stream *Stream, input, output *os.File) error {
-	if stream == nil || input == nil || output == nil || !term.IsTerminal(input.Fd()) {
+func Drive(ctx context.Context, stream *Stream, input, output *os.File) (result error) {
+	if stream == nil || input == nil || output == nil {
 		return errors.New("native drive requires a terminal and an opened private stream")
 	}
-	state, err := term.MakeRaw(input.Fd())
+	inputFD, inputFlags, err := descriptor(input)
+	if err != nil || !term.IsTerminal(uintptr(inputFD)) {
+		return errors.New("native drive requires a terminal and an opened private stream")
+	}
+	outputFD, outputFlags, err := descriptor(output)
+	if err != nil {
+		return err
+	}
+	state, err := term.MakeRaw(uintptr(inputFD))
 	if err != nil {
 		return err
 	}
 	ctx, cancel := context.WithCancel(ctx)
+	stopCancel := context.AfterFunc(ctx, func() { _ = stream.Close() })
 	var workers sync.WaitGroup
-	defer func() { cancel(); _ = stream.Close(); workers.Wait(); _ = term.Restore(input.Fd(), state) }()
+	defer func() {
+		cancel()
+		stopCancel()
+		_ = stream.Close()
+		workers.Wait()
+		result = errors.Join(result, term.Restore(uintptr(inputFD), state), setFlags(inputFD, inputFlags), setFlags(outputFD, outputFlags))
+		runtime.KeepAlive(input)
+		runtime.KeepAlive(output)
+	}()
+	if err := setFlags(inputFD, inputFlags|unix.O_NONBLOCK); err != nil {
+		return err
+	}
+	if err := setFlags(outputFD, outputFlags|unix.O_NONBLOCK); err != nil {
+		return err
+	}
 	inputError := make(chan error, 1)
+	finishInput := func(err error) {
+		select {
+		case inputError <- err:
+		default:
+		}
+		cancel()
+		_ = stream.Close()
+	}
 	workers.Add(1)
 	go func() {
 		defer workers.Done()
 		buffer := make([]byte, MaxFrame)
 		prefix := false
 		for {
-			if err := pollTerminal(ctx, int(input.Fd()), unix.POLLIN); err != nil {
+			if err := pollTerminal(ctx, inputFD, unix.POLLIN); err != nil {
 				return
 			}
-			n, err := unix.Read(int(input.Fd()), buffer)
+			n, err := unix.Read(inputFD, buffer)
 			if err == unix.EINTR || err == unix.EAGAIN {
 				continue
 			}
 			if err != nil || n == 0 {
-				select {
-				case inputError <- err:
-				default:
-				}
-				_ = stream.Close()
+				finishInput(err)
 				return
 			}
 			if stream.Receipt.ReadOnly {
 				for _, key := range buffer[:n] {
 					if prefix && key == 'd' {
-						select {
-						case inputError <- nil:
-						default:
-						}
-						_ = stream.Close()
+						finishInput(nil)
 						return
 					}
 					prefix = key == 7
@@ -64,11 +88,7 @@ func Drive(ctx context.Context, stream *Stream, input, output *os.File) error {
 				continue
 			}
 			if err := stream.WriteInput(buffer[:n]); err != nil {
-				select {
-				case inputError <- err:
-				default:
-				}
-				_ = stream.Close()
+				finishInput(err)
 				return
 			}
 		}
@@ -85,10 +105,10 @@ func Drive(ctx context.Context, stream *Stream, input, output *os.File) error {
 				case <-ctx.Done():
 					return
 				case <-resizes:
-					cols, rows, err := term.GetSize(input.Fd())
+					cols, rows, err := term.GetSize(uintptr(inputFD))
 					if err == nil && rows > 0 && cols > 0 && rows <= 4096 && cols <= 4096 {
 						if err := stream.Resize(uint16(rows), uint16(cols)); err != nil {
-							_ = stream.Close()
+							finishInput(err)
 							return
 						}
 					}
@@ -111,7 +131,12 @@ func Drive(ctx context.Context, stream *Stream, input, output *os.File) error {
 		}
 		switch frame.Kind {
 		case Output:
-			if err := writeAll(output, frame.Data); err != nil {
+			if err := writeTerminal(ctx, outputFD, frame.Data); err != nil {
+				select {
+				case inputErr := <-inputError:
+					return inputErr
+				default:
+				}
 				return err
 			}
 		case Close:
