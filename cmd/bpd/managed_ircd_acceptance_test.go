@@ -6,13 +6,17 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -21,10 +25,13 @@ import (
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/chatadapter"
 	"github.com/seanheiney/keelmux/internal/config"
+	"github.com/seanheiney/keelmux/internal/daemon"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/ircd"
 	"github.com/seanheiney/keelmux/internal/ircdchannel"
 	"github.com/seanheiney/keelmux/internal/protocol"
+	bpruntime "github.com/seanheiney/keelmux/internal/runtime"
+	"github.com/seanheiney/keelmux/internal/store"
 )
 
 // This opt-in product qualification builds the actual control executables from
@@ -83,6 +90,7 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 			"IRC intake is bounded live coverage; disconnects explicitly report a history gap.",
 			"Delivered proves matching server echo, not reader receipt or model acceptance.",
 			"Registration permission consumed before failed authentication can require manual repair.",
+			"Lost native launch acknowledgements require exact authenticated reconciliation; unavailable authority leaves cleanup unresolved and retains private state.",
 			"This proof covers the recorded source and host only; package and customer qualification are separate.",
 		},
 	}
@@ -94,6 +102,7 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	var native *nativepty.Backend
 	var manager *ircd.Manager
 	var fixtures []domain.RuntimeRef
+	var launchIntents []managedProductLaunchIntent
 	var ircInstance domain.ID
 	var peers [2]*chatadapter.IRC
 	var controlDone <-chan error
@@ -110,10 +119,31 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 				_ = peer.Close()
 			}
 		}
-		cleanupOK := true
+		// Resolve every operation recorded before launch IO. A missing HTTP ACK
+		// cannot make the absence of an acknowledged runtime into absence proof.
+		var cleanupLookup managedProductLaunchLookup
+		if native != nil {
+			cleanupLookup = native
+		}
+		recovered, unresolved := managedProductRecoverLaunches(clean, client, cleanupLookup, launchIntents)
+		cleanupOK := len(unresolved) == 0
+		report["native_launch_intent_count"] = len(launchIntents)
+		report["unresolved_native_launch_operations"] = unresolved
+		for _, ref := range recovered {
+			fixtures = append(fixtures, ref)
+			proof, e := managedProductReadOwnedProcess(state, ref.ExecutionID)
+			if e != nil {
+				cleanupOK = false
+			} else {
+				processProofs = append(processProofs, proof)
+				supervisorPIDs = append(supervisorPIDs, proof.SupervisorPID)
+			}
+		}
 		if manager != nil {
 			if s, e := manager.Status(clean); e == nil && s.Alive {
-				cleanupOK = manager.Stop(clean, s.Instance) == nil
+				if manager.Stop(clean, s.Instance) != nil {
+					cleanupOK = false
+				}
 			} else if e != nil && ircInstance != "" {
 				cleanupOK = false
 			}
@@ -265,13 +295,18 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 		ready := filepath.Join(root, fmt.Sprintf("fixture-ready-%d", i))
 		ensure(os.WriteFile(sentinels[i], nil, 0600) == nil, fmt.Sprintf("input_sentinel_%d_created", i))
 		launch := protocol.LaunchRequest{OperationID: domain.NewID("op"), Name: fmt.Sprintf("inert IRC project fixture %d", i), Workspace: workspaces[projectIndex[i]], Provider: "fixture", ProviderVersion: "owned-test", Argv: []string{"/bin/sh", "-c", "/bin/stty -icanon -echo min 1 time 0; printf ready > '" + ready + "'; exec /bin/cat > '" + sentinels[i] + "'"}}
+		// Keep the exact intent before IO; on a lost or malformed ACK cleanup
+		// may only recover that operation through the private control/native APIs.
+		launchIntents = append(launchIntents, managedProductLaunchIntent{Request: launch})
 		var e error
 		sessions[i], e = client.Launch(ctx, launch)
 		fixture := sessions[i].Session.Execution.Runtime
-		if fixture.ExecutionID != "" {
+		acknowledged := e == nil && managedProductLaunchAcknowledged(launch, sessions[i])
+		if acknowledged {
+			launchIntents[len(launchIntents)-1].Runtime = fixture
 			fixtures = append(fixtures, fixture)
 		}
-		ensure(e == nil && fixture.Backend == "native" && fixture.ExecutionID != "" && fixture.Pane == "", fmt.Sprintf("actual_native_fixture_%d_running", i))
+		ensure(acknowledged, fmt.Sprintf("actual_native_fixture_%d_running", i))
 		fixtureProofs[i] = managedProductOwnedProcess(t, state, fixture.ExecutionID)
 		processProofs = append(processProofs, fixtureProofs[i])
 		supervisorPIDs = append(supervisorPIDs, fixtureProofs[i].SupervisorPID)
@@ -714,6 +749,14 @@ type managedProductProcessProof struct {
 // the receipt's authentication token or send signals from persisted PID data.
 func managedProductOwnedProcess(t *testing.T, state string, execution domain.ID) managedProductProcessProof {
 	t.Helper()
+	proof, e := managedProductReadOwnedProcess(state, execution)
+	if e != nil {
+		t.Fatal("owned native helper receipt unavailable")
+	}
+	return proof
+}
+
+func managedProductReadOwnedProcess(state string, execution domain.ID) (managedProductProcessProof, error) {
 	sum := sha256.Sum256([]byte(execution))
 	b, e := config.ReadPrivateSecret(filepath.Join(state, "native", hex.EncodeToString(sum[:])[:24]+".json"))
 	var projected struct {
@@ -722,9 +765,9 @@ func managedProductOwnedProcess(t *testing.T, state string, execution domain.ID)
 		Ref   domain.RuntimeRef `json:"ref"`
 	}
 	if e != nil || json.Unmarshal(b, &projected) != nil || projected.PID <= 0 || projected.Start == "" || projected.Ref.PID <= 0 || projected.Ref.ExecutionID != execution || projected.Ref.ProcessStart == "" {
-		t.Fatal("owned native helper receipt unavailable")
+		return managedProductProcessProof{}, errors.New("owned native helper receipt unavailable")
 	}
-	return managedProductProcessProof{ExecutionID: execution, PID: projected.Ref.PID, ProcessStart: projected.Ref.ProcessStart, SupervisorPID: projected.PID, SupervisorStart: projected.Start}
+	return managedProductProcessProof{ExecutionID: execution, PID: projected.Ref.PID, ProcessStart: projected.Ref.ProcessStart, SupervisorPID: projected.PID, SupervisorStart: projected.Start}, nil
 }
 
 func managedProductControlStart(t *testing.T, pid int) string {
@@ -734,4 +777,234 @@ func managedProductControlStart(t *testing.T, pid int) string {
 		t.Fatal("owned control process lifetime observation unavailable")
 	}
 	return strings.TrimSpace(string(b))
+}
+
+// Test intent is independent of a successful Launch response. A zero Runtime
+// means the effect may exist but its exact private authority is unresolved.
+type managedProductLaunchIntent struct {
+	Request protocol.LaunchRequest
+	Runtime domain.RuntimeRef
+}
+
+type managedProductLaunchDirectory interface {
+	Reconcile(context.Context) error
+	List(context.Context) ([]domain.Session, error)
+}
+type managedProductLaunchLookup interface {
+	Lookup(context.Context, domain.ID, domain.ID) (bpruntime.Observation, error)
+}
+
+func managedProductNativeRef(ref domain.RuntimeRef) bool {
+	return ref.Backend == "native" && domain.ValidObjectID(ref.ExecutionID, "execution") && (domain.ValidObjectID(ref.OperationID, "op") || domain.ValidObjectID(ref.OperationID, "operation")) && ref.Socket != "" && ref.Session != "" && ref.Pane == "" && ref.PID > 0 && ref.BootID != "" && ref.ProcessStart != ""
+}
+func managedProductLaunchAcknowledged(request protocol.LaunchRequest, response protocol.LaunchResponse) bool {
+	s, op, ref := response.Session, response.Operation, response.Session.Execution.Runtime
+	return managedProductNativeRef(ref) && ref.OperationID == request.OperationID && ref.ExecutionID == s.Execution.ID && domain.ValidObjectID(s.ID, "session") && s.Mode == domain.Managed && s.Execution.Generation == 1 && s.Name == request.Name && s.Workspace == request.Workspace && s.Execution.Provider == request.Provider && s.Execution.ProviderVersion == request.ProviderVersion && op.ID == request.OperationID && op.Kind == "launch" && op.SessionID == s.ID && op.ExecutionID == s.Execution.ID && op.Outcome == domain.Completed
+}
+
+// This performs only reconciliation, inventory and exact native Lookup. It
+// never resubmits Launch, selects by display name alone, or guesses a process
+// locator. Inventory locates the recorded operation; native Lookup authenticates
+// the exact execution/operation before any recovered ref can be stopped.
+func managedProductRecoverLaunches(ctx context.Context, directory managedProductLaunchDirectory, native managedProductLaunchLookup, intents []managedProductLaunchIntent) ([]domain.RuntimeRef, []domain.ID) {
+	var pending []managedProductLaunchIntent
+	for _, intent := range intents {
+		if intent.Runtime.ExecutionID == "" {
+			pending = append(pending, intent)
+		}
+	}
+	if len(pending) == 0 {
+		return nil, []domain.ID{}
+	}
+	unresolved := func() []domain.ID {
+		var ids []domain.ID
+		for _, intent := range pending {
+			ids = append(ids, intent.Request.OperationID)
+		}
+		return ids
+	}
+	if directory == nil || native == nil || directory.Reconcile(ctx) != nil {
+		return nil, unresolved()
+	}
+	listed, e := directory.List(ctx)
+	if e != nil {
+		return nil, unresolved()
+	}
+	var recovered []domain.RuntimeRef
+	var missing []domain.ID
+	for _, intent := range pending {
+		var matches []domain.Session
+		for _, s := range listed {
+			if s.Execution.Runtime.OperationID == intent.Request.OperationID {
+				matches = append(matches, s)
+			}
+		}
+		if len(matches) != 1 {
+			missing = append(missing, intent.Request.OperationID)
+			continue
+		}
+		s := matches[0]
+		ref := s.Execution.Runtime
+		if !managedProductNativeRef(ref) || ref.ExecutionID != s.Execution.ID || !domain.ValidObjectID(s.ID, "session") || s.Mode != domain.Managed || s.Execution.Generation != 1 || s.Name != intent.Request.Name || s.Workspace != intent.Request.Workspace || s.Execution.Provider != intent.Request.Provider || s.Execution.ProviderVersion != intent.Request.ProviderVersion {
+			missing = append(missing, intent.Request.OperationID)
+			continue
+		}
+		proof, e := native.Lookup(ctx, s.Execution.ID, intent.Request.OperationID)
+		if e != nil || proof.Ref != ref {
+			missing = append(missing, intent.Request.OperationID)
+			continue
+		}
+		recovered = append(recovered, proof.Ref)
+	}
+	return recovered, missing
+}
+
+// Provider-free failure regression: the real daemon/store handles Launch, but
+// the HTTP connection closes after the effect is recorded and before any ACK.
+// The injected native boundary never spawns a process or accepts terminal input.
+func TestManagedProductLostLaunchACKCleanup(t *testing.T) {
+	for _, failure := range []string{"recoverable", "control-unavailable", "supervisor-unavailable", "foreign-operation", "duplicate-operation", "drift-observation"} {
+		t.Run(failure, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			st, e := store.Open(filepath.Join(t.TempDir(), "state", "registry.db"))
+			if e != nil {
+				t.Fatal(e)
+			}
+			defer st.Close()
+			backend := &managedProductLaunchFixture{mode: failure}
+			svc, e := daemon.New(st, backend, domain.NewID("host"))
+			if e != nil {
+				t.Fatal(e)
+			}
+			handler := svc.Handler()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/v1/launch" {
+					recorder := httptest.NewRecorder()
+					handler.ServeHTTP(recorder, r)
+					if recorder.Code != http.StatusOK {
+						t.Error("owned fixture launch was not recorded")
+					}
+					conn, _, err := w.(http.Hijacker).Hijack()
+					if err != nil {
+						t.Error("owned ACK-loss fixture could not close transport")
+						return
+					}
+					_ = conn.Close()
+					return
+				}
+				if failure == "control-unavailable" {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					return
+				}
+				if r.URL.Path == "/v1/sessions" && (failure == "foreign-operation" || failure == "duplicate-operation") {
+					recorder := httptest.NewRecorder()
+					handler.ServeHTTP(recorder, r)
+					var inventory protocol.Inventory
+					if json.Unmarshal(recorder.Body.Bytes(), &inventory) != nil || len(inventory.Sessions) != 1 {
+						t.Error("owned inventory fixture missing")
+						w.WriteHeader(http.StatusServiceUnavailable)
+						return
+					}
+					if failure == "foreign-operation" {
+						inventory.Sessions[0].Execution.Runtime.OperationID = domain.NewID("op")
+					} else {
+						second := inventory.Sessions[0]
+						second.ID = domain.NewID("session")
+						inventory.Sessions = append(inventory.Sessions, second)
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(inventory)
+					return
+				}
+				handler.ServeHTTP(w, r)
+			}))
+			defer server.Close()
+			client := &protocol.Client{HTTP: server.Client(), BaseURL: server.URL}
+			defer client.HTTP.CloseIdleConnections()
+			request := protocol.LaunchRequest{OperationID: domain.NewID("op"), Name: "owned lost ACK sentinel", Workspace: t.TempDir(), Provider: "fixture", ProviderVersion: "owned-test", Argv: []string{"/owned-fixture/no-process"}}
+			intents := []managedProductLaunchIntent{{Request: request}}
+			ack, err := client.Launch(ctx, request)
+			if err == nil || ack.Session.Execution.Runtime.ExecutionID != "" {
+				t.Fatal("response acknowledgement was not genuinely lost")
+			}
+			refs, unresolved := managedProductRecoverLaunches(ctx, client, backend, intents)
+			if failure == "recoverable" {
+				if len(unresolved) != 0 || len(refs) != 1 || refs[0] != backend.ref {
+					t.Fatal("exact owned launch did not reconcile")
+				}
+				if backend.Stop(ctx, refs[0]) != nil {
+					t.Fatal("exact recovered cleanup fixture failed")
+				}
+			} else {
+				if len(refs) != 0 || len(unresolved) != 1 || unresolved[0] != request.OperationID {
+					t.Fatal("unknown launch was treated as absent or recoverable")
+				}
+			}
+			backend.mu.Lock()
+			defer backend.mu.Unlock()
+			if backend.launches != 1 {
+				t.Fatal("lost launch ACK was replayed")
+			}
+			if failure != "recoverable" && backend.stops != 0 {
+				t.Fatal("unknown execution was stopped using unconfirmed evidence")
+			}
+			if (failure == "foreign-operation" || failure == "duplicate-operation" || failure == "control-unavailable") && backend.lookups != 0 {
+				t.Fatal("ambiguous or foreign operation reached native lookup")
+			}
+			if intents[0].Runtime.ExecutionID != "" {
+				t.Fatal("unacknowledged intent was retroactively marked as acknowledged")
+			}
+		})
+	}
+}
+
+type managedProductLaunchFixture struct {
+	mu                       sync.Mutex
+	ref                      domain.RuntimeRef
+	mode                     string
+	launches, lookups, stops int
+	stopped                  bool
+}
+
+func (f *managedProductLaunchFixture) Launch(_ context.Context, spec domain.LaunchSpec) (domain.RuntimeRef, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.launches++
+	f.ref = domain.RuntimeRef{Backend: "native", Socket: "owned-test-authority", Session: "owned-test-instance", PID: 123, BootID: "owned-test-boot", ProcessStart: "owned-test-start", ExecutionID: spec.Session.Execution.ID, OperationID: spec.OperationID}
+	return f.ref, nil
+}
+func (f *managedProductLaunchFixture) Lookup(_ context.Context, execution, operation domain.ID) (bpruntime.Observation, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.lookups++
+	if f.mode == "supervisor-unavailable" || execution != f.ref.ExecutionID || operation != f.ref.OperationID {
+		return bpruntime.Observation{}, errors.New("exact owned fixture authority unavailable")
+	}
+	ref := f.ref
+	if f.mode == "drift-observation" {
+		ref.ProcessStart = "foreign-test-lifetime"
+	}
+	return bpruntime.Observation{Ref: ref, Alive: !f.stopped}, nil
+}
+func (f *managedProductLaunchFixture) Inspect(_ context.Context, ref domain.RuntimeRef) (bpruntime.Observation, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if ref != f.ref {
+		return bpruntime.Observation{}, errors.New("different owned fixture ref")
+	}
+	return bpruntime.Observation{Ref: f.ref, Alive: !f.stopped}, nil
+}
+func (f *managedProductLaunchFixture) Stop(_ context.Context, ref domain.RuntimeRef) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if ref != f.ref {
+		return errors.New("different owned fixture stop ref")
+	}
+	f.stops++
+	f.stopped = true
+	return nil
+}
+func (f *managedProductLaunchFixture) AttachCommand(domain.RuntimeRef, bool) ([]string, error) {
+	return nil, errors.New("input/attachment is outside this provider-free fixture")
 }
