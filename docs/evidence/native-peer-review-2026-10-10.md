@@ -101,8 +101,18 @@ download proof.
 No providers/models were started by this review or repair, and no network writes
 or publication were performed. Fresh installed-package/native-provider proof
 on final integrated bytes, hosted CI, Linux runtime coverage of these follow-up
-repairs, and anonymous public-download proof remain separate gates. After the
-listed fixes, no remaining integration blocker was found in the reviewed diff.
+repairs, and anonymous public-download proof remain separate gates.
+
+A subsequent independent expected-state review identified a remaining short-tail
+screen defect at `812d640`: at width seven,
+`1234567\x1b[?25lA\u0301` duplicates A and leaves the cursor at column six
+instead of preserving one accented A at column zero with cursor column one.
+CSI 2J and an autowrap-disable/enable pair can expose the same underlying shadow
+state disagreement. The conservative batch guard preserves bytewise behavior
+in these cases, which is insufficient when the bytewise state is itself wrong.
+Native source integration remains held for a separate correction and explicit
+short-tail expected-cell tests. The package cancellation fixes and their
+provider-free test results are independent of that remaining native defect.
 
 Source SHA-256 at `bf4eb59`:
 
