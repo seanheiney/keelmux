@@ -19,3 +19,11 @@ Dropped-response tests wait until the server produces a response and discard it 
 Actual vendor runs cover native launch, link, TUI attach/detach/reconnect, Unicode visibility, resize, TUI SIGKILL recovery, daemon SIGKILL recovery and native interrupt behavior. Interruption is tested after uninterrupted recovery because a vendor CLI may legitimately exit on Ctrl-C. Two-client grant races, forged releases, read-only attachment and durable journal checks exercise the real daemon API.
 
 The raw Unicode/Escape/Ctrl-C/literal-prefix oracle and eight auxiliary sessions are explicitly fixtures. The ten-session scenario contains two native programs and eight fixture processes; it is not a ten-agent model-work or independent-user speed claim. Company/product selection and a local draft are restored through TUI restart. Native skill preload, verified account/model, authenticated turns, host reboot, remote servers, continuity, chat delivery and accessibility/simplicity pilots remain separate gates. Passing this harness alone does not certify terminal alpha.
+
+`claude_discovery.py` is a separate narrow native selector check. It requires a separately authorized project installation of the Claude connection bundle in an already trusted repository. It does not install or remove skills itself. For example, after the explicit project preview and apply steps:
+
+```sh
+python3 tests/claude_discovery.py --native-workspace /path/to/trusted/repository --report docs/evidence/claude-discovery.json
+```
+
+The harness waits for Claude's native composer, types `/backplane`, and requires the native menu's skill description. It leaves the command unsubmitted. It then observes `/rc` autocomplete without submitting or opening Remote Control. Installed native code containing the `remote-control` command's `rc` alias is recorded separately from runtime eligibility and invocation. A menu row proves discovery; it does not prove that native skill instructions were loaded or executed. The exact link uses the inherited helper before native exec. Safe project-bundle removal remains a separate explicit step using the owned installation ledger.

@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "tested_sha": "dd93d3a45a01a3d9d29ab97bc93e554abb544799",
+  "harness_sha256": "edd5b11e97762aa7a7aa69e127d9966ee94e6e2b8bae99da4d6b291066dbc258",
+  "utc": "2026-10-10T17:33:04Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "auth_mode": "existing native realm; effective account/model unknown; no model prompt submitted",
+  "socket": "private owned /tmp/bp-a-*/s/tmux.sock",
+  "checks": [
+    {
+      "name": "Claude native project skill selector",
+      "kind": "native_program",
+      "result": "pass",
+      "detail": {
+        "selector_rows": [
+          "\u276f /backplane                              Explicitly link this exact managed native terminal to",
+          "\u276f\u00a0/backplane"
+        ],
+        "discoverable": "observed_in_native_selector",
+        "instruction_loaded": "not_proven",
+        "invoked": "not_run",
+        "enter_sent": false,
+        "model_prompt_submitted": false,
+        "link_method": "inherited_helper_before_native_exec",
+        "native_login_config_changes": false
+      }
+    },
+    {
+      "name": "native rc autocomplete observation",
+      "kind": "native_program",
+      "result": "observed",
+      "detail": {
+        "selector_rows": [
+          "\u276f\u00a0/rc"
+        ],
+        "remote_control_menu_description_visible": false,
+        "alias_invocation": "not_run_unknown",
+        "enter_sent": false,
+        "external_connectivity_opened": false
+      }
+    }
+  ],
+  "missing_evidence": [
+    "native skill instruction loading and invocation",
+    "authenticated model turn and verified effective account/model",
+    "user-scope skill discovery"
+  ],
+  "native_core_harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "claim": "Claude project skill discoverable in native slash selector only",
+  "bundle": {
+    "scope": "project",
+    "workspace": "/Volumes/DataSSD1/agent-backplane",
+    "files": {
+      "SKILL.md": "56fa29f8af0f9388d9757db3e67aa2c383f2f7de72ff961b531d25ae4fb6b63a",
+      "scripts/link.sh": "d9f62cad79140ff6db62d33acb4ac3f5b9bd1bd8192c5774bfee32307b6f640b"
+    }
+  },
+  "native_alias_definition": {
+    "kind": "installed_native_code_observation",
+    "executable": "/Users/sean/.local/share/claude/versions/2.1.296",
+    "sha256": "c9b5341637becbd423ddffc5b254afb645682a3868cb708bbc6cc0e7bb419937",
+    "remote_control_rc_alias_present": true,
+    "runtime_eligibility_and_alias_invocation": "unknown_not_run"
+  },
+  "project_cleanup": {
+    "tested_sha": "8663d3e73bca63f33e72a58ed450dc9e15bcb106",
+    "command": [
+      "/Volumes/DataSSD1/agent-backplane-worktrees/acceptance/bin/bp",
+      "skills",
+      "remove",
+      "--scope",
+      "project",
+      "--root",
+      "/Volumes/DataSSD1/agent-backplane",
+      "--providers",
+      "claude"
+    ],
+    "receipt": {
+      "provider": "claude",
+      "scope": "project",
+      "directory": ".claude/skills/backplane",
+      "action": "removed",
+      "detail": "Owned bundle moved out of its installation directory and retained intact in a private safety archive; native discovery/loading remain unverified.",
+      "source": "https://github.com/seanheiney/agent-backplane/tree/main/internal/skills",
+      "revision": "backplane-connection/v1",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "digest": "56fa29f8af0f9388d9757db3e67aa2c383f2f7de72ff961b531d25ae4fb6b63a"
+        },
+        {
+          "path": "scripts/link.sh",
+          "digest": "d9f62cad79140ff6db62d33acb4ac3f5b9bd1bd8192c5774bfee32307b6f640b"
+        }
+      ],
+      "invocation": "/backplane [status|off]; preserves the native /rc command",
+      "reload": "Restart or reload the native CLI, then verify the skill in its selector. File presence does not prove discovery or loading.",
+      "installed": "no",
+      "discoverable": "unknown",
+      "loaded": "unknown",
+      "retained_path": "/Volumes/DataSSD1/agent-backplane/.backplane/removals/removal_b2318da2942f40a80e65e2d222ff674c",
+      "recovery_hint": "Safety archive retained indefinitely; inspect this exact path before any separately authorized cleanup."
+    },
+    "archive_verified_files": {
+      "SKILL.md": "56fa29f8af0f9388d9757db3e67aa2c383f2f7de72ff961b531d25ae4fb6b63a",
+      "scripts/link.sh": "d9f62cad79140ff6db62d33acb4ac3f5b9bd1bd8192c5774bfee32307b6f640b"
+    },
+    "installed_directory_absent": true,
+    "archive_retained": true
+  }
+}
