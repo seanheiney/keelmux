@@ -52,3 +52,14 @@ Provider marker properties are correlation evidence when authenticated self,
 root/channel and payload hash match. They are not durable remote deduplication
 guarantees. The shared durable controller must claim once and retain uncertainty;
 adapter reconciliation never sends another message.
+
+Follow-up review controls: disabled bindings refuse Send while retaining
+read-only historical Reconcile. All provider receipts require the exact frozen
+text as well as hash/scope/self evidence; edited/copied MM properties or Slack
+metadata do not prove the original payload. Mattermost receipts additionally
+require a normal, undeleted reply with positive creation time; Slack receipts
+require a normal message with a valid non-root timestamp. HTTP parsing rejects
+invalid UTF-8 and case-aliased JSON fields that Go would otherwise decode into
+the same identity member. Closing adapters stops subsequent HTTP requests and
+closes owned idle resources. These controls passed the same focused race/vet
+commands.

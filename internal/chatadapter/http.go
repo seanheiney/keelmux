@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/config"
@@ -32,11 +34,16 @@ type httpWire struct {
 	client   *http.Client
 	mu       sync.Mutex
 	cooldown map[string]time.Time
+	closed   bool
 }
 
 func newHTTP(client *http.Client) httpWire {
 	if client == nil {
-		client = &http.Client{}
+		transport := http.DefaultTransport
+		if standard, ok := transport.(*http.Transport); ok {
+			transport = standard.Clone()
+		}
+		client = &http.Client{Transport: transport}
 	}
 	copy := *client
 	copy.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
@@ -45,6 +52,14 @@ func newHTTP(client *http.Client) httpWire {
 		copy.Timeout = 15 * time.Second
 	}
 	return httpWire{client: &copy, cooldown: map[string]time.Time{}}
+}
+
+func (w *httpWire) close() error {
+	w.mu.Lock()
+	w.closed = true
+	w.mu.Unlock()
+	w.client.CloseIdleConnections()
+	return nil
 }
 
 func readToken(ref string) (string, error) {
@@ -105,7 +120,11 @@ func (w *httpWire) request(ctx context.Context, token, method, address string, b
 	key := r.URL.Scheme + "://" + r.URL.Host + r.URL.Path + string(hash[:])
 	w.mu.Lock()
 	until := w.cooldown[key]
+	closed := w.closed
 	w.mu.Unlock()
+	if closed {
+		return 0, errTransport
+	}
 	if time.Now().Before(until) {
 		return http.StatusTooManyRequests, nil
 	}
@@ -148,8 +167,12 @@ func (w *httpWire) request(ctx context.Context, token, method, address string, b
 	return response.StatusCode, nil
 }
 
-// Reject duplicate keys and excessive nesting before identity fields are decoded.
+// Reject invalid UTF-8, duplicate/case-aliased keys and excessive nesting before
+// identity fields are decoded. Go struct decoding accepts case aliases.
 func validJSON(b []byte) bool {
+	if !utf8.Valid(b) {
+		return false
+	}
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
 	nodes := 0
@@ -176,10 +199,11 @@ func validJSON(b []byte) bool {
 					return false
 				}
 				name, ok := key.(string)
-				if !ok || seen[name] {
+				folded := foldJSONKey(name)
+				if !ok || seen[folded] {
 					return false
 				}
-				seen[name] = true
+				seen[folded] = true
 				if !value(depth + 1) {
 					return false
 				}
@@ -203,6 +227,20 @@ func validJSON(b []byte) bool {
 	return err == io.EOF
 }
 
+func foldJSONKey(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		smallest := r
+		for next := unicode.SimpleFold(r); next != r; next = unicode.SimpleFold(next) {
+			if next < smallest {
+				smallest = next
+			}
+		}
+		b.WriteRune(smallest)
+	}
+	return b.String()
+}
+
 func evidence(b channels.Binding, realm, self, source string) channels.Evidence {
 	return channels.Evidence{Provider: b.Provider, Endpoint: b.Endpoint, RealmID: realm, SelfID: self, ChannelID: b.ChannelID, RootID: b.RootID, Source: source, ObservedAt: time.Now().UTC()}
 }
@@ -216,7 +254,11 @@ func boundPage(cursor string, limit int) bool {
 }
 
 func sendInput(b channels.Binding, d channels.Delivery, m channels.Message) bool {
-	return channels.ValidID(b.RealmID) && channels.ValidID(b.SelfID) && b.Active && d.ID != "" && d.ID == d.MessageID && d.MessageID == m.ID && d.BindingID == b.ID && m.BindingID == b.ID && m.ThreadID == b.ThreadID && channels.ValidText(m.Text)
+	return b.Active && receiptInput(b, d, m)
+}
+
+func receiptInput(b channels.Binding, d channels.Delivery, m channels.Message) bool {
+	return channels.ValidID(b.RealmID) && channels.ValidID(b.SelfID) && channels.ValidID(string(d.ID)) && d.ID == d.MessageID && d.MessageID == m.ID && d.BindingID == b.ID && m.BindingID == b.ID && m.ThreadID == b.ThreadID && channels.ValidText(m.Text)
 }
 
 func failed() channels.SendResult {

@@ -506,7 +506,7 @@ func TestSlackPaginationWatermarkAndExpiredCursorRecovery(t *testing.T) {
 }
 
 func TestHTTPBoundedUntrustedInputRedirectsAndRetryAfter(t *testing.T) {
-	for _, input := range []string{`{"x":1,"x":2}`, `{"x":{"a":1,"a":2}}`, `{} {}`, strings.Repeat("[", 25) + "0" + strings.Repeat("]", 25)} {
+	for _, input := range []string{`{"x":1,"x":2}`, `{"id":"self","ID":"other"}`, `{"ok":true,"oK":false}`, `{"id":"bad` + string([]byte{0xff}) + `"}`, `{"x":{"a":1,"a":2}}`, `{} {}`, strings.Repeat("[", 25) + "0" + strings.Repeat("]", 25)} {
 		if validJSON([]byte(input)) {
 			t.Fatal("unbounded/ambiguous JSON accepted")
 		}
@@ -549,5 +549,117 @@ func TestHTTPBoundedUntrustedInputRedirectsAndRetryAfter(t *testing.T) {
 		if _, err := endpoint(raw); err == nil {
 			t.Fatal("noncanonical TLS endpoint", raw)
 		}
+	}
+}
+
+func TestDisabledReconciliationRetainsExactFrozenPayload(t *testing.T) {
+	t.Run("mattermost", func(t *testing.T) {
+		f, a, b := newMMFixture(t)
+		d, m := testDelivery(b)
+		r, _ := a.Send(context.Background(), b, d, m)
+		if r.State != channels.Delivered {
+			t.Fatal("initial send")
+		}
+		b.Active = false
+		r, _ = a.Send(context.Background(), b, d, m)
+		if r.State != channels.Failed || f.count != 1 {
+			t.Fatal("disabled Send posted")
+		}
+		r, _ = a.Reconcile(context.Background(), b, d, m)
+		if r.State != channels.Delivered || f.count != 1 {
+			t.Fatal("disabled readonly receipt did not resolve")
+		}
+		for _, kind := range []string{"text", "type", "timestamp"} {
+			f.mu.Lock()
+			original := f.posts["reply1"]
+			changed := original
+			switch kind {
+			case "text":
+				changed.Text = "Edited or copied properties, different payload"
+			case "type":
+				changed.Type = "system_join_channel"
+			case "timestamp":
+				changed.CreatedAt = 0
+			}
+			f.posts["reply1"] = changed
+			f.mu.Unlock()
+			r, _ = a.Reconcile(context.Background(), b, d, m)
+			if r.State != channels.Uncertain || f.count != 1 {
+				t.Fatal("mutated payload became delivery proof", kind)
+			}
+			f.mu.Lock()
+			f.posts["reply1"] = original
+			f.mu.Unlock()
+		}
+	})
+	t.Run("slack", func(t *testing.T) {
+		f, a, b := newSlackFixture(t)
+		d, m := testDelivery(b)
+		r, _ := a.Send(context.Background(), b, d, m)
+		if r.State != channels.Delivered {
+			t.Fatal("initial send")
+		}
+		b.Active = false
+		r, _ = a.Send(context.Background(), b, d, m)
+		if r.State != channels.Failed || f.count != 1 {
+			t.Fatal("disabled Send posted")
+		}
+		r, _ = a.Reconcile(context.Background(), b, d, m)
+		if r.State != channels.Delivered || f.count != 1 {
+			t.Fatal("disabled readonly receipt did not resolve")
+		}
+		f.mu.Lock()
+		f.messages[1].Text = "Edited or copied metadata, different payload"
+		f.mu.Unlock()
+		r, _ = a.Reconcile(context.Background(), b, d, m)
+		if r.State != channels.Uncertain || f.count != 1 {
+			t.Fatal("mutated metadata became delivery proof")
+		}
+	})
+}
+
+func TestReceiptRejectsWrongActualAcknowledgedText(t *testing.T) {
+	mm, a, b := newMMFixture(t)
+	d, m := testDelivery(b)
+	r, _ := a.Send(context.Background(), b, d, m)
+	if r.State != channels.Delivered {
+		t.Fatal("initial send")
+	}
+	p := mm.posts[r.RemoteID]
+	p.Text = "different text"
+	if mmReceipt(p, b, d, m, r.Evidence) {
+		t.Fatal("wrong acknowledgement text passed")
+	}
+	slack, sa, sb := newSlackFixture(t)
+	sd, sm := testDelivery(sb)
+	sr, _ := sa.Send(context.Background(), sb, sd, sm)
+	if sr.State != channels.Delivered {
+		t.Fatal("initial slack send")
+	}
+	sp := slack.messages[1]
+	sp.Text = "different text"
+	if slackReceipt(sp, sb, sd, sm, slackAuth{User: sb.SelfID, Bot: "BSELF"}) {
+		t.Fatal("wrong Slack acknowledgement text passed")
+	}
+}
+
+func TestHTTPClosedAdapterDoesNotOpenMoreRequests(t *testing.T) {
+	f, a, b := newMMFixture(t)
+	if _, err := a.Probe(context.Background(), b); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	before := len(f.tokens)
+	f.mu.Unlock()
+	if err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Probe(context.Background(), b); err == nil {
+		t.Fatal("closed adapter reopened HTTP")
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.tokens) != before {
+		t.Fatal("closed adapter touched transport")
 	}
 }

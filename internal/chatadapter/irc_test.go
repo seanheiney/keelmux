@@ -439,6 +439,29 @@ func TestIRCCredentialRotationRefusesWrongSelfBeforeSend(t *testing.T) {
 	}
 }
 
+func TestIRCDisabledHistoricalReceiptDoesNotSendOrTrustChangedText(t *testing.T) {
+	f, a, b := newIRCFixture(t)
+	d, m := testDelivery(b)
+	r, _ := a.Send(context.Background(), b, d, m)
+	if r.State != channels.Delivered {
+		t.Fatal("initial echo proof")
+	}
+	b.Active = false
+	r, _ = a.Send(context.Background(), b, d, m)
+	if r.State != channels.Failed || f.postCount() != 1 {
+		t.Fatal("disabled IRC binding sent")
+	}
+	r, _ = a.Reconcile(context.Background(), b, d, m)
+	if r.State != channels.Delivered || f.postCount() != 1 {
+		t.Fatal("disabled retained readonly receipt did not resolve")
+	}
+	m.Text = "changed authored text"
+	r, _ = a.Reconcile(context.Background(), b, d, m)
+	if r.State != channels.Uncertain || f.postCount() != 1 {
+		t.Fatal("changed payload trusted old receipt")
+	}
+}
+
 func TestIRCWireBoundsTLSCanonicalizationAndInjection(t *testing.T) {
 	f, a, b := newIRCFixture(t)
 	d, m := testDelivery(b)

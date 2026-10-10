@@ -23,7 +23,7 @@ type Slack struct{ wire httpWire }
 // the pinned Slack endpoint to an isolated TLS fixture. The binding endpoint
 // is always exactly https://slack.com/api, including during tests.
 func NewSlack(client *http.Client) *Slack { return &Slack{wire: newHTTP(client)} }
-func (*Slack) Close() error               { return nil }
+func (a *Slack) Close() error             { return a.wire.close() }
 
 type slackMeta struct {
 	EventType string            `json:"event_type"`
@@ -221,8 +221,9 @@ func slackRejected(code string) bool {
 	return false
 }
 
-func slackReceipt(p slackMessage, b channels.Binding, d channels.Delivery, auth slackAuth) bool {
-	return slackTimestamp.MatchString(p.TS) && p.ThreadTS == b.RootID && slackActor(p, auth) == auth.User && p.Metadata != nil && p.Metadata.EventType == "keelmux_reply" && p.Metadata.Payload["delivery_id"] == string(d.ID) && p.Metadata.Payload["payload_hash"] == hex.EncodeToString(d.PayloadHash[:])
+func slackReceipt(p slackMessage, b channels.Binding, d channels.Delivery, m channels.Message, auth slackAuth) bool {
+	_, validTime := slackTime(p.TS)
+	return validTime && p.TS != b.RootID && p.Text == m.Text && p.Type == "message" && (p.Subtype == "" || p.Subtype == "bot_message") && slackTimestamp.MatchString(p.TS) && p.ThreadTS == b.RootID && slackActor(p, auth) == auth.User && p.Metadata != nil && p.Metadata.EventType == "keelmux_reply" && p.Metadata.Payload["delivery_id"] == string(d.ID) && p.Metadata.Payload["payload_hash"] == hex.EncodeToString(d.PayloadHash[:])
 }
 
 func (a *Slack) Send(ctx context.Context, b channels.Binding, d channels.Delivery, m channels.Message) (channels.SendResult, error) {
@@ -257,14 +258,14 @@ func (a *Slack) Send(ctx context.Context, b channels.Binding, d channels.Deliver
 		}
 		return uncertain(e), nil
 	}
-	if posted.Channel != b.ChannelID || posted.TS != posted.Message.TS || !slackReceipt(posted.Message, b, d, auth) {
+	if posted.Channel != b.ChannelID || posted.TS != posted.Message.TS || !slackReceipt(posted.Message, b, d, m, auth) {
 		return uncertain(e), nil
 	}
 	return channels.SendResult{State: channels.Delivered, RemoteID: posted.TS, Evidence: e}, nil
 }
 
 func (a *Slack) Reconcile(ctx context.Context, b channels.Binding, d channels.Delivery, m channels.Message) (channels.SendResult, error) {
-	if !sendInput(b, d, m) {
+	if !receiptInput(b, d, m) {
 		return unconfirmed(channels.Evidence{}), nil
 	}
 	token, err := readToken(b.CredentialRef)
@@ -290,7 +291,7 @@ func (a *Slack) Reconcile(ctx context.Context, b channels.Binding, d channels.De
 	}
 	found := ""
 	for _, p := range page.Messages {
-		if slackReceipt(p, b, d, auth) {
+		if slackReceipt(p, b, d, m, auth) {
 			if found != "" {
 				return unconfirmed(e), nil
 			}

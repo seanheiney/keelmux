@@ -19,7 +19,7 @@ type Mattermost struct{ wire httpWire }
 // NewMattermost injects a client for isolated TLS fixtures; endpoint validation
 // and redirect refusal are identical for injected and production clients.
 func NewMattermost(client *http.Client) *Mattermost { return &Mattermost{wire: newHTTP(client)} }
-func (*Mattermost) Close() error                    { return nil }
+func (a *Mattermost) Close() error                  { return a.wire.close() }
 
 type mmPost struct {
 	ID        string                     `json:"id"`
@@ -204,14 +204,14 @@ func (a *Mattermost) Send(ctx context.Context, b channels.Binding, d channels.De
 	if err != nil || status != http.StatusCreated {
 		return httpSendFailure(status, err, e), nil
 	}
-	if !mmReceipt(posted, b, d, e) {
+	if !mmReceipt(posted, b, d, m, e) {
 		return uncertain(e), nil
 	}
 	return channels.SendResult{State: channels.Delivered, RemoteID: posted.ID, Evidence: e}, nil
 }
 
-func mmReceipt(p mmPost, b channels.Binding, d channels.Delivery, e channels.Evidence) bool {
-	return segment(p.ID) && p.UserID == e.SelfID && p.ChannelID == b.ChannelID && p.RootID == b.RootID && p.DeletedAt == 0 && rawString(p.Props["keelmux_delivery_id"]) == string(d.ID) && rawString(p.Props["keelmux_payload_hash"]) == hex.EncodeToString(d.PayloadHash[:])
+func mmReceipt(p mmPost, b channels.Binding, d channels.Delivery, m channels.Message, e channels.Evidence) bool {
+	return segment(p.ID) && p.ID != b.RootID && p.Text == m.Text && p.Type == "" && p.CreatedAt > 0 && p.UserID == e.SelfID && p.ChannelID == b.ChannelID && p.RootID == b.RootID && p.DeletedAt == 0 && rawString(p.Props["keelmux_delivery_id"]) == string(d.ID) && rawString(p.Props["keelmux_payload_hash"]) == hex.EncodeToString(d.PayloadHash[:])
 }
 func rawString(b json.RawMessage) string {
 	var s string
@@ -222,7 +222,7 @@ func rawString(b json.RawMessage) string {
 }
 
 func (a *Mattermost) Reconcile(ctx context.Context, b channels.Binding, d channels.Delivery, m channels.Message) (channels.SendResult, error) {
-	if !sendInput(b, d, m) {
+	if !receiptInput(b, d, m) {
 		return unconfirmed(channels.Evidence{}), nil
 	}
 	token, err := readToken(b.CredentialRef)
@@ -236,7 +236,7 @@ func (a *Mattermost) Reconcile(ctx context.Context, b channels.Binding, d channe
 	if d.RemoteID != "" && segment(d.RemoteID) {
 		var p mmPost
 		status, err := a.wire.request(ctx, token, http.MethodGet, apiURL(base, "/api/v4/posts/"+d.RemoteID, nil), nil, &p)
-		if err == nil && status == http.StatusOK && p.ID == d.RemoteID && mmReceipt(p, b, d, e) {
+		if err == nil && status == http.StatusOK && p.ID == d.RemoteID && mmReceipt(p, b, d, m, e) {
 			return channels.SendResult{State: channels.Delivered, RemoteID: p.ID, Evidence: e}, nil
 		}
 		return unconfirmed(e), nil
@@ -247,7 +247,7 @@ func (a *Mattermost) Reconcile(ctx context.Context, b channels.Binding, d channe
 	}
 	found := ""
 	for _, p := range posts {
-		if mmReceipt(p, b, d, e) {
+		if mmReceipt(p, b, d, m, e) {
 			if found != "" {
 				return unconfirmed(e), nil
 			}

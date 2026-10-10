@@ -83,6 +83,7 @@ type ircPending struct {
 }
 type ircReceipt struct {
 	Hash   [32]byte
+	Text   string
 	Result channels.SendResult
 }
 type ircBatch struct {
@@ -544,7 +545,7 @@ func (s *ircSession) remember(p *ircPending, r channels.SendResult) {
 	if _, ok := s.receipts[p.ID]; !ok {
 		s.order = append(s.order, p.ID)
 	}
-	s.receipts[p.ID] = ircReceipt{Hash: p.Hash, Result: r}
+	s.receipts[p.ID] = ircReceipt{Hash: p.Hash, Text: p.Text, Result: r}
 	if len(s.order) > ircBufferSize {
 		delete(s.receipts, s.order[0])
 		s.order = s.order[1:]
@@ -726,7 +727,7 @@ func (a *IRC) Send(ctx context.Context, b channels.Binding, d channels.Delivery,
 	s.mu.Lock()
 	if receipt, ok := s.receipts[p.ID]; ok {
 		s.mu.Unlock()
-		if receipt.Hash != p.Hash {
+		if receipt.Hash != p.Hash || receipt.Text != p.Text {
 			return unconfirmed(s.proof), nil
 		}
 		return receipt.Result, nil
@@ -784,7 +785,7 @@ func (s *ircSession) writeTagged(ctx context.Context, tags, line string) error {
 }
 
 func (a *IRC) Reconcile(ctx context.Context, b channels.Binding, d channels.Delivery, m channels.Message) (channels.SendResult, error) {
-	if !sendInput(b, d, m) {
+	if !receiptInput(b, d, m) {
 		return unconfirmed(channels.Evidence{}), nil
 	}
 	s, err := a.session(ctx, b)
@@ -793,7 +794,7 @@ func (a *IRC) Reconcile(ctx context.Context, b channels.Binding, d channels.Deli
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if receipt, ok := s.receipts[string(d.ID)]; ok && receipt.Hash == d.PayloadHash {
+	if receipt, ok := s.receipts[string(d.ID)]; ok && receipt.Hash == d.PayloadHash && receipt.Text == m.Text && (d.RemoteID == "" || d.RemoteID == receipt.Result.RemoteID) {
 		return receipt.Result, nil
 	}
 	// No CHATHISTORY capability is requested, and a lost echo is never replayed.
