@@ -132,7 +132,7 @@ func validateNativeArgs(provider string, args []string) error {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--" {
-			return nil // The native parser treats following tokens as prompt text.
+			continue // Conservatively inspect the next positional token too.
 		}
 		if provider == "claude" && (arg == "-p" || arg == "--print" || strings.HasPrefix(arg, "--print=") || arg == "--bg" || arg == "--background") {
 			return errors.New("managed launch requires an interactive native terminal; print/background workflows are unsupported")
