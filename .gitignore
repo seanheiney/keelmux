@@ -1,0 +1,16 @@
+.DS_Store
+bin/
+dist/
+coverage.out
+*.test
+.env
+.env.*
+!.env.example
+.local/
+.backplane/
+*.db
+*.db-shm
+*.db-wal
+*.sock
+.consensus/
+
