@@ -1,0 +1,24 @@
+[?25l[?1049h[2J[H[?25l[?2004h[H  [1;36mKeelmux / All work                                               11 sessions[0m[K
+  [90m/ Search sessions[0m[K
+  [90m  SESSION                                             PROVIDER    STATE[0m[K
+  [7m› api / tests                                         codex       running   [0m[K
+    billing / migration                                 claude      running[K
+    cli / docs                                          codex       running[K
+    data / import                                       claude      running[K
+    design / review                                     codex       running[K
+    edge / retries                                      claude      missing[K
+    gateway / reconnect                                 codex       running[K
+    infra / deploy                                      claude      running[K
+    search / indexing                                   codex       running[K
+    worker / queues                                     claude      running[K
+    zeta / cleanup                                      codex       running[K
+[K
+  /work/keelmux/api / managed[K
+  [90mRuntime: native / running[0m[K
+  [90mModel: unknown  Account: unknown[0m[K
+  [90mThread: thread_session_00  Generation: 1[0m[K
+[K
+[K
+[K
+  [1;36mEnter attach  v read-only  / search[0m[K
+  [90m↑/↓ select  c inbox  g groups  p draft  r refresh  q quit[0m[K[24;H

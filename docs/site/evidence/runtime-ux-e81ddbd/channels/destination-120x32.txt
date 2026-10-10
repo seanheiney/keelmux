@@ -1,0 +1,32 @@
+  Keelmux / choose destination
+  Thread: thread_session_00
+  One active destination · no automatic fanout
+  mattermost / channel_owned / root: root_owned
+  Endpoint: https://chat.example.test / realm: realm_owned
+  Bot: bot_owned / binding: binding_owned
+  › binding_owned                                                                                               active
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Choose one active destination; Enter confirms.
+  ↑/↓ choose  Enter confirm  Esc inbox

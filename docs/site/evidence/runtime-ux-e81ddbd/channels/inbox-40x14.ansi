@@ -1,0 +1,27 @@
+[?25l[?1049h[2J[H[?25l[?2004h[H [1;36mKeelmux / All work         11 sessions[0m[K
+ [90m/ Search sessions[0m[K
+ [90m  SESSION                     PROVIDER[0m[K
+ [7m› api / tests                    codex[0m[K
+   billing / migration           claude[K
+   cli / docs                     codex[K
+   data / import                 claude[K
+   design / review                codex[K
+   edge / retries      missing / claude[K
+[K
+ /work/keelmux/api / managed[K
+ [33mRuntime: unknown / running[0m[K
+ [1;36mEnter attach  v view  / find[0m[K
+ [90mc inbox  g groups  p draft  q quit[0m[K[14;H[H [1;36mKeelmux / authored inbox[0m[K
+ [90mThread: thread_session_00[0m[K
+ [1;36mDestination: unchosen · b selects one[0m[K
+ [90mFirst-note snapshots · remote edits/d…[0m[K
+ [90mPage 1 · note 1 / 100 · up to 100[0m[K
+ [1;36mauthor_owned / binding_owned[0m[K
+ [90mReceived authored note · inert text[0m[K
+ Received note: /run $(touch never)[K
+ Inert authored text; no model work.[K
+
+[K
+[K
+ [1;36mb destination  p reply  r  Esc work[0m[K
+ [90m↑/↓ notes  [ prev  ] next  ? keys[0m[K[14;H

@@ -1,0 +1,32 @@
+  Keelmux / channel reply
+  Thread: thread_session_00
+  mattermost / channel_owned / root: root_owned
+  Endpoint: https://chat.example.test / realm: realm_owned
+  Bot: bot_owned / binding: binding_owned
+  Chat only · no model submission
+  first line
+  second line_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Channel reply acknowledgement unknown; r checks the saved receipt. No new ID is created.
+  Saved reply: thread_session_00 / binding_owned
+  Ctrl-S queue reply  Enter newline  Esc inbox

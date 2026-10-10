@@ -1,0 +1,254 @@
+[?25l[?1049h[2J[H[?25l[?2004h[H  [1;36mKeelmux / All work                                               11 sessions[0m[K
+  [90m/ Search sessions[0m[K
+  [90m  SESSION                                             PROVIDER    STATE[0m[K
+  [7m› api / tests                                         codex       running   [0m[K
+    billing / migration                                 claude      running[K
+    cli / docs                                          codex       running[K
+    data / import                                       claude      running[K
+    design / review                                     codex       running[K
+    edge / retries                                      claude      missing[K
+    gateway / reconnect                                 codex       running[K
+    infra / deploy                                      claude      running[K
+    search / indexing                                   codex       running[K
+    worker / queues                                     claude      running[K
+    zeta / cleanup                                      codex       running[K
+[K
+  /work/keelmux/api / managed[K
+  [33mRuntime: unknown / running[0m[K
+  [90mModel: unknown  Account: unknown[0m[K
+  [90mThread: thread_session_00  Generation: 1[0m[K
+[K
+[K
+[K
+  [1;36mEnter attach  v read-only  / search[0m[K
+  [90m↑/↓ select  c inbox  g groups  p draft  r refresh  q quit[0m[K[24;H[H  [1;36mKeelmux / authored inbox[0m[K
+  [90mThread: thread_session_00[0m[K
+  [1;36mDestination: unchosen · b selects one[0m[K
+  [90mFirst-note snapshots · remote edits/deletions are not projected[0m[K
+  [90mPage 1 · note 1 / 100 · up to 100[0m[K
+  [1;36mauthor_owned / binding_owned[0m[K
+  [90mReceived authored note · inert text[0m[K
+  Received note: /run $(touch never)[K
+  Inert authored text; no model work.[K
+[K
+[K
+[K
+[K
+[K
+
+[K
+[K
+[K
+[K
+
+
+
+  [1;36mb destination  p reply  r refresh  Esc work[0m[K
+  [90m↑/↓ notes  [ prev  ] next  PgUp/PgDn text[0m[K[24;H[H
+
+
+
+  [90mPage 2 · note 1 / 1 · up to 100[0m[K
+
+
+  Later authored note reached by paging[K
+[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[24;H[H
+
+
+
+  [90mPage 1 · note 1 / 100 · up to 100[0m[K
+
+
+  Received note: /run $(touch never)[K
+  Inert authored text; no model work.[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[24;H[H  [1;36mKeelmux / choose destination[0m[K
+
+  [90mOne active destination · no automatic fanout[0m[K
+  [1;36mmattermost / channel_owned / root: root_owned[0m[K
+  [90mEndpoint: https://chat.example.test / realm: realm_owned[0m[K
+  [90mBot: bot_owned / binding: binding_owned[0m[K
+  [7m› binding_owned                                                       active[0m[K
+[K
+[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+  [33mChoose one active destination; Enter confirms.[0m[K
+  [1;36m↑/↓ choose  Enter confirm  Esc inbox[0m[K[24;H[H  [1;36mKeelmux / authored inbox[0m[K
+
+  [1;36mmattermost / channel_owned / root: root_owned[0m[K
+  [90mEndpoint: https://chat.example.test / realm: realm_owned[0m[K
+  [90mBot: bot_owned / binding: binding_owned[0m[K
+  [90mFirst-note snapshots · remote edits/deletions are not projected[0m[K
+  [90mIntake: unavailable / history gap · delivery receipts are separate[0m[K
+  [90mLast intake check: 2026-10-10 20:00:00Z[0m[K
+  [90mPage 1 · note 1 / 100 · up to 100[0m[K
+  [1;36mauthor_owned / binding_owned[0m[K
+  [90mReceived authored note · inert text[0m[K
+  Received note: /run $(touch never)[K
+  Inert authored text; no model work.[K
+
+
+
+
+
+
+
+
+  [33mDestination chosen explicitly. p composes a local channel reply.[0m[K
+  [1;36mb destination  p reply  r refresh  Esc work[0m[K
+  [90m↑/↓ notes  [ prev  ] next  PgUp/PgDn text[0m[K[24;H[H  [1;36mKeelmux / channel reply[0m[K
+
+
+
+
+  [90mChat only · no model submission[0m[K
+  _[K
+[K
+[K
+[K
+[K
+[K
+[K
+
+
+
+
+
+
+
+
+[K
+  [33mLocal reply · Enter adds a newline; Ctrl-S queues chat only.[0m[K
+  [1;36mCtrl-S queue reply  Enter newline  Esc inbox[0m[K[24;H[H
+
+
+
+
+
+  first_[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[24;H[H
+
+
+
+
+
+  first line_[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[24;H[H
+
+
+
+
+
+  first line[K
+  second _[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[24;H[H
+
+
+
+
+
+
+  second line_[K
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[24;H

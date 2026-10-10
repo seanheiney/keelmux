@@ -1,0 +1,14 @@
+ Keelmux / All work         11 sessions
+ / Search sessions
+   SESSION                     PROVIDER
+ › api / tests                    codex
+   billing / migration           claude
+   cli / docs                     codex
+   data / import                 claude
+   design / review                codex
+   edge / retries      missing / claude
+
+ /work/keelmux/api / managed
+ Runtime: native / running
+ Enter attach  v view  / find
+ c inbox  g groups  p draft  q quit

@@ -1,0 +1,892 @@
+{
+  "source_commit": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+  "source_inputs_sha256": {
+    "cmd/bp/attach.go": "2604f416f2dfef280cf60b3b993af573dd5aae8cac58e8fbe07f5e4e4319b96f",
+    "cmd/bp/channels.go": "034607cbb6c100418b6177a2932b80515f4c08fafa53d9c286b78882a4f9c220",
+    "cmd/bp/drive.go": "14c08295974361d199f6ef2a7d0eea962ce13ee76c40d7038e87bdf09a029943",
+    "cmd/bp/ircd.go": "14115f3be10cb05431e1f1433ee4334eda463e85353a7e9002a56ebd9540df2a",
+    "cmd/bp/ircd_test.go": "422cc60deec09dc389eefec656842146963892858c437508a7c3da78f1f6b574",
+    "cmd/bp/lifecycle.go": "17c1e2982f46aa86dbd07660dde33ee78276d3ca71ae781c3eae0aae677a281d",
+    "cmd/bp/lifecycle_test.go": "63bf043d34c65956cf98634b9db72d29f372767881d30083b17e0fa47b0ccc4d",
+    "cmd/bp/main.go": "a0f4c7c8dcf52538c5c953d39b1aaee21291ff27c02f493c9f2cd5fa8c56b56c",
+    "cmd/bp/main_test.go": "09a3c99f472080b4e0d2209479824667b5182b09a074803a759a1ea0ff5f5485",
+    "cmd/bp/skills.go": "09b33278b0ae32b87b82259884b5b9a183b875fc21af7f471b6195090f979ae8",
+    "cmd/bp/terminal_startup_test.go": "483cad93e94bf51a46a337bb689ba928de69b659a84f45d2b51cdc8e9b920961",
+    "cmd/bp/version_test.go": "da440b230da69378aa2d8d325c0ca6ac5b8296e7b6640b92c53428aed905e6b2",
+    "cmd/bpd/ircd.go": "4a76fff730fe37aaf88519c808728826bd138171024aa040ff4ea9df5cc2315a",
+    "cmd/bpd/main.go": "1b927a77af501eb40de4f27a0b51b6a8e209ba45ae8678c24e59eb8a0935d988",
+    "cmd/bpd/native_test.go": "334cce9b3ba76889c088d397664646ce08540a322a09e49321886e4c61fd8b7c",
+    "cmd/bpg/main.go": "2b312810ca3f62d36f268f20a21b91cbc1c5fcca53c0d53f367d7c867134c6b1",
+    "cmd/bpg/main_test.go": "cb31c95307f6ffde4c491e2ff7f06756cfdbc85d49a3e35ae5d87a793479d431",
+    "cmd/keelmux-supervisor/main.go": "2620ddf24a0b048405ac57969aac185e27ec2f0b8d02ebdb0cab8531dde55c44",
+    "docs/site/capture_runtime.py": "9035f0d80f9fbefda38c07ed4b1b227ff1fe2a70b744b0dcb9b495a172e590d1",
+    "go.mod": "9bab7d16157a85800240dd2e480e3ad9c3905dcbc05fa4909dcd8bb939b4214c",
+    "go.sum": "1e1f1a6642dff1147d79d8c8d1f8291f3b5842be3542dd747be07ca4137221ee",
+    "internal/adapters/nativepty/backend.go": "295b0dac9ef40373a3e9164ed35ba737863a9a5b480993951890c590e205828a",
+    "internal/adapters/nativepty/backend_test.go": "939e15b98b01858b583549ee7be1e998d0885aa1ca68ffa81453f4f44fbb8683",
+    "internal/adapters/nativepty/client.go": "8114f82090da6d2a150b20df4faee0847ad47e3496211aaf9f4fd67d1d91dd81",
+    "internal/adapters/nativepty/files.go": "6290d981d31b03215f86a2325135f23b7e54aaa7316b75d1cc7b2e51a9730017",
+    "internal/adapters/nativepty/filter.go": "327b1c825d110a0f45d3f96c3264a455c26d8eaf2201c8f48f43a711e96a5b6d",
+    "internal/adapters/nativepty/identity_darwin.go": "96af14e98d343b4a4004df8782f08e6233ecc33e64de0944eaf6e7711f6b9cb1",
+    "internal/adapters/nativepty/identity_linux.go": "a0a1e96cc87fb177d9e6e219e040387c4f358d70f6732c580ed2624581007163",
+    "internal/adapters/nativepty/protocol.go": "fdc852f2f2756dcd10a20dee487f9ffe773df8d0a636463e7871f4c1e241fd37",
+    "internal/adapters/nativepty/ptyio.go": "dd56fe2fcf8ad90659b43a3bd2ea29fb036b4d6b4a168e82f20735128e459965",
+    "internal/adapters/nativepty/race_disabled_test.go": "32140a8cdfab52b84690fc858cee6afc72588e4cca2374a0b616715a98438f04",
+    "internal/adapters/nativepty/race_enabled_test.go": "e243ffce2591b5b58fb6934dedb12400dffd276748f23b7a5b09a0a1c0ce2638",
+    "internal/adapters/nativepty/screen.go": "1fc74d17d7f2f3a5b3d388cd4bcd05f3a1378c53cc3ebe5aa73a2607283f8d3d",
+    "internal/adapters/nativepty/screen_test.go": "fc0a8a1f111333ed1288660e57f806d599cb25e5da2ead16f250daa9bcb05958",
+    "internal/adapters/nativepty/server.go": "107d1485066e08368c2dae6756e2dc7e22b7c309db056fbd7c09f121b1ada878",
+    "internal/adapters/owned/backend.go": "eaa28a6e55299080adf3f86cd4ad2f63a841fa4d72998e161b0ef29ecb26b654",
+    "internal/adapters/owned/backend_test.go": "c309317a7b8d5dfbdf5fe3ac3dccbc7eeaf4cac06e7dd7159e406f89e01c3447",
+    "internal/adapters/providers/providers.go": "21eb873de7244184abfb1fbc6ed29b931c56a3f1cb641cc18da1bba0caa32641",
+    "internal/adapters/providers/providers_test.go": "9a2e3396df64baf873dd8c1446b2fb6c27196efa055fbbde314911233d7e7f41",
+    "internal/adapters/tmux/backend.go": "7cf4e4a3d6b71695a75a6996518a0a8b10b3799997aa784adea68600623b8a64",
+    "internal/adapters/tmux/backend_test.go": "a514e060712b0e5d90c11d9828bc0fafb2f7007a75ddf2b5a621727c41f71513",
+    "internal/adapters/tmux/process.go": "239a0fbce1912c525767462ba4a2dbf055d7f9da8917a573fca1a5fdc24d8f05",
+    "internal/buildinfo/info.go": "837cddaf532e59554fdff720cace7002b21a152d81f7a340febb84f2dbc9b2f9",
+    "internal/channels/channel.go": "93b80ee113ca75da0c73ffc6d3ca8ee8b4ba0505d6148f07131a0df6d26e398c",
+    "internal/channels/channel_test.go": "8b61a4276130fbda0719f228ebfe5465916f05fc2921696408b58929bbe86e77",
+    "internal/channels/channels.go": "2b747b9046c99103ada2588a90c00f678d29325614f9d461dfcabe2352bdfce5",
+    "internal/channels/coverage.go": "dc6a378faf55b21f5a19f05070dfb53247b6b9f71d8983bcfad7b77bd9dec85a",
+    "internal/channels/coverage_test.go": "3423ab633b8c1ebe1db6b66af2e48a6cbd55fd93ff745457153d58705899cbf7",
+    "internal/channels/endpoint.go": "ec05614ca64ac204ba9b661505a833147bcd7d774854fd81ca5384fa276c94ae",
+    "internal/channels/endpoint_test.go": "6a4e94164bfbe788482a27e89c56ab6e777c964378e01cf5efa0c90f03fc7a18",
+    "internal/channels/payload.go": "201af323a503436db36914de91f6a35683793aaaaeb5e432221dac9f2c14719c",
+    "internal/channels/payload_test.go": "2224fd19b6acb7b6cd78d19b369b6a72a8a78e81527ea699b82559ca39a17e69",
+    "internal/channels/validate.go": "1633171b7265b54b03c191e8683f55156df2f6fa4bc34c4394b16f5db3db9db7",
+    "internal/channelservice/admission_test.go": "c5127dd15d53296f0b99ad50d8709b50f7c504598ba5db6667942c53b83af877",
+    "internal/channelservice/gap_test.go": "e03c7c6d1ca49d64b05fb57e06288b48792f5008ead41a36fd45eacb2af12f5a",
+    "internal/channelservice/http.go": "2259112b588c41e9e0c984c2d7af125dee745526275e30276aafe3a079a11332",
+    "internal/channelservice/mattermost_acceptance_test.go": "82b6f425e2e8f3a7089b3dec568be1fb06f4db945cf04c2a65a9386bc8aa422b",
+    "internal/channelservice/service.go": "6f30cdb8f46b725d951a9e2e9dab820e4a01841135ee3b496a97de51cd84ea62",
+    "internal/channelservice/service_test.go": "f010a243dc900dfaa22818dfaca041389cd64ea455ff9ea757fb453a00e2fa28",
+    "internal/chatadapter/http.go": "37418fc110bf4ba36b4059c0a12624bf75cd60f310b1a603c8048b79604f2929",
+    "internal/chatadapter/http_test.go": "7c2823abc0136d89d8874836fc27a5eb043064dc34ecf4f4b244c364f7a3063e",
+    "internal/chatadapter/irc.go": "ce1703dce5d208c864e6540f1bc0066789ef7010e52baf619814ebde455203fd",
+    "internal/chatadapter/irc_test.go": "930c6a811f8e127235ceaa9c491c8940d5f37d535018a7108b22a32890e3afbd",
+    "internal/chatadapter/mattermost.go": "04a383e62fe0113a5341243632bc4c0f4be40995f4cc3fa4e7f5877bbec3a5c6",
+    "internal/chatadapter/slack.go": "e5e2713a1eff54238526c8534b539019d2608f64bcaa2a4469700ffc4e475969",
+    "internal/clientstate/channels_test.go": "ef9d6db92ca71e2b0bd0069129b33bd741bba3cd77c5a6584ae1b42e8e19c7a3",
+    "internal/clientstate/json.go": "3e38623d877f51a62004325285caf7cfa9cd5ab71f1ad2e7d1ec8589ecd811bd",
+    "internal/clientstate/lock.go": "821f6dfe0bd2a6a181f33a852dae4d4c7c717075152e1d429d7e9384ff0996e4",
+    "internal/clientstate/state.go": "4b315098883b582aeb743b627a7bef41bcb241399bfc31c7846f7edc863d4922",
+    "internal/clientstate/state_test.go": "38cfe4626419e960eaed1562d05e650d899ddf0e563003103aebe0b8e9a6a387",
+    "internal/codexbroker/contracts.go": "e50f540fe1c481aa3df2722b1356090168e1dadb8d9af4f852b15e798b592c5f",
+    "internal/codexbroker/policy.go": "b39130ba65edccd56e0866b8a8eb6bcd97da9c91157c485779eaa829cbcb3d73",
+    "internal/codexbroker/policy_acceptance_test.go": "819f2dcc50f2fb032d84157ea8817355e3cd0b8c93c85657a087dac75d40371b",
+    "internal/codexbroker/policy_bootstrap.go": "81fbae69fee964aa245e36006116a2dd1a787865514a31ea19b532c2a3766ddf",
+    "internal/codexbroker/policy_decode.go": "e9fffd03f59b6ad2303977160439732fd5b409ce4f90bf0f9527d603b943fde9",
+    "internal/codexbroker/policy_output.go": "e55480973ae6de9cdcbaae9e2b72ae16246f303d93920ff2a3c0826a7a7dce77",
+    "internal/codexbroker/policy_test.go": "ced5f8a5355ca349276a3e2eca8fd172e64362fd04e1ca7cae793ba93a9a91cc",
+    "internal/codexbroker/relay.go": "532941ea7bdc07848f4fa23b6b4cdca673de1215f000b849f1eae0a611cf44ca",
+    "internal/codexbroker/wire/native_test.go": "5d0247da8baa40f8f9f8737d16005b862002e596fadcab3f60af7ee3b7d5a266",
+    "internal/codexbroker/wire/unix.go": "1dd28d58ad753a94f527a0d24b8b37e39822e1ea66483639a6a8583cb540adda",
+    "internal/codexbroker/wire/unix_test.go": "c00194295099d242c8cbb94d5d3ade274f53bf0b7063e795a165163f954dcb11",
+    "internal/config/config.go": "e3891b54647f9a9a28257ab590136b5748a1a6a7b8c04b3008d7e5698c7dd572",
+    "internal/config/config_test.go": "ed420d08d1cce958c22c7c8c6bdc2383f1f728802d781a6297e2a744c9adedbe",
+    "internal/config/credential.go": "1d084f00be444b541f01ebb26c002d001cd20c4c69f0218fcdb37e5d7aeb9372",
+    "internal/config/credential_test.go": "279ac2dfd5f3b413c8a01cd66609a44b399881198114970cc569f89792ffcf62",
+    "internal/config/directories.go": "9c8e5bda0a168511563a9fd623c761b337adba891ee4a9977257f6188209dbcc",
+    "internal/config/hardening_test.go": "2df5dd3efd7f0692ec836ec0da7f54d4848981837f74ce8c23b32a98401ff444",
+    "internal/config/log_test.go": "af313557631124a6fc3442f5311be1faf53030c259ae8c5635ce4147f8322aca",
+    "internal/config/migration_test.go": "32249cc3e8b46898e5598b1d8c1ebd2d890adfa3130d7b403468407a16b7571d",
+    "internal/daemon/codex.go": "e51a22aec44571c51fbd4a8cfba6ffa6cd36b9b0b65c8a9684e21adda1c010fe",
+    "internal/daemon/codex_barrier_test.go": "948dbc9ad3408ad9bd0b4b352e3433b3d626ee7c4aacc80181af822e09f33fae",
+    "internal/daemon/codex_relay_acceptance_test.go": "e46fcbdf684708b3b50045ea9ae5e617c2528759549c6887eb3ac5858002e7cb",
+    "internal/daemon/codex_test.go": "b0bdb4bb53739a538fa204f5282c7e0dd7f3f529a3d0afc3231f431abbcd6f7c",
+    "internal/daemon/lifecycle.go": "9227404ffd1df6e526bfb117258d0acd6875efd879e5ee0c0e49ee9bff3aa837",
+    "internal/daemon/lifecycle_test.go": "87dbcf32da573c4953ccf093037dd966fb77060ebe3cdd60dce0bebc5bd783f4",
+    "internal/daemon/service.go": "6bff9614bfbc05ace3367248a7e36e2863d24703e3152867c7165d184ecc20db",
+    "internal/daemon/service_test.go": "cdcc1d8c375b244040962c0037f1a4dbade7311e1f411de45a27c87179f17012",
+    "internal/domain/domain.go": "2b8174b617700fbaaf52c29ae88a680d319bec3266a192ce79f4b4bf83bfc2be",
+    "internal/domain/domain_test.go": "8cfb4e44f4ab0eb41b3ce63bf3936622c003e4a4923affff73b9e6c7fce59077",
+    "internal/federation/gateway.go": "6fa650ab219e002ee846085692d8a31685adc2139b981ef924f2eee427aef991",
+    "internal/federation/gateway_test.go": "e7e0539ebf4e5b1730c44b6d6e33fedd54c1d99eac7f48e0d9ab86437ec2ae74",
+    "internal/federation/hardening_test.go": "24eefcc2d1f1320e2bab48b85758e653af00a7e8d72dffc08b7d70ddabc7725c",
+    "internal/federation/native_test.go": "248de898dfdd8fc681d301c33fbb13d0e34f6b0af423461f88ec2221f828f799",
+    "internal/federation/receipts.go": "77136cf56b18154eac8eaa50489732189766aea27adc880c5b6c433cc285acf4",
+    "internal/ircd/accounts.go": "a1095b30d398964c39f480f69f0c4ae3fcd301aa43b32ec4db8fc18e99da5291",
+    "internal/ircd/accounts_test.go": "01d641f20067b8b6738c16955945fa443989a959e4928446c618e6fc32fe5f4a",
+    "internal/ircd/api.go": "e653151face53d07c09f0dcf38588b9faed641eef3911a7bf74c1ead22d0226f",
+    "internal/ircd/channels.go": "e22fe926d28dec246600983f4982abece7b4283fe549a3132fd701507725d70b",
+    "internal/ircd/config.go": "46b637e6d84dd1b30e9ba180241736970eeb2bc9a2af123a653ba3ecccc3563a",
+    "internal/ircd/lifecycle.go": "709b4e9d95ea306648f7ee9cdf3ba3ff914cb60a2c10bbb70dc36e35cb08ea7e",
+    "internal/ircd/lifecycle_test.go": "dc11882731aae455e6ba1261b9bb928d49d5666f2a862e20de283a1eb3b82356",
+    "internal/ircd/native_test.go": "d4380ce801587444b34766c17973b5c3ed96ac3ae3ec2a29a08eb8cd9a3ad90d",
+    "internal/ircd/provision_test.go": "496c118292677acd3971bb0c7917da2f7bb314ed1232c8cde235c1fdfe7994a3",
+    "internal/ircd/real_test.go": "6d9446998b21cc4be5d6342546732434ab5604cca872b659c0d23dad82f9e125",
+    "internal/ircd/rename_darwin.go": "6468302665e1fdc7301238ea8222820896f2de08e87d094f125e74281e0e613d",
+    "internal/ircd/rename_linux.go": "0bad8122bc0f7607f1344ffff4b897ef4c245d857f82b321fc6d6d50d2def115",
+    "internal/ircd/runtime.go": "2c5a2e8a03fb2fed35461db0acdbdf66fd5de63e89f4eae40cf640f83800d832",
+    "internal/ircd/storage.go": "7b2e6a8f568fa147d88e20fb2d6c809d3269ab82cf1e23fc4dcc39a13fddcf88",
+    "internal/ircd/types.go": "94fbd8a862dd0cb1c6c911804e5b5dcb1824174590fca9f5b1079db1abd56061",
+    "internal/ircdchannel/channel.go": "0f2db1a05a51bd47735e7bef0d6babee7ff28c7c751f61727066aade46a9a307",
+    "internal/ircdchannel/channel_test.go": "42fbe5ee52c2dd6ee146fb230953e746ff735ea6afd67822e394ed3b29e9e7d2",
+    "internal/ircdchannel/irc.go": "a77fdb61a78d1384b9b3df240fe71b6379bc4df25ec5f2a93f0829099d033153",
+    "internal/ircdchannel/irc_test.go": "2ce760ceb704fe6e6a6daafe393fd9bb04bc71b8db081270bcbd7b17f46e31d2",
+    "internal/ircdchannel/real_test.go": "41169e77d5559e4ae66940a86a946f2e0d76ca39d80aef6fa0672dce76d90944",
+    "internal/ircdservice/http.go": "d18d992e6c3f46f8a5b6073de3029320126fe32de61e521e4d442c53719dab22",
+    "internal/ircdservice/response_test.go": "ad4b2e613a25a3475d90c4b6b4bc6e89137ef3de2381fdcacf2694c3d4ed7ef3",
+    "internal/ircdservice/service.go": "24528bfaa00a0b35d40267ccf2be42181c17802cbcfd8dbed4c088a92f9a4c72",
+    "internal/ircdservice/service_test.go": "1fba7ff4ab96f899f18d2f84f22304dc00c92aa4e52e2cce4916275600994746",
+    "internal/protocol/channel_response.go": "502a7c2752d7e2179eb2ea717d68968f3b456628f0b315f6d600d5c434fd7595",
+    "internal/protocol/channel_response_test.go": "2f9584329e3615df6a012dfe06c6a1e94e891234417b42beb653e7c4d3c1f8b2",
+    "internal/protocol/channels.go": "85c47c305368caa4914df2a45460387d790a52b1ac8c6a5cede900bff0ed1bc0",
+    "internal/protocol/ircd.go": "73974fb7ab51cdaeb76e5c2f8f68d441f90ae5f7721acb847734aef526eb8c7e",
+    "internal/protocol/lifecycle.go": "5a7fcc8836e617c8ab529346639429d13d9d1bb8d44d62e64ea9fa0193222d3b",
+    "internal/protocol/protocol.go": "b27696853989f7f347471a733e7cb4754961a9af12843cbca31a2106d6ce07c2",
+    "internal/runtime/runtime.go": "4d0d042fedb63195b0e4bb4267e69b1359b16d5d42d19631de703ca10166a56b",
+    "internal/skills/catalog.go": "3f39feaa5dd6de6ce4078d6da78479f1753d4087f29137fe6f0aa2d4ec6b0b16",
+    "internal/skills/files.go": "e005f13152ae5fe1d1f536b8940ba5318d76b50973fdb112fcef2406b09359c4",
+    "internal/skills/install.go": "680bf2ac0a034b207101402da1f2aaa3199cb31b89ad70b540da6281a5ce82b5",
+    "internal/skills/install_test.go": "98a7b4c9f794598e5f780ab2e071aee0668181bbadf158aa214a6c1b8b0df1c9",
+    "internal/skills/removal.go": "cbb73ee905e7e4f5ab1a2f5e9a4e606a1cc93a24d246570ff922413cb08d7041",
+    "internal/skills/removal_test.go": "d9e2b77395ac8af464ce0940d7e91b002c73ef73b9f9a50184ec6beaa0fd0dd3",
+    "internal/skills/rename_darwin.go": "2a73dc6b3cf859ff55925b5dae84bed10ade06380c2d21d782e1a80732fb082e",
+    "internal/skills/rename_linux.go": "8eb9ea0b294d63589d1cff5e6f2a57db5eff3ef9a8aaaef26608a7447855e0a7",
+    "internal/store/channel_schema.go": "2245fa2b64c0233b52c212f3486cfcaa9a79d821c49104676fb9f4ee7cf8ed51",
+    "internal/store/channels.go": "8d9f0a2af3d52e43cfa832bc927a70dc45b4a53beb8746acd28135aef37a74c8",
+    "internal/store/channels_test.go": "3984f518eb31066e08b92d99d16d7a7ff3d258da9393ca684842f4a8970cb096",
+    "internal/store/codex.go": "3eb7d71581d14618018bc93ae63ced40ae0dba95b30e20f3e71884a5231bd552",
+    "internal/store/codex_reservation_test.go": "0eef02d7ff5b1e2e454ef37f686e89cac2226c1aa37b07a6ab0710a325c67147",
+    "internal/store/codex_schema.go": "f866f04073dd9a8fab807dd41a4487edfc0eba01f52fa070437681fd9b69d3de",
+    "internal/store/codex_test.go": "e16d0c4fa7094c801416d5b0bf50f5cf4fba9c2359839942a5aedb5e4b1f23e5",
+    "internal/store/store.go": "0d3250d2351b7211d44c11a1074d223d86fbce654f028b9219ff8bd16769fe11",
+    "internal/store/store_test.go": "409f83ee07cedbbc705f35c1848fb585d2ce3b74dc53018edf606d2d36de257d",
+    "internal/transport/drive.go": "9c38a67b3f5181a338463a1c5b826d2c49ce90d37c08e6e32e4da9bfd4149629",
+    "internal/transport/drive_test.go": "0030c721c4d2ce0d1feeb69bee5cf5087fb5c4e04fa1b82acc20b26e6c46ce29",
+    "internal/transport/host.go": "3be69fec45e99140953f9fb40067cb6937893e50c44abb45fa84248402a90dd9",
+    "internal/transport/native_test.go": "a7de8df00ca15517c1dd8246f3b272fdb8b0af2d78eb4fa7c6a9c6b3658cee7b",
+    "internal/transport/stream.go": "fcbadbc44383a3a81c821529c8ec5f082c63de87f2fbcd9476184c1fe9b282d5",
+    "internal/transport/stream_test.go": "22ea23c25240a2ed04591c5b6bbfdc7551719bc9e2166b894cfcd48b6e6a7c9d",
+    "internal/transport/terminal.go": "1d8438b63c24da6019dd82b5ecb390804acaa3210e7bf95974342d893d7bcf58",
+    "internal/tui/channels.go": "b3b2bedd6dfb48d30c4e7b37824bb0c2afb562111763fef6cfdfb26d7e3c952a",
+    "internal/tui/channels_test.go": "bc729fd6eaa7d4e715d60002e266a0160a8fdeaf37a278faa86d2f0a3f27b16d",
+    "internal/tui/channels_view.go": "b5655d85abd4063b4fe0d64a29a3d94636d1a0d9d678f84fb8e026ae498c9d57",
+    "internal/tui/runtime_view_test.go": "89879d6d4c84f3de6631f80ecda8b26020aa16fbdad7730d0d8d0e226f0e0bf7",
+    "internal/tui/testdata/capture.py": "c13b1af0358af5ebb05be09457437eb73a5ce15655abf4ad199165a206d65956",
+    "internal/tui/testdata/capture_channels.py": "0a08b18c4130de7eb46695071e08e1d163bc4a0c9cf4357ea8576c26f5a7cdff",
+    "internal/tui/tui.go": "39f1780902be8093364aba77d949b805feba7b3b5b00718ffbc9415e44b9a5fd",
+    "internal/tui/tui_test.go": "9f9b4d0478016ab36353f3c4daea23a5cb146453e56ead6c14070b531d89710b",
+    "internal/tui/view.go": "a29a424528832ce5b359fcf4f230056109bc9a5ac18a69e4ef420475df2dc5f3",
+    "internal/tui/view_test.go": "645f85764ec26859b5740e62f617070ccf17dc820d259b888277b4e8689cecdf",
+    "tests/codexbrokerprobe/main.go": "9fa74bdb33e49cf7ad181c8787415a3798c2f77f299a98145277a23a08bcc149",
+    "tests/codexbrokerprobe/main_test.go": "ce3d6c566fe1bff05073348db091c640cf90db49df822e909761cdbdc4c4095e",
+    "third_party/bubbletea/LICENSE": "69793670485e4ae8bf28fcbe5639141f604256d5bb6c1862571f3a32823fa221",
+    "third_party/bubbletea/PROVENANCE.json": "3348dc170e947fcd4ad327f0a1255ebcde8b76de2e37ef0e785cef2c181a4d33",
+    "third_party/bubbletea/README.md": "4773d2ae5697acef3b03a907285763915183e9b128d8655dfa8da182134441b3",
+    "third_party/bubbletea/UPSTREAM_README.md": "7e833229a4756671250358f368d6e7a140b868c77f6f7bd067541da2d664a4a5",
+    "third_party/bubbletea/commands.go": "e4733645ed4a3afe7b90585bc4014198f937d140d099b069ff16164d8e9fb949",
+    "third_party/bubbletea/commands_test.go": "19474220d6821ffeb526a10b08f3a53f3e71a6cd8602881004ca8ab177379195",
+    "third_party/bubbletea/exec.go": "80739d13c56f1a95ee08568fb667beb1edc9423f0d704afc9b32b97dba24f2d0",
+    "third_party/bubbletea/exec_test.go": "0936acfeed563b6d7d1c67e5eefc5c6e893cd7f157b9bd6a9f1b3c42f5e1e1ec",
+    "third_party/bubbletea/focus.go": "ac27153c7127a434edf501816150c1919fb6b8d9c8ddd542f4293a7e053a50d3",
+    "third_party/bubbletea/go.mod": "903f2904b09b37dd74092f437ad306794e7633329ddc5af7b201d469e2d937fb",
+    "third_party/bubbletea/go.sum": "5fe23fd458f3a5c92a77aa933e0a6d83de545a0b59b33c698a9c33e39d057755",
+    "third_party/bubbletea/inputreader_other.go": "eb0ae77b31947e3e996b23de0b85b606c969b87a7a456ad564a3b1c3c3800b13",
+    "third_party/bubbletea/inputreader_windows.go": "5e2fb998078e1455e9f8a5ec871f0ed950e219c93bbc04af17daa228074ba7ba",
+    "third_party/bubbletea/key.go": "364667133bcd72e7bfe22e30eb92d462f18aadaffa96a4c32cdccbe00368b43f",
+    "third_party/bubbletea/key_other.go": "ae456d473d43a8def40ca31ec7826a40392b84d47b8c27bfe3f12006bcf3c2ff",
+    "third_party/bubbletea/key_sequences.go": "a552fc2ce1e0eec029fef551f981a50bfd4166289aa378ec4bf8906f05395e48",
+    "third_party/bubbletea/key_test.go": "0bd074aa6295ce9de56929f0af78f198639e7c82b0a8ac538b0bca35eac41dca",
+    "third_party/bubbletea/key_windows.go": "a84bc6eb41a98580539236061f91c5b83fb2ffb61dd1dc4b8e80cf14e02943b5",
+    "third_party/bubbletea/logging.go": "af7eaaf5b8ae2a4edc631a8750e93644459dae91bcb25e3c3de94a3b9e6593ad",
+    "third_party/bubbletea/logging_test.go": "7b1523891eb1b7378ce0094c6a60f6412534fef6139eb80c561bd8da41dc8eb2",
+    "third_party/bubbletea/mouse.go": "d91927f56a91dde0fe7f62ebcb26f954cd86bc68ae4006270e34417f8c2bc983",
+    "third_party/bubbletea/mouse_test.go": "39020c9e07b2231eaaf9e14b267c421b32870fb198a52acfa5cda7c9cc27fae8",
+    "third_party/bubbletea/nil_renderer.go": "6dcf82b44a05df0af91ce6b70443bdc88da2bc2a429276ca1811790dd71102cd",
+    "third_party/bubbletea/nil_renderer_test.go": "ce9f21e9f74f092d93255ead5bb5633d762652a7c77112410a00086a366bbb1e",
+    "third_party/bubbletea/options.go": "4f78a834d8f82ca45dda6f292bcc54b53f198c089a059d207ff02f8e606891ca",
+    "third_party/bubbletea/options_test.go": "a601f50dcf3dc81f02c1be69ec9e807f0f2aa74ca27cfa651e434681d481ef2c",
+    "third_party/bubbletea/renderer.go": "2c53589b014d3b7bc2c74d4c332d29862eb064971b150a66c0fa38f6fef61f43",
+    "third_party/bubbletea/screen.go": "13539b00d61af207d9c968ed198a0b57cff428d86d65509f54c9f146546523cb",
+    "third_party/bubbletea/screen_test.go": "ae316cd554eb3c84866e59136309add25673044569497d151399f8500f49a3db",
+    "third_party/bubbletea/signals_unix.go": "3954426922ae0a399a29769ed8e85ace7c451f33bb835b7009336ed086e65bf3",
+    "third_party/bubbletea/signals_windows.go": "25437273fa773a70b2a11c8f6f63674d7483460f65d0352a2c5ca1d2c1677c4a",
+    "third_party/bubbletea/standard_renderer.go": "fe30321708716b962f78965cab407c4edccac2bc22f9dd5e72ac506420a1b4d6",
+    "third_party/bubbletea/tea.go": "93a3744362223921e3f82ded63c65bf8029ff77d2e4a46604b77fbd37f87162e",
+    "third_party/bubbletea/tea_test.go": "f61e8482198aa5adfcdc92ce08268f2fc6130b7935bd6af8b2705b2336a3274b",
+    "third_party/bubbletea/tty.go": "db99d0fe947fa401d079429dad62daaf4889c19f6121bb89258a132a87214144",
+    "third_party/bubbletea/tty_unix.go": "1206fdac0fc2d6940ec957f4c530638df2b6611de4a123cfdb99375bd7545f3f",
+    "third_party/bubbletea/tty_windows.go": "af4316838b7cac5e9230b82a93b4b407ef91b755a57005135d93f0eb2c8b6aad",
+    "third_party/bubbletea/verify.py": "fa366db4a679d16efa4ebc0d169d4171687d6be05a3daeae033acbcfff584953"
+  },
+  "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+  "capture_script_sha256": "9035f0d80f9fbefda38c07ed4b1b227ff1fe2a70b744b0dcb9b495a172e590d1",
+  "scope": "Actual owned PTY with deterministic fixture inventory/notes; PNGs rasterize interpreted cells, not native Terminal screenshots",
+  "native_provider_launches": 0,
+  "external_service_posts": 0,
+  "model_turns": 0,
+  "switcher_captures": [
+    {
+      "size": [
+        80,
+        24
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "5f6a2ebccec58f8a54826b335d9f3006fc2c8816c21811c6dfb7834f8242fa18",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "native",
+      "prefix": "native-80x24"
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "d69408498db3e0701872b9b5b8bb9f2253f06053e77fed642edca397c5052041",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "native",
+      "prefix": "native-120x32"
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "e670f9159886942351d3c7403eb2488e4743ba8411f29171e5e7ad3ec2052eb0",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "native",
+      "prefix": "native-40x14"
+    },
+    {
+      "size": [
+        80,
+        24
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "499c73faa34aeb368b3fdc78ef00ea653bb77f310e5ae9250e9af8cfe3abf3de",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "legacy",
+      "prefix": "legacy-80x24"
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "f0e3c522fb612ec1b61b770c427ba8a039fc4133ed003c28fd136c745914a786",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "legacy",
+      "prefix": "legacy-120x32"
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "ffd77ade22913858e01985517478ac009207d27101b762343e7ccc819cd14224",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "legacy",
+      "prefix": "legacy-40x14"
+    },
+    {
+      "size": [
+        80,
+        24
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "0e6f0d8faf2b9be44981bf4d7a85f110bf83c41656707a008c84b69513b93497",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "missing",
+      "prefix": "missing-80x24"
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "9ecb33b23ddf67916a615cebea65cae2146a1f1ba6374eb2018b72cb8f870601",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "missing",
+      "prefix": "missing-120x32"
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "14b4efeb66fe30a8dd4b96768a5dcbcfc57f536d4295da28bcc54ca0c8db9a0d",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "missing",
+      "prefix": "missing-40x14"
+    },
+    {
+      "size": [
+        80,
+        24
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "eb877b26293749e85a17d761885bf35d7f9de67b676460eefa3d1a42d32ee320",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "uncertain",
+      "prefix": "uncertain-80x24"
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "ac9c3282fe0c01690b6652ffcb5a54dba92e640030e460e46d197b7a317cba80",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "uncertain",
+      "prefix": "uncertain-120x32"
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "3221a2e73f18cebcddbdefe573851c72d8ea118da43086148225b8ecb8f42f4e",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "uncertain",
+      "prefix": "uncertain-40x14"
+    },
+    {
+      "size": [
+        80,
+        24
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "d43d245e3e7713d56eeaf092bd8e5375efdaaf433382185c4db9c932b836b72f",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "unknown",
+      "prefix": "unknown-80x24"
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "33c7ce03c18f1f46b1bb5fd1821ed6c05fb8d12a4f368a5dba3c23d2793f4b2f",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "unknown",
+      "prefix": "unknown-120x32"
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "mode": "inventory",
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "raw_sha256": "6a4f36e6f7796b78f6242cac2d501fc89e602ede5d1db44d063d027e4d6cb8df",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0,
+      "scenario": "unknown",
+      "prefix": "unknown-40x14"
+    }
+  ],
+  "channel_captures": [
+    {
+      "size": [
+        80,
+        24
+      ],
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "captures": [
+        {
+          "label": "inbox",
+          "raw_sha256": "d867cc1386b247f385a9a3031cfe8790c5bd62e84ee31acaa9fdc1e3b999a3db"
+        },
+        {
+          "label": "next-page",
+          "raw_sha256": "0d0b23b8dc6ab04f8c1b41ff99597677c7bcce09554953f23d69dc5881afe6fa"
+        },
+        {
+          "label": "previous-page",
+          "raw_sha256": "9eb4d8dfd208911052cb1aa3a31b68e6b13549828f4e937cea784121b333a337"
+        },
+        {
+          "label": "destination",
+          "raw_sha256": "0088783242d5ab3690a254b500c2901892e27e22d91f77d8acfc14f100ce12ef"
+        },
+        {
+          "label": "chosen-inbox",
+          "raw_sha256": "68529723e6e5b9a88c096040e9db6eed54a9da31c73c1c9fb8d4eee87df1a738"
+        },
+        {
+          "label": "multiline-reply",
+          "raw_sha256": "64855a3bb89aca1d58327a000c4dc6718835943d8c6a7f3c32c04d89ef772cd8"
+        },
+        {
+          "label": "pending",
+          "raw_sha256": "5365a59bfabf267078b2c853b21aa48ebe74ce01bbae9a62189cf6d421a68249"
+        },
+        {
+          "label": "restarted-queued",
+          "raw_sha256": "00b79983fadf41d5f8e1d21b6b72aa359c5e2ad092f1012d0bc1e8f7b9112c03"
+        }
+      ],
+      "actual_local_queue_posts": 1,
+      "actual_external_posts": 0,
+      "durable_intent_before_local_request": true,
+      "enter_only_newline": true,
+      "restart_recovery_queried_exact_receipt_without_repost": true,
+      "later_note_101_and_previous_page_visible": true,
+      "native_draft_and_selection_preserved": true,
+      "owned_state_removed": true,
+      "tui_exit_zero_without_signals": true,
+      "capture_kind": "Actual PTY; cell rasterization, not native Terminal screenshot",
+      "calls": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=100&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "POST",
+          "/v1/channels/send"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/delivery?id=message_c49417bf7480e79e16e369aaaa027cdb"
+        ]
+      ]
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "captures": [
+        {
+          "label": "inbox",
+          "raw_sha256": "1912564f331f605cc8ce9393662242b4b555c834ef15bc44a18740c926f3d03e"
+        },
+        {
+          "label": "next-page",
+          "raw_sha256": "cd71c1e3de7c3ecfa0301866832a97200c191938b44128e4e9cfce3ea40d3e38"
+        },
+        {
+          "label": "previous-page",
+          "raw_sha256": "076a4ef5b22940cb883c401488e6e321498867e6187d7dcfe40ab2455ec47993"
+        },
+        {
+          "label": "destination",
+          "raw_sha256": "6f9f5edffd5ae311b2aa83c680c22d319b01d5f9683fcff7dbdf43f4a8cfa257"
+        },
+        {
+          "label": "chosen-inbox",
+          "raw_sha256": "e491a9f18d46f22570d2d818e0534c8b9bb443804c0a34d5e8d034e8e6c22141"
+        },
+        {
+          "label": "multiline-reply",
+          "raw_sha256": "cadb43b255f4ce5b86983e3d82431e3551485f916bcc563839276bb9ccfa62af"
+        },
+        {
+          "label": "pending",
+          "raw_sha256": "42e7ed150610612d01e451007efaea70cd9fe1b0ac869ff21cafb200ee20a280"
+        },
+        {
+          "label": "restarted-queued",
+          "raw_sha256": "8bc044c13870b37ade42ccf41f6577ded38dbe6cb9a61aeaadcc1bad6fe33d0e"
+        }
+      ],
+      "actual_local_queue_posts": 1,
+      "actual_external_posts": 0,
+      "durable_intent_before_local_request": true,
+      "enter_only_newline": true,
+      "restart_recovery_queried_exact_receipt_without_repost": true,
+      "later_note_101_and_previous_page_visible": true,
+      "native_draft_and_selection_preserved": true,
+      "owned_state_removed": true,
+      "tui_exit_zero_without_signals": true,
+      "capture_kind": "Actual PTY; cell rasterization, not native Terminal screenshot",
+      "calls": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=100&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "POST",
+          "/v1/channels/send"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels/delivery?id=message_5d6fae843e93e8b07bf70d3ca44681f4"
+        ]
+      ]
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "binary_sha256": "00a3d2b1e904f284b1025a28442ce130a73c002696a43601ce5a3f945a7430e2",
+      "captures": [
+        {
+          "label": "inbox",
+          "raw_sha256": "655b058f13d8deeca097cf807498e9015cfcd5d09432a713b8907d5efd05f605"
+        },
+        {
+          "label": "next-page",
+          "raw_sha256": "6c77c4b7354fed8e339efa8ec918408a37acf040c6d8e40b3be4416ed95e9784"
+        },
+        {
+          "label": "previous-page",
+          "raw_sha256": "de6e29b224a996f840579b3ab2a4bde9f01a2ec62ecc87ea580123b21a247d5c"
+        },
+        {
+          "label": "destination",
+          "raw_sha256": "366780b119ffe5d2846af850216ae924e3eb960fc84403ab1472b4d198fe2a8c"
+        },
+        {
+          "label": "chosen-inbox",
+          "raw_sha256": "8be491552a58df378e0dcc1cf8f15e4d871080b195806853f35f50b3eaa3d9eb"
+        },
+        {
+          "label": "multiline-reply",
+          "raw_sha256": "f1fab3c4102807180f1738c7e4cdc383b92463c0f7bef475bcb0abe6bbc07afb"
+        },
+        {
+          "label": "pending",
+          "raw_sha256": "33b47b0d3c0d17148f5e0dff8ede382221b3e1857491da2e06f5d456f3f19286"
+        },
+        {
+          "label": "restarted-queued",
+          "raw_sha256": "7f5aac17de5bcf4edd5257e2862bfbda5fd9e8249fee0c9676d7e6940ba003bf"
+        }
+      ],
+      "actual_local_queue_posts": 1,
+      "actual_external_posts": 0,
+      "durable_intent_before_local_request": true,
+      "enter_only_newline": true,
+      "restart_recovery_queried_exact_receipt_without_repost": true,
+      "later_note_101_and_previous_page_visible": true,
+      "native_draft_and_selection_preserved": true,
+      "owned_state_removed": true,
+      "tui_exit_zero_without_signals": true,
+      "capture_kind": "Actual PTY; cell rasterization, not native Terminal screenshot",
+      "calls": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=100&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "POST",
+          "/v1/channels/send"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels/delivery?id=message_dccab6c4632fd21d984431404dd49ee7"
+        ]
+      ]
+    }
+  ],
+  "files_sha256": {
+    "missing-80x24.txt": "57dbbe70ed17b3445f5c638e19c341bb300d01f21781af4d9f5588612fc952df",
+    "missing-120x32.ansi": "9ecb33b23ddf67916a615cebea65cae2146a1f1ba6374eb2018b72cb8f870601",
+    "uncertain-40x14.png": "ca1334a3c39d30cf1bd6dc24f087e4efaf251996baabe6bd59b6164706615b84",
+    "uncertain-80x24.png": "1c7ad63ecf58cc32047f7b3877fde88fc9611953908b7b4e09c3fe3d0e8ae8ae",
+    "missing-40x14.txt": "9de0ac7242678944140c0fb65339ebc9ae42735c00dfcd3fe52a7048436e959a",
+    "legacy-120x32.png": "e2130cee60796be7db274237b4ce4bd6074f65b229bd0523cbe0f0d5132701e8",
+    "native-120x32.ansi": "d69408498db3e0701872b9b5b8bb9f2253f06053e77fed642edca397c5052041",
+    "legacy-40x14.txt": "4a458b7a45b0044736c4087701119abc61384ecb4e8bd7cb9c9e43fa4323f08c",
+    "legacy-80x24.txt": "d93d2a48d72658ca9f15d8e57d375239172d1b9846bc3762679c508bb6e86722",
+    "unknown-80x24.ansi": "d43d245e3e7713d56eeaf092bd8e5375efdaaf433382185c4db9c932b836b72f",
+    "native-80x24.ansi": "5f6a2ebccec58f8a54826b335d9f3006fc2c8816c21811c6dfb7834f8242fa18",
+    "uncertain-40x14.txt": "c14e38a43b537aed2a65f6b570f8928a87b714e14b27b761ced391ed429aca22",
+    "missing-80x24.png": "2071254bf893707bcebe57a15e51f38994f7f8c139a32ad0f3c42106110acaa7",
+    "uncertain-40x14.ansi": "3221a2e73f18cebcddbdefe573851c72d8ea118da43086148225b8ecb8f42f4e",
+    "missing-40x14.ansi": "14b4efeb66fe30a8dd4b96768a5dcbcfc57f536d4295da28bcc54ca0c8db9a0d",
+    "legacy-120x32.ansi": "f0e3c522fb612ec1b61b770c427ba8a039fc4133ed003c28fd136c745914a786",
+    "missing-40x14.png": "60763c506320d929dcacdf990b1205b3018789eebfba2f8dcead46763f84afb6",
+    "legacy-120x32.txt": "a9ed72498ef4d05a2c753bfc95893236802323f211cabb8d605ed278d7e3cd6f",
+    "uncertain-80x24.txt": "394d41c38563c19ee2d72652968586fee98ae5abdd784924e997ac60b30e4d57",
+    "legacy-40x14.png": "780eea4e425b05637ed3cea9e23465726217bc1889ff0dacf4350605ceb8fde5",
+    "uncertain-80x24.ansi": "eb877b26293749e85a17d761885bf35d7f9de67b676460eefa3d1a42d32ee320",
+    "missing-80x24.ansi": "0e6f0d8faf2b9be44981bf4d7a85f110bf83c41656707a008c84b69513b93497",
+    "legacy-80x24.png": "8fd0ca8d14a79311fbdf94644fc13dc809ad9e020f66a2892cd0e4b2a5313cbb",
+    "unknown-40x14.ansi": "6a4f36e6f7796b78f6242cac2d501fc89e602ede5d1db44d063d027e4d6cb8df",
+    "unknown-120x32.ansi": "33c7ce03c18f1f46b1bb5fd1821ed6c05fb8d12a4f368a5dba3c23d2793f4b2f",
+    "native-40x14.ansi": "e670f9159886942351d3c7403eb2488e4743ba8411f29171e5e7ad3ec2052eb0",
+    "missing-120x32.txt": "92c397239c6c001963c36df423c5a54c85a451d0bdaf69e683cd0bf2d58370ba",
+    "uncertain-120x32.txt": "e58fda63588d9761cbcf5ec466fbd6fb54c2fb01fa465bf90d83c2dab2475ed9",
+    "native-40x14.png": "9de37d5d8699c901ea9377b43bde6695786e5872220af853936b5ebfe3801de6",
+    "native-80x24.png": "cbbfa5a8cfa7b5d9f513f83d4a1a015367ce472a086b0e44cf2384a6f35e0803",
+    "legacy-40x14.ansi": "ffd77ade22913858e01985517478ac009207d27101b762343e7ccc819cd14224",
+    "unknown-80x24.png": "b53734450356cabf99a0ac2f84fbcc679a2adaf6c72a58d35c6acc1eeb7d632e",
+    "legacy-80x24.ansi": "499c73faa34aeb368b3fdc78ef00ea653bb77f310e5ae9250e9af8cfe3abf3de",
+    "native-120x32.txt": "47cf649e8cc95b690bb91fafa257f6d93654308b03190db93868d96fe678239e",
+    "unknown-120x32.txt": "9bd751a7cce5445fc340b295a428239b05bdd526a149f9177c7caa8048ae4a55",
+    "unknown-40x14.png": "26ba532618c197903675301f661d2aee49552c0660f92b5ac4f629452802c49b",
+    "native-40x14.txt": "9592bb4eaeef500405edcb932ce97aceda6e877b55e572f40cfb1dadd4f50a32",
+    "missing-120x32.png": "0a39d15be3cdb5295c8b5d48811a2b19ed2a3ab373f4833c23e270e830992f65",
+    "uncertain-120x32.png": "389ce1c54df4e94797419dcd7f8773209d23ea1ea7e4a927ce1c2abfdbec4caf",
+    "native-80x24.txt": "e197c0ea4b08ab2fed50ab59b6b8b849f2c0d8e3c366af56dae43f08141588a6",
+    "unknown-80x24.txt": "25bf6e2796655cc8fd8e282a67cbdb994a812c9ca050daa52f0ea6108c9fadda",
+    "unknown-40x14.txt": "e4b846273a4b4fdf532e31a97262bb6d000cdee53e9e45f57b7babf21eb69250",
+    "uncertain-120x32.ansi": "ac9c3282fe0c01690b6652ffcb5a54dba92e640030e460e46d197b7a317cba80",
+    "native-120x32.png": "4864c7fd6a7945d7aac7d2f20086307188d4411a68b3a5ac303796f6e058659b",
+    "unknown-120x32.png": "7ce5f96bba512bc21bd64b6aff31edc61f5f58e6b1e01f4d241fc3ad93eee2a1",
+    "channels/inbox-120x32.ansi": "1912564f331f605cc8ce9393662242b4b555c834ef15bc44a18740c926f3d03e",
+    "channels/restarted-queued-120x32.ansi": "8bc044c13870b37ade42ccf41f6577ded38dbe6cb9a61aeaadcc1bad6fe33d0e",
+    "channels/multiline-reply-120x32.png": "30ded7cd04f2341f28cecd9cd8c5c52b2516f4621c763e0fd30faf274bcdd292",
+    "channels/next-page-80x24.ansi": "0d0b23b8dc6ab04f8c1b41ff99597677c7bcce09554953f23d69dc5881afe6fa",
+    "channels/pending-80x24.png": "5f11b63291cde4c771e3ce0aad0ebd2399666512b8a47991d8ca7dbe399f4822",
+    "channels/destination-40x14.ansi": "366780b119ffe5d2846af850216ae924e3eb960fc84403ab1472b4d198fe2a8c",
+    "channels/restarted-queued-40x14.txt": "5d00a1844d9f5b67a60a279ea6f6173e80b7900c6228ad811eca014430b4bd00",
+    "channels/pending-120x32.ansi": "42e7ed150610612d01e451007efaea70cd9fe1b0ac869ff21cafb200ee20a280",
+    "channels/destination-80x24.png": "d845e945cf82f1ccaaa4725bd1ed7aec927ca5dbd0caf3ca1753b400d789b60b",
+    "channels/destination-40x14.png": "8fa7014fe9eb2919ed02b5b0082a8934ae5023e167a0a1f9aa71bfb7bacba1a2",
+    "channels/chosen-inbox-120x32.ansi": "e491a9f18d46f22570d2d818e0534c8b9bb443804c0a34d5e8d034e8e6c22141",
+    "channels/restarted-queued-80x24.txt": "f25413b4f4091cca28039242b19220d3fb6f4796987c772a23e7a5d04d6d2dd6",
+    "channels/pending-40x14.png": "fff23c80f17f7a24c2ec7ae845cfdd17bb406872b110d0bc5b73e83888b79451",
+    "channels/inbox-40x14.ansi": "655b058f13d8deeca097cf807498e9015cfcd5d09432a713b8907d5efd05f605",
+    "channels/inbox-80x24.ansi": "d867cc1386b247f385a9a3031cfe8790c5bd62e84ee31acaa9fdc1e3b999a3db",
+    "channels/multiline-reply-80x24.png": "3d871dd30855b6eb18542a613272d48feade9746672fbf4d0d110e1f1af1e23c",
+    "channels/chosen-inbox-40x14.png": "6d81d39124abb6ed08b85ebcaaeed1f66dfc4a2ceadf665a2658e2cfb2c3472b",
+    "channels/restarted-queued-120x32.txt": "69da98434f3695634691e7e3f5875f7a66cc864050466549aaed9bb9d1c7b324",
+    "channels/chosen-inbox-80x24.png": "c12d1f79b9db1f1be6e78de36c400eb186ae483661c208412cf41f282b744942",
+    "channels/previous-page-120x32.txt": "10c0164252690ca0472d14b9c9052a56d0e1aea456f41e10eceb54d1424ce376",
+    "channels/destination-80x24.ansi": "0088783242d5ab3690a254b500c2901892e27e22d91f77d8acfc14f100ce12ef",
+    "channels/next-page-40x14.ansi": "6c77c4b7354fed8e339efa8ec918408a37acf040c6d8e40b3be4416ed95e9784",
+    "channels/multiline-reply-40x14.png": "d5d9f2e7402ad492ea410e5fcd69784c3a2c0c19fda244d2b9a8dfaebad3a52a",
+    "channels/chosen-inbox-40x14.ansi": "8be491552a58df378e0dcc1cf8f15e4d871080b195806853f35f50b3eaa3d9eb",
+    "channels/next-page-120x32.ansi": "cd71c1e3de7c3ecfa0301866832a97200c191938b44128e4e9cfce3ea40d3e38",
+    "channels/destination-80x24.txt": "51004fa02e225e9743294f2a34719c18378e8227a0725f1d659a2a803711c696",
+    "channels/multiline-reply-120x32.txt": "fd90b2da00ce382c9e8eb26c8a57a1751248c9fcf7ad0ad6fad6fb540d795496",
+    "channels/pending-80x24.txt": "211c8915d9f7cd591bcb673eedfe660da10a28cf34714cb2d4f42bb286568442",
+    "channels/pending-80x24.ansi": "5365a59bfabf267078b2c853b21aa48ebe74ce01bbae9a62189cf6d421a68249",
+    "channels/restarted-queued-40x14.png": "b80dda6a44c8130f1443f5f9a7ef4b0728837bdaba1b92f021648816d293326d",
+    "channels/restarted-queued-80x24.png": "eef2f453d3ebbf34fc0b518666bb3d5f67c75d69f2735dc061a3f54b680cecc0",
+    "channels/pending-40x14.txt": "e313d906080b00a10d770d52504753fa3c247adbcc9b4d0115d5ae0c239fc8aa",
+    "channels/destination-40x14.txt": "644d8eb3b9e45918af2084308b27a4a8705dc75fad83802e2eec6c812824f8dc",
+    "channels/chosen-inbox-40x14.txt": "11de660b178db81a15dfa7dd2f2ac7d7d2f111992ba859543c0d3b07153466f1",
+    "channels/restarted-queued-120x32.png": "9a1b45286132e7f9d3a1ba428583dcc529a8994d08674959b0cd3b6fd2816f82",
+    "channels/multiline-reply-80x24.txt": "813ee5700f57f6f2755f293e1fc709192c3b548fa7e6ce4e0dcd911228d5531c",
+    "channels/pending-40x14.ansi": "33b47b0d3c0d17148f5e0dff8ede382221b3e1857491da2e06f5d456f3f19286",
+    "channels/multiline-reply-40x14.txt": "0769d03e36ce7d91b93af08cf84118674d7d765ebf01d42f6eac53b4c01eb25b",
+    "channels/chosen-inbox-80x24.txt": "4e1cc0314b2b15177a14e9ddff4c69a10ac8c817b468005f4f5269e9a0eba4df",
+    "channels/previous-page-120x32.png": "704f2dc0131fd79fc467ac00f3ea1f71d139db2f1afff7b91335d168ebdd85c7",
+    "channels/chosen-inbox-80x24.ansi": "68529723e6e5b9a88c096040e9db6eed54a9da31c73c1c9fb8d4eee87df1a738",
+    "channels/next-page-40x14.txt": "6bcc057e0bba77e4f53e9c45de4aed8c7fcc15fe5c49a44c851c2600317b5093",
+    "channels/destination-120x32.png": "2745dbe3ef9b4c00769d75fece259513511d2d5e2a867707b6dedb050c9abfec",
+    "channels/previous-page-40x14.txt": "ad11a2f966ed974e56325b7a336f34a5a4857af00b48e080454a808a9936c22c",
+    "channels/multiline-reply-40x14.ansi": "f1fab3c4102807180f1738c7e4cdc383b92463c0f7bef475bcb0abe6bbc07afb",
+    "channels/chosen-inbox-120x32.txt": "fbcce5c627c2b584e19cdf1110a3b58f42b4a54c2c9a22ab077b10e604a78c2c",
+    "channels/previous-page-120x32.ansi": "076a4ef5b22940cb883c401488e6e321498867e6187d7dcfe40ab2455ec47993",
+    "channels/inbox-120x32.png": "704f2dc0131fd79fc467ac00f3ea1f71d139db2f1afff7b91335d168ebdd85c7",
+    "channels/previous-page-80x24.txt": "57831f5cb56eff86e414478bc2617bfa5b93ac448977200727285d0e72379dcc",
+    "channels/next-page-80x24.txt": "7355d048afcccb161f8f0ed09c26bc34bcd11df7394adc492c4ddfbfd1a9f51a",
+    "channels/inbox-80x24.txt": "57831f5cb56eff86e414478bc2617bfa5b93ac448977200727285d0e72379dcc",
+    "channels/inbox-40x14.txt": "ad11a2f966ed974e56325b7a336f34a5a4857af00b48e080454a808a9936c22c",
+    "channels/multiline-reply-80x24.ansi": "64855a3bb89aca1d58327a000c4dc6718835943d8c6a7f3c32c04d89ef772cd8",
+    "channels/multiline-reply-120x32.ansi": "cadb43b255f4ce5b86983e3d82431e3551485f916bcc563839276bb9ccfa62af",
+    "channels/pending-120x32.txt": "29d8536cd74ec23c1d982e42b62c98b501d62a11145667d8acdd5d4ec0ea78d1",
+    "channels/next-page-120x32.png": "f044eec11975e7b6772941028ba51fa22eea2ec10aacdd66690a84e9672fedd0",
+    "channels/previous-page-80x24.ansi": "9eb4d8dfd208911052cb1aa3a31b68e6b13549828f4e937cea784121b333a337",
+    "channels/chosen-inbox-120x32.png": "43d3048aaa0f88f8dfd8c7f3344a940e481ba3ca47be5eb6a13c38e5194a5d7f",
+    "channels/next-page-40x14.png": "79f3ca8c157e04e3c2717afe74a5f008a3c3a08ccc4b9504d5f098ad6b6d8147",
+    "channels/destination-120x32.txt": "2911585eeeb158fe472ad1872c34d79cd9a996fbff293cb1a7bcd3fac5b60236",
+    "channels/previous-page-40x14.png": "deaf7812b5d89975d8da9c3e64564d617b58fc6a28720e4b84f6a3add03c54bb",
+    "channels/inbox-120x32.txt": "10c0164252690ca0472d14b9c9052a56d0e1aea456f41e10eceb54d1424ce376",
+    "channels/previous-page-80x24.png": "5cd3b65d2dc499ed9f63c407a074ed75ff97d16fee85b619f3bb3635a2547a1a",
+    "channels/next-page-80x24.png": "faf528626c81451947877a6a64c703a984259fb0c2cdadcb7bb01b2c008e4582",
+    "channels/restarted-queued-80x24.ansi": "00b79983fadf41d5f8e1d21b6b72aa359c5e2ad092f1012d0bc1e8f7b9112c03",
+    "channels/restarted-queued-40x14.ansi": "7f5aac17de5bcf4edd5257e2862bfbda5fd9e8249fee0c9676d7e6940ba003bf",
+    "channels/inbox-80x24.png": "5cd3b65d2dc499ed9f63c407a074ed75ff97d16fee85b619f3bb3635a2547a1a",
+    "channels/destination-120x32.ansi": "6f9f5edffd5ae311b2aa83c680c22d319b01d5f9683fcff7dbdf43f4a8cfa257",
+    "channels/pending-120x32.png": "a8cbf2e6fbcbe60a0d9a3bc93965835377afdcb9e633c4d27dac1c31cb1e7022",
+    "channels/next-page-120x32.txt": "8acead7bf6803e72c45797e1c2f6fdc9d656b6198a07cd37896473b9bf3878a5",
+    "channels/previous-page-40x14.ansi": "de6e29b224a996f840579b3ab2a4bde9f01a2ec62ecc87ea580123b21a247d5c",
+    "channels/inbox-40x14.png": "deaf7812b5d89975d8da9c3e64564d617b58fc6a28720e4b84f6a3add03c54bb"
+  },
+  "missing_proof": [
+    "Real native-provider behavior",
+    "live external chat delivery",
+    "packaged release acceptance",
+    "saved attachment recovery PTY screenshot (covered by source tests)"
+  ]
+}

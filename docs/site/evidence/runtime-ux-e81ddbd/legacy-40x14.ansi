@@ -1,0 +1,14 @@
+[?25l[?1049h[2J[H[?25l[?2004h[H [1;36mKeelmux / All work         11 sessions[0m[K
+ [90m/ Search sessions[0m[K
+ [90m  SESSION                     PROVIDER[0m[K
+ [7m› api / tests                    codex[0m[K
+   billing / migration           claude[K
+   cli / docs                     codex[K
+   data / import                 claude[K
+   design / review                codex[K
+   edge / retries      missing / claude[K
+[K
+ /work/keelmux/api / managed[K
+ [90mRuntime: legacy tmux / running[0m[K
+ [1;36mEnter attach  v view  / find[0m[K
+ [90mc inbox  g groups  p draft  q quit[0m[K[14;H

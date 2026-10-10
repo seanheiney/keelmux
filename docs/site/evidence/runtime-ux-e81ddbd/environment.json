@@ -1,0 +1,21 @@
+{
+  "capture_source_commit": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+  "os": "Darwin",
+  "os_version": "26.7.1",
+  "architecture": "arm64",
+  "python": "3.12.14",
+  "pillow": "12.3.0",
+  "build_metadata": {
+    "name": "Keelmux",
+    "version": "development",
+    "commit": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+    "built_at": "2026-10-10T21:19:09Z",
+    "protocol": "bp/1",
+    "go_version": "go1.26.6",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "command": "make build; bundled-python docs/site/capture_runtime.py --binary bin/keelmux --output docs/site/evidence/runtime-ux-current",
+  "output_directory_renamed_after_capture": "runtime-ux-e81ddbd",
+  "historical_attempt": "91c90aa actual 40x14 uncertain fixture clipped the session name; harness rejected it. Display fixed and all captures rerun from e81ddbd. Failed scratch artifacts remain local in work/runtime-ux-91c90aa-attempt."
+}

@@ -1,0 +1,32 @@
+  Keelmux / All work                                                                                       11 sessions
+  / Search sessions
+    SESSION                                                                                     PROVIDER    STATE
+  › api / tests                                                                                 codex       running
+    billing / migration                                                                         claude      running
+    cli / docs                                                                                  codex       running
+    data / import                                                                               claude      running
+    design / review                                                                             codex       running
+    edge / retries                                                                              claude      missing
+    gateway / reconnect                                                                         codex       running
+    infra / deploy                                                                              claude      running
+    search / indexing                                                                           codex       running
+    worker / queues                                                                             claude      running
+    zeta / cleanup                                                                              codex       running
+
+  /work/keelmux/api / managed
+  Runtime: legacy tmux / running
+  Model: unknown  Account: unknown
+  Thread: thread_session_00  Generation: 1
+
+
+
+
+
+
+
+
+
+
+
+  Enter attach  v read-only  / search
+  ↑/↓ select  c inbox  g groups  p draft  r refresh  q quit
