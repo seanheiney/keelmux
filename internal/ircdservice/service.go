@@ -5,6 +5,7 @@ package ircdservice
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -27,13 +28,20 @@ type Manager interface {
 	EnsureAccount(context.Context, string) (ircd.Credential, error)
 }
 type Registrar interface {
-	Ensure(context.Context, domain.ID, domain.ID) (ircdchannel.Route, error)
+	EnsureProject(context.Context, ircdchannel.Project, domain.ID, domain.ID) (ircdchannel.Route, error)
 }
 type Binder interface {
 	Bind(context.Context, protocol.ChannelBindRequest) (protocol.ChannelStatus, error)
 }
 type Sessions interface {
 	Session(context.Context, domain.ID) (domain.Session, error)
+}
+
+// ProjectRegistry is required only for explicit managed project bindings. A
+// sessions-only deployment can still initialize, inspect and control its IRCD.
+type ProjectRegistry interface {
+	Project(context.Context, domain.ID) (domain.Project, error)
+	BindProjectThread(context.Context, domain.ID, domain.ID) (domain.Project, error)
 }
 type Service struct {
 	manager   Manager
@@ -95,7 +103,7 @@ func validAccount(s string) bool {
 
 func (s *Service) Bind(ctx context.Context, in protocol.IRCDBindRequest) (protocol.ChannelStatus, error) {
 	var zero protocol.ChannelStatus
-	if !validID(in.ID, "binding") || !validID(in.SessionID, "session") || !validOperation(in.OperationID) || !validAllowlist(in.Allowlist) {
+	if !validID(in.ProjectID, "project") || !validID(in.ID, "binding") || !validID(in.SessionID, "session") || !validOperation(in.OperationID) || !validAllowlist(in.Allowlist) {
 		return zero, channels.ErrInvalid
 	}
 	session, err := s.sessions.Session(ctx, in.SessionID)
@@ -105,9 +113,35 @@ func (s *Service) Bind(ctx context.Context, in protocol.IRCDBindRequest) (protoc
 	if session.ID != in.SessionID || !validID(session.ThreadID, "thread") {
 		return zero, domain.ConflictError{Reason: "session stable thread identity could not be verified"}
 	}
-	// The only external scope comes from the pinned manager and registrar. The
-	// request cannot choose a server, channel, account, credential or thread.
-	route, err := s.registrar.Ensure(ctx, session.ThreadID, in.OperationID)
+	registry, ok := s.sessions.(ProjectRegistry)
+	if !ok {
+		return zero, domain.ConflictError{Reason: "explicit project registry is unavailable"}
+	}
+	project, err := registry.Project(ctx, in.ProjectID)
+	if err != nil {
+		return zero, err
+	}
+	if project.Validate() != nil || project.ID != in.ProjectID || project.HostID != session.HostID || project.Workspace != session.Workspace {
+		return zero, domain.ConflictError{Reason: "project host or workspace does not match the session"}
+	}
+	membership, err := registry.BindProjectThread(ctx, project.ID, session.ID)
+	if err != nil {
+		return zero, err
+	}
+	if membership != project {
+		return zero, ircd.ErrConflict
+	}
+	// Membership is explicit and durably pinned before any external effect.
+	// Re-read the stable scope to reject a mismatched registry/session resolver.
+	current, err := s.sessions.Session(ctx, session.ID)
+	if err != nil {
+		return zero, err
+	}
+	if current.ID != session.ID || current.ThreadID != session.ThreadID || current.HostID != project.HostID || current.Workspace != project.Workspace {
+		return zero, ircd.ErrConflict
+	}
+	projection := ircdchannel.Project{ID: project.ID, HostID: project.HostID, Name: project.Name, Workspace: project.Workspace}
+	route, err := s.registrar.EnsureProject(ctx, projection, session.ThreadID, in.OperationID)
 	if err != nil {
 		return zero, err
 	}
@@ -115,18 +149,20 @@ func (s *Service) Bind(ctx context.Context, in protocol.IRCDBindRequest) (protoc
 	if err != nil {
 		return zero, err
 	}
-	channel, err := ircdchannel.ChannelName(session.ThreadID)
+	channel, err := ircdchannel.ProjectChannelName(projection)
+	account, accountErr := ircdchannel.ThreadAccount(session.ThreadID)
+	ref := filepath.Join(filepath.Dir(cfg.CredentialRef), "accounts", account, "credential.json")
 	registered, registrationErr := time.Parse(time.RFC3339Nano, route.RegisteredAt)
-	if err != nil || route.ServerID != cfg.ID || route.ThreadID != session.ThreadID || route.Endpoint != cfg.Endpoint || route.RealmID != cfg.RealmID || route.Account != cfg.Account || route.CredentialRef != cfg.CredentialRef || route.CAFile != cfg.CAFile || route.Channel != channel || registrationErr != nil || registered.IsZero() || route.ConfirmedAt.IsZero() || !validOperation(route.OperationID) {
+	if err != nil || accountErr != nil || route.ProjectID != project.ID || route.Nick != account || route.ServerID != cfg.ID || route.ThreadID != session.ThreadID || route.Endpoint != cfg.Endpoint || route.RealmID != cfg.RealmID || route.Account != account || route.CredentialRef != ref || route.CAFile != cfg.CAFile || route.Channel != channel || registrationErr != nil || registered.IsZero() || route.ConfirmedAt.IsZero() || !validOperation(route.OperationID) {
 		return zero, ircd.ErrConflict
 	}
 	allow := append([]string{}, in.Allowlist...)
 	sort.Strings(allow)
-	out, err := s.binder.Bind(ctx, protocol.ChannelBindRequest{ID: in.ID, SessionID: session.ID, Provider: channels.IRC, Endpoint: route.Endpoint, ChannelID: route.Channel, CredentialRef: route.CredentialRef, Allowlist: allow})
+	out, err := s.binder.Bind(ctx, protocol.ChannelBindRequest{ID: in.ID, SessionID: session.ID, ProjectID: project.ID, IRCAddressed: true, Provider: channels.IRC, Endpoint: route.Endpoint, ChannelID: route.Channel, CredentialRef: route.CredentialRef, Allowlist: allow})
 	if err != nil {
 		return zero, err
 	}
-	if out.ID != in.ID || out.SessionID != session.ID || out.ThreadID != session.ThreadID || out.Provider != channels.IRC || out.Endpoint != route.Endpoint || out.RealmID != route.RealmID || out.SelfID != route.Account || out.ChannelID != route.Channel || out.RootID != "" || !reflect.DeepEqual(out.Allowlist, allow) || out.SemanticDispatch {
+	if out.ProjectID != project.ID || !out.IRCAddressed || out.ID != in.ID || out.SessionID != session.ID || out.ThreadID != session.ThreadID || out.Provider != channels.IRC || out.Endpoint != route.Endpoint || out.RealmID != route.RealmID || out.SelfID != route.Account || out.ChannelID != route.Channel || out.RootID != "" || !reflect.DeepEqual(out.Allowlist, allow) || out.SemanticDispatch {
 		return zero, errors.New("managed IRC binding proof could not be verified")
 	}
 	return out, nil

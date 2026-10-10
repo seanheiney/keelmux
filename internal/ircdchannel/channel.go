@@ -43,8 +43,9 @@ type ManagedRuntime interface {
 // Route is registration evidence, not authority to dispatch native/model input.
 // Its private credential reference must not be included in public status views.
 type Route struct {
-	ServerID, ThreadID, OperationID                            domain.ID
+	ServerID, ProjectID, ThreadID, OperationID                 domain.ID
 	Endpoint, RealmID, Account, CredentialRef, CAFile, Channel string
+	Nick                                                       string
 	RegisteredAt                                               string
 	ConfirmedAt                                                time.Time
 }

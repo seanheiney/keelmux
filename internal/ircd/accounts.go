@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/seanheiney/keelmux/internal/config"
@@ -39,6 +40,9 @@ func (m *Manager) accountSecret(c Config) (saslSecret, string, error) {
 func readAccountSecret(account, ref string) (s saslSecret, sha string, err error) {
 	b, e := readFile(ref, 8192, 0600)
 	if e != nil || strictJSON(b, &s) != nil || s.Account != account || len(s.Password) != 64 {
+		return s, "", ErrRepair
+	}
+	if strings.HasPrefix(account, "kt-") && s.Nick != account || !strings.HasPrefix(account, "kt-") && s.Nick != "" {
 		return s, "", ErrRepair
 	}
 	for _, r := range s.Password {
@@ -95,7 +99,11 @@ func (m *Manager) prepareAccount(c Config, account string) (Credential, string, 
 	if e != nil {
 		return Credential{}, "", e
 	}
-	b, e := json.Marshal(saslSecret{Account: account, Password: password})
+	secret := saslSecret{Account: account, Password: password}
+	if strings.HasPrefix(account, "kt-") {
+		secret.Nick = account
+	}
+	b, e := json.Marshal(secret)
 	if e != nil || publish(filepath.Join(stage, "credential.json"), b, 0600, false) != nil {
 		return Credential{}, "", ErrRepair
 	}
@@ -129,6 +137,11 @@ func (m *Manager) accountProof(ctx context.Context, c Config, s saslSecret) (acc
 // identity has a separate credential and durable intent. An admitted attempt is
 // never sent again; matching account/password proof reconciles a lost ACK.
 func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential, error) {
+	// The thread namespace is never available for a generic human account or
+	// for adoption of credentials created before a full thread ownership claim.
+	if !ValidAccount(account) || strings.HasPrefix(account, "kt-") {
+		return Credential{}, ErrConflict
+	}
 	unlock, e := m.lock(ctx, false)
 	if e != nil {
 		return Credential{}, e
@@ -138,14 +151,20 @@ func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential
 	if e != nil || r.Stage != "ready" {
 		return Credential{}, ErrRepair
 	}
+	return m.ensureAccountLocked(ctx, r, account)
+}
+
+// The caller holds manager.lock and, for reserved thread accounts, has already
+// durably claimed the full immutable thread/server identity.
+func (m *Manager) ensureAccountLocked(ctx context.Context, r configRecord, account string) (Credential, error) {
 	c := r.Config
-	if e = m.requireLive(ctx, r); e != nil {
+	if e := m.requireLive(ctx, r); e != nil {
 		return Credential{}, e
 	}
 	if !ValidAccount(account) {
 		return Credential{}, ErrConflict
 	}
-	if _, e = m.probe(ctx, c); e != nil {
+	if _, e := m.probe(ctx, c); e != nil {
 		return Credential{}, e
 	}
 	cred, p, e := m.prepareAccount(c, account)

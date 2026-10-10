@@ -28,6 +28,7 @@ type configRecord struct {
 type saslSecret struct {
 	Account  string `json:"account"`
 	Password string `json:"password"`
+	Nick     string `json:"nick,omitempty"`
 }
 
 func (m *Manager) Init(ctx context.Context, opts InitOptions) (Config, error) {

@@ -107,13 +107,28 @@ func (m *testManager) EnsureAccount(ctx context.Context, account string) (ircd.C
 }
 
 type testSessions struct {
-	session domain.Session
-	calls   int
+	session                       domain.Session
+	project                       domain.Project
+	projectCalls, membershipCalls int
+	membershipError               error
+	calls                         int
 }
 
 func (s *testSessions) Session(ctx context.Context, id domain.ID) (domain.Session, error) {
 	s.calls++
 	return s.session, nil
+}
+
+func (s *testSessions) Project(ctx context.Context, id domain.ID) (domain.Project, error) {
+	s.projectCalls++
+	return s.project, nil
+}
+func (s *testSessions) BindProjectThread(ctx context.Context, project, session domain.ID) (domain.Project, error) {
+	s.membershipCalls++
+	if project != s.project.ID || session != s.session.ID {
+		return domain.Project{}, ircd.ErrConflict
+	}
+	return s.project, s.membershipError
 }
 
 type testRegistrar struct {
@@ -124,7 +139,7 @@ type testRegistrar struct {
 	change         func(*ircdchannel.Route)
 }
 
-func (r *testRegistrar) Ensure(ctx context.Context, thread, op domain.ID) (ircdchannel.Route, error) {
+func (r *testRegistrar) EnsureProject(ctx context.Context, project ircdchannel.Project, thread, op domain.ID) (ircdchannel.Route, error) {
 	r.calls++
 	if r.failure != nil {
 		return ircdchannel.Route{}, r.failure
@@ -132,8 +147,9 @@ func (r *testRegistrar) Ensure(ctx context.Context, thread, op domain.ID) (ircdc
 	route, ok := r.routes[thread]
 	if !ok {
 		r.effects++
-		channel, _ := ircdchannel.ChannelName(thread)
-		route = ircdchannel.Route{ServerID: r.cfg.ID, ThreadID: thread, OperationID: op, Endpoint: r.cfg.Endpoint, RealmID: r.cfg.RealmID, Account: r.cfg.Account, CAFile: r.cfg.CAFile, CredentialRef: r.cfg.CredentialRef, Channel: channel, RegisteredAt: "2026-10-10T20:00:00Z", ConfirmedAt: time.Now().UTC()}
+		channel, _ := ircdchannel.ProjectChannelName(project)
+		account, _ := ircdchannel.ThreadAccount(thread)
+		route = ircdchannel.Route{ServerID: r.cfg.ID, ProjectID: project.ID, ThreadID: thread, OperationID: op, Endpoint: r.cfg.Endpoint, RealmID: r.cfg.RealmID, Account: account, Nick: account, CAFile: r.cfg.CAFile, CredentialRef: filepath.Join(filepath.Dir(r.cfg.CredentialRef), "accounts", account, "credential.json"), Channel: channel, RegisteredAt: "2026-10-10T20:00:00Z", ConfirmedAt: time.Now().UTC()}
 		r.routes[thread] = route
 	}
 	if r.change != nil {
@@ -158,7 +174,8 @@ func (b *testBinder) Bind(ctx context.Context, in protocol.ChannelBindRequest) (
 		}
 		return existing, nil
 	}
-	out := protocol.ChannelStatus{ID: in.ID, SessionID: in.SessionID, ThreadID: b.session.ThreadID, Provider: in.Provider, Endpoint: in.Endpoint, RealmID: b.cfg.RealmID, SelfID: b.cfg.Account, ChannelID: in.ChannelID, RootID: in.RootID, Allowlist: in.Allowlist, Active: true, ActivationCutoff: time.Now().UTC()}
+	account, _ := ircdchannel.ThreadAccount(b.session.ThreadID)
+	out := protocol.ChannelStatus{ProjectID: in.ProjectID, IRCAddressed: in.IRCAddressed, ID: in.ID, SessionID: in.SessionID, ThreadID: b.session.ThreadID, Provider: in.Provider, Endpoint: in.Endpoint, RealmID: b.cfg.RealmID, SelfID: account, ChannelID: in.ChannelID, RootID: in.RootID, Allowlist: in.Allowlist, Active: true, ActivationCutoff: time.Now().UTC()}
 	if b.change != nil {
 		b.change(&out)
 	}
@@ -171,7 +188,8 @@ func setup(t *testing.T) (*Service, *testManager, *testRegistrar, *testBinder, *
 	dir := t.TempDir()
 	cfg := ircd.Config{ID: domain.NewID("ircd"), Endpoint: "ircs://127.0.0.1:6697", RealmID: "127.0.0.1:6697", Account: "keelmux-bot", CredentialRef: filepath.Join(dir, "bot.json"), CAFile: filepath.Join(dir, "ca.pem"), Runtime: ircd.RuntimeInfo{Version: ircd.Version, Source: ircd.SourceCommit, Target: "darwin/arm64"}}
 	m := &testManager{cfg: cfg, calls: map[string]int{}, status: ircd.Status{Config: cfg, State: "initialized", ObservedAt: time.Now().UTC()}}
-	sessions := &testSessions{session: domain.Session{ID: domain.NewID("session"), ThreadID: domain.NewID("thread"), WorkID: domain.NewID("work"), HostID: domain.NewID("host")}}
+	sessions := &testSessions{session: domain.Session{ID: domain.NewID("session"), ThreadID: domain.NewID("thread"), WorkID: domain.NewID("work"), HostID: domain.NewID("host"), Workspace: dir}}
+	sessions.project = domain.Project{ID: domain.NewID("project"), HostID: sessions.session.HostID, Name: "Owned project", Workspace: dir, CreatedAt: time.Now().UTC()}
 	r := &testRegistrar{cfg: cfg, routes: map[domain.ID]ircdchannel.Route{}}
 	b := &testBinder{cfg: cfg, session: sessions.session, bindings: map[domain.ID]protocol.ChannelStatus{}}
 	s, err := New(m, r, b, sessions)
@@ -245,27 +263,27 @@ func TestExplicitLifecycleIDsAndUnknownResponsesNeverReplay(t *testing.T) {
 
 func TestBindResolvesStableThreadAndImmutableManagedScope(t *testing.T) {
 	s, m, r, b, sessions := setup(t)
-	c := client(t, s)
-	in := protocol.IRCDBindRequest{ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"zoe", "alice"}}
-	out, err := c.BindIRCD(context.Background(), in)
+	in := protocol.IRCDBindRequest{ProjectID: sessions.project.ID, ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"zoe", "alice"}}
+	out, err := s.Bind(context.Background(), in)
 	if err != nil {
 		t.Fatal(err)
 	}
-	channel, _ := ircdchannel.ChannelName(sessions.session.ThreadID)
+	channel, _ := ircdchannel.ProjectChannelName(ircdchannel.Project{ID: sessions.project.ID, HostID: sessions.project.HostID, Name: sessions.project.Name, Workspace: sessions.project.Workspace})
+	account, _ := ircdchannel.ThreadAccount(sessions.session.ThreadID)
 	if out.ThreadID != sessions.session.ThreadID || out.ChannelID != channel || out.Endpoint != m.cfg.Endpoint || out.SemanticDispatch {
 		t.Fatal("bind did not preserve stable managed route")
 	}
 	got := b.calls[0]
-	if got.CredentialRef != m.cfg.CredentialRef || got.RootID != "" || got.Provider != channels.IRC || !reflect.DeepEqual(got.Allowlist, []string{"alice", "zoe"}) {
+	if got.CredentialRef != filepath.Join(filepath.Dir(m.cfg.CredentialRef), "accounts", account, "credential.json") || got.ProjectID != sessions.project.ID || !got.IRCAddressed || got.RootID != "" || got.Provider != channels.IRC || !reflect.DeepEqual(got.Allowlist, []string{"alice", "zoe"}) {
 		t.Fatal("unverified binding scope")
 	}
 	in.OperationID = domain.NewID("operation")
-	again, err := c.BindIRCD(context.Background(), in)
+	again, err := s.Bind(context.Background(), in)
 	if err != nil || again.ID != out.ID || r.effects != 1 {
 		t.Fatal("same-thread retry repeated channel creation", err)
 	}
 	in.Allowlist = []string{"other"}
-	if _, err = c.BindIRCD(context.Background(), in); err == nil || r.effects != 1 {
+	if _, err = s.Bind(context.Background(), in); err == nil || r.effects != 1 {
 		t.Fatal("binding identity reused with altered immutable allowlist")
 	}
 }
@@ -273,7 +291,7 @@ func TestBindResolvesStableThreadAndImmutableManagedScope(t *testing.T) {
 func TestUncertainRegistrationNeverCreatesBinding(t *testing.T) {
 	s, _, r, b, sessions := setup(t)
 	r.failure = ircdchannel.ErrUncertain
-	in := protocol.IRCDBindRequest{ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}}
+	in := protocol.IRCDBindRequest{ProjectID: sessions.project.ID, ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}}
 	for i := 0; i < 2; i++ {
 		if _, err := s.Bind(context.Background(), in); !errors.Is(err, ircdchannel.ErrUncertain) {
 			t.Fatal(err)
@@ -296,7 +314,7 @@ func TestBindingProofCannotGrantNativeDispatchOrChangeIdentity(t *testing.T) {
 		t.Run(change.name, func(t *testing.T) {
 			s, _, _, b, sessions := setup(t)
 			b.change = change.change
-			out, err := s.Bind(context.Background(), protocol.IRCDBindRequest{ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}})
+			out, err := s.Bind(context.Background(), protocol.IRCDBindRequest{ProjectID: sessions.project.ID, ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}})
 			if err == nil || !reflect.DeepEqual(out, protocol.ChannelStatus{}) {
 				t.Fatal("unverified binding result published authority")
 			}
@@ -321,7 +339,7 @@ func TestBindRejectsIdentityDriftBeforeBinding(t *testing.T) {
 		t.Run(change.name, func(t *testing.T) {
 			s, _, r, b, sessions := setup(t)
 			r.change = change.change
-			_, err := s.Bind(context.Background(), protocol.IRCDBindRequest{ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}})
+			_, err := s.Bind(context.Background(), protocol.IRCDBindRequest{ProjectID: sessions.project.ID, ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}})
 			if err == nil || len(b.calls) != 0 {
 				t.Fatal("unverified route reached binding")
 			}
@@ -329,7 +347,7 @@ func TestBindRejectsIdentityDriftBeforeBinding(t *testing.T) {
 	}
 	s, _, r, _, sessions := setup(t)
 	sessions.session.ID = domain.NewID("session")
-	if _, err := s.Bind(context.Background(), protocol.IRCDBindRequest{ID: domain.NewID("binding"), SessionID: domain.NewID("session"), OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}}); err == nil || r.calls != 0 {
+	if _, err := s.Bind(context.Background(), protocol.IRCDBindRequest{ProjectID: sessions.project.ID, ID: domain.NewID("binding"), SessionID: domain.NewID("session"), OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}}); err == nil || r.calls != 0 {
 		t.Fatal("session resolver mismatch reached registrar")
 	}
 }

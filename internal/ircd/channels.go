@@ -76,6 +76,11 @@ func (m *Manager) BeginChannel(ctx context.Context, channel string, threadID, op
 	} else if !os.IsNotExist(e) {
 		return ChannelOperation{}, false, e
 	}
+	if strings.HasPrefix(channel, "#km-") {
+		// Reserved project channels only use the separate format2 journal. Old
+		// recorded format1 routes above may still reconcile without mutation.
+		return ChannelOperation{}, false, ErrConflict
+	}
 	if e = m.requireLive(ctx, r); e != nil {
 		return ChannelOperation{}, false, e
 	}

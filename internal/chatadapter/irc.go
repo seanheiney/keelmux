@@ -20,6 +20,8 @@ import (
 
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/config"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/ircd"
 )
 
 const ircBufferSize = 256
@@ -109,6 +111,14 @@ type ircSession struct {
 }
 
 func ircEndpoint(b channels.Binding) (string, error) {
+	if b.IRCAddressed {
+		account, e := ircd.ThreadAccount(b.ThreadID)
+		if e != nil || !domain.ValidObjectID(b.ProjectID, "project") || b.SelfID != "" && b.SelfID != account {
+			return "", errBinding
+		}
+	} else if b.ProjectID != "" {
+		return "", errBinding
+	}
 	canonical, err := channels.CanonicalEndpoint(channels.IRC, b.Endpoint)
 	if err != nil || canonical != b.Endpoint {
 		return "", errBinding
@@ -184,6 +194,12 @@ func (a *IRC) session(ctx context.Context, b channels.Binding) (*ircSession, err
 	if err != nil {
 		return nil, err
 	}
+	if b.IRCAddressed {
+		account, e := ircd.ThreadAccount(b.ThreadID)
+		if e != nil || secret.Account != account || secret.Nick != account {
+			return nil, errCredential
+		}
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.closed || a.dial == nil {
@@ -191,7 +207,7 @@ func (a *IRC) session(ctx context.Context, b channels.Binding) (*ircSession, err
 	}
 	if old := a.states[string(b.ID)]; old != nil {
 		old.mu.Lock()
-		matching := old.binding.Endpoint == b.Endpoint && old.binding.ChannelID == b.ChannelID && old.binding.CredentialRef == b.CredentialRef && matchIdentity(b, old.proof.RealmID, old.proof.SelfID)
+		matching := old.binding.Endpoint == b.Endpoint && old.binding.ChannelID == b.ChannelID && old.binding.CredentialRef == b.CredentialRef && old.binding.ProjectID == b.ProjectID && old.binding.ThreadID == b.ThreadID && old.binding.IRCAddressed == b.IRCAddressed && matchIdentity(b, old.proof.RealmID, old.proof.SelfID)
 		alive := old.alive
 		sameSecret := old.secretHash == hash
 		old.mu.Unlock()
@@ -366,6 +382,7 @@ func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority 
 	acked := map[string]bool{}
 	requested, authStarted, authSent, success, welcome, joinSent, joined := false, false, false, false, false, false, false
 	account := ""
+	saslTarget := ""
 	for count := 0; count < 512; count++ {
 		m, err := s.read()
 		if err != nil {
@@ -464,9 +481,20 @@ func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority 
 			if !authSent || len(m.Params) < 3 || !matchIdentity(s.binding, authority, m.Params[2]) {
 				return errBinding
 			}
+			if s.binding.IRCAddressed {
+				placeholder := len(m.Params) == 4 && m.Params[0] == "*" && m.Params[1] == "*"
+				exact := len(m.Params) == 4 && m.Params[0] == s.nick && strings.HasPrefix(m.Params[1], s.nick+"!") && strings.Contains(m.Params[1], "@")
+				if account != "" || !ircServerNumeric(m) || !placeholder && !exact || m.Params[2] != s.nick {
+					return errBinding
+				}
+				saslTarget = m.Params[0]
+			}
 			account = m.Params[2]
 		case "903":
 			if !authSent || account == "" || success {
+				return errBinding
+			}
+			if s.binding.IRCAddressed && (len(m.Params) != 2 || m.Params[0] != saslTarget || !ircServerNumeric(m)) {
 				return errBinding
 			}
 			success = true
@@ -477,6 +505,9 @@ func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority 
 			if !success || len(m.Params) < 1 || !ircNick(m.Params[0]) {
 				return errBinding
 			}
+			if s.binding.IRCAddressed && (welcome || len(m.Params) != 2 || m.Params[0] != s.nick || !ircServerNumeric(m)) {
+				return errBinding
+			}
 			s.nick = m.Params[0]
 			welcome = true
 		case "JOIN":
@@ -484,11 +515,18 @@ func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority 
 				break
 			}
 			nick, _, _ := strings.Cut(m.Prefix, "!")
+			if s.binding.IRCAddressed && strings.EqualFold(nick, s.nick) && nick != s.nick {
+				return errBinding
+			}
 			if strings.EqualFold(nick, s.nick) {
 				if tag := m.Tags["account"]; tag != "" && tag != account {
 					return errBinding
 				}
 				joined = true
+			}
+		case "NICK":
+			if s.binding.IRCAddressed {
+				return errBinding
 			}
 		case "904", "905", "906", "907", "901", "433", "432", "461", "ERROR", "403", "405", "471", "473", "474", "475", "476", "477", "489":
 			return errBinding
@@ -573,7 +611,13 @@ func (s *ircSession) receive(m ircMessage) bool {
 	if m.Command == "900" && (len(m.Params) < 3 || m.Params[2] != s.proof.SelfID) {
 		return false
 	}
+	if s.binding.IRCAddressed && (m.Command == "001" || m.Command == "903" || m.Command == "900" && (len(m.Params) != 4 || m.Params[0] != s.nick || !strings.HasPrefix(m.Params[1], s.nick+"!") || !strings.Contains(m.Params[1], "@") || !ircServerNumeric(m))) {
+		return false
+	}
 	if m.Command == "NICK" && strings.EqualFold(nick, s.nick) {
+		if s.binding.IRCAddressed {
+			return false
+		}
 		if len(m.Params) != 1 || !ircNick(m.Params[0]) {
 			return false
 		}
@@ -622,7 +666,7 @@ func (s *ircSession) receive(m ircMessage) bool {
 	}
 	if p := s.pending[label]; label != "" && p != nil {
 		r := unconfirmed(s.proof)
-		if m.Command == "PRIVMSG" && len(m.Params) == 2 && sameIRCChannel(m.Params[0], s.binding.ChannelID) && m.Params[1] == p.Text && m.Tags["account"] == s.proof.SelfID && channels.ValidID(m.Tags["msgid"]) {
+		if m.Command == "PRIVMSG" && len(m.Params) == 2 && sameIRCChannel(m.Params[0], s.binding.ChannelID) && m.Params[1] == p.Text && m.Tags["account"] == s.proof.SelfID && channels.ValidID(m.Tags["msgid"]) && (!s.binding.IRCAddressed || nick == s.nick) {
 			r = channels.SendResult{State: channels.Delivered, RemoteID: m.Tags["msgid"], Evidence: s.proof}
 		} else if m.Command == "401" || m.Command == "403" || m.Command == "404" || m.Command == "442" || m.Command == "482" {
 			r = failed()
@@ -647,6 +691,9 @@ func (s *ircSession) receive(m ircMessage) bool {
 	if !channels.ValidID(account) || account == "*" || !channels.ValidID(id) || !channels.ValidText(m.Params[1]) {
 		return true
 	}
+	if s.binding.IRCAddressed && !ircAddressedText(m.Params[1], s.nick) {
+		return true
+	}
 	at, err := time.Parse(time.RFC3339Nano, m.Tags["time"])
 	if err != nil || at.IsZero() || at.UnixMilli() <= 0 {
 		return true
@@ -658,6 +705,21 @@ func (s *ircSession) receive(m ircMessage) bool {
 		s.buffer = s.buffer[1:]
 	}
 	return true
+}
+
+func ircServerNumeric(m ircMessage) bool {
+	return m.Prefix != "" && !strings.ContainsAny(m.Prefix, "!@")
+}
+
+// Only an exact initial thread address selects a recipient. Preserve the full
+// original authored text for the inbox; no parsing into commands or fanout.
+func ircAddressedText(text, nick string) bool {
+	for _, prefix := range []string{nick + ": ", "@" + nick + " "} {
+		if strings.HasPrefix(text, prefix) && channels.ValidText(strings.TrimSpace(strings.TrimPrefix(text, prefix))) {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *IRC) Probe(ctx context.Context, b channels.Binding) (channels.Evidence, error) {
