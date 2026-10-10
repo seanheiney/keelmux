@@ -25,7 +25,7 @@ flowchart LR
 
 A binding names the home HostID, WorkID and stable ThreadID. It also names a verified external realm, channel and root message. Native thread IDs, execution generations, processes and terminal panes remain separate. Existing session records supply the initial thread provenance; a durable conversation record then preserves that identity independently of a running process.
 
-Bindings are immutable. Changing the target or allowed sender identities creates a new binding; disabling an old binding does not reactivate it. One external address has one active route. Mattermost and Slack require an existing verified root in the intended channel. IRC uses an explicit network bot channel; IRC has no equivalent built-in root thread in this support mode.
+Bindings are immutable. Changing the target or allowed sender identities creates a new binding; disabling an old binding does not reactivate it. One external address has one active route. Address and incoming-source uniqueness include the exact provider endpoint as well as realm and channel: cloned Mattermost servers can reuse team, channel and post IDs. Mattermost realm is the verified channel's team ID, Slack realm is the authenticated workspace ID, and IRC realm is its verified TLS network authority. Mattermost and Slack require an existing verified root in the intended channel. IRC uses an explicit network bot channel; IRC has no equivalent built-in root thread in this support mode.
 
 Inbound authorization uses exact identities from the authenticated transport: Mattermost user IDs, Slack workspace/user IDs, or IRC services accounts reported by the server. Display names and IRC nicknames are presentation. Bots, own echoes, deleted messages, and unsupported message kinds do not become new inbound authored messages. Replay is stored or deduplicated as history and never executes an action.
 
@@ -39,7 +39,7 @@ An attempted operation found after daemon loss becomes uncertain. It is never re
 
 Disabling a route blocks future claims and cancels its queued deliveries. A send already admitted can still complete externally; its receipt remains visible after disable. The implementation must record that outcome rather than inventing cancellation of an effect that may already exist.
 
-Incoming source IDs, normalized authored messages and intake progress commit together. Intake is bounded by request size, page count, message count and time. Truncated history must be exposed explicitly; it cannot advance a completion watermark as though every message was read. Transport replay uses overlapping reads plus durable deduplication.
+Incoming source IDs, normalized authored messages and intake progress commit together. Intake is bounded by request size, page count, message count and time. Truncated history must be exposed explicitly; it cannot advance a completion watermark as though every message was read. Transport replay uses overlapping reads plus durable deduplication. Imported notes preserve the first observed text. A same-source edit is ignored while intake progress can advance; changes to original actor, address or creation time conflict atomically. Remote edits and deletions are outside this snapshot inbox contract and must remain visible as a coverage limit.
 
 ## Transport boundaries
 

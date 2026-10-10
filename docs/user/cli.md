@@ -63,6 +63,10 @@ keelmux-entry --state /absolute/entry-state --config /absolute/private-entry.jso
 
 The configuration and scope are described in the [private entry guide](private-entry.md). Entry clients can browse and attach. Launch, stop, link and reconciliation management remain at the execution home. `drive` is an internal attachment companion with generation and acquisition arguments; it is not a public prompt API.
 
+## Channels on the development branch
+
+The published v0.1.0 binary does not provide these commands. The channel branch adds `keelmux channels --help`, `bind`, `list`, `history`, `send`, `delivery`, `sync`, `reconcile` and `disable`. [Channel setup and receipts](channels.md) document their exact flags and recovery behavior. These local-home commands manage authored chat only; they do not submit native model turns or approve tools.
+
 ## Commands still on the roadmap
 
 There are no implemented `join`, `connect`, `continue`, `subscriptions`, `usage`, backup or semantic-message commands at this source. Proposed syntax in the product specification must not be mistaken for an available command. Structured Codex prompt and approval control remains experimental and has no product launcher.
