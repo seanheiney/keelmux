@@ -47,11 +47,11 @@ const (
 )
 
 type LifecycleRequest struct {
-	Action                        Action
-	OperationID                   domain.ID
-	Target                        Target
-	Agent                         cb.AgentBinding // Complete exact binding for stop; zero for start.
-	NativeThreadID, RealmRevision string
+	Action                                   Action
+	OperationID                              domain.ID
+	Target                                   Target
+	Agent                                    cb.AgentBinding // Complete exact binding for stop; zero for start.
+	NativeThreadID, RealmRevision, Workspace string
 }
 
 // Gate is an adapter on the EXISTING Service/store authority, never another

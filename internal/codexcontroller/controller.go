@@ -42,6 +42,14 @@ func New(j *Journal, s Supervisor, u Upstream, g Gate, o Options) (*Controller, 
 	if j == nil || absent(s) || absent(u) || absent(g) {
 		return nil, ErrUnavailable
 	}
+	// A partially qualified real adapter must refuse construction before any
+	// supervisor launch. Fixtures and other reviewed implementations need not
+	// implement this optional readiness boundary.
+	if readiness, ok := u.(interface{ CheckPrimaryReady() error }); ok {
+		if readiness.CheckPrimaryReady() != nil {
+			return nil, ErrUnavailable
+		}
+	}
 	if !cleanPath(o.Binary) || !cleanPath(o.Home) || !cleanPath(o.CodexHome) || !validText(o.RealmRevision) || !digest(o.BinarySHA256) {
 		return nil, ErrInvalid
 	}
@@ -163,7 +171,7 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 	ctx, cancel := c.bounded(ctx)
 	defer cancel()
 	var out View
-	err := c.gateRun(ctx, LifecycleRequest{Action: StartPrimary, OperationID: r.OperationID, Target: r.Target, NativeThreadID: r.NativeThreadID, RealmRevision: r.RealmRevision}, func(ctx context.Context) error {
+	err := c.gateRun(ctx, LifecycleRequest{Action: StartPrimary, OperationID: r.OperationID, Target: r.Target, NativeThreadID: r.NativeThreadID, RealmRevision: r.RealmRevision, Workspace: r.Workspace}, func(ctx context.Context) error {
 		j := c.journal
 		j.mu.Lock()
 		defer j.mu.Unlock()
@@ -447,7 +455,7 @@ func (c *Controller) Stop(ctx context.Context, r StopRequest) (View, error) {
 		return View{}, ErrNotFound
 	}
 	var out View
-	err := c.gateRun(ctx, LifecycleRequest{Action: StopPrimary, OperationID: r.OperationID, Target: r.Target, Agent: e.Evidence.Agent, NativeThreadID: e.Request.NativeThreadID, RealmRevision: e.Request.RealmRevision}, func(ctx context.Context) error {
+	err := c.gateRun(ctx, LifecycleRequest{Action: StopPrimary, OperationID: r.OperationID, Target: r.Target, Agent: e.Evidence.Agent, NativeThreadID: e.Request.NativeThreadID, RealmRevision: e.Request.RealmRevision, Workspace: e.Request.Workspace}, func(ctx context.Context) error {
 		j.mu.Lock()
 		defer j.mu.Unlock()
 		if !j.available() {
