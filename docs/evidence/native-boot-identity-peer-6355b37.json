@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "scope": "independent synthetic native boot/lifecycle regressions; no service or model child launched",
+  "source": "6355b37d60b25959638412a10bfed847b718f2a0",
+  "source_tree": "a70ba5231a7963ffb05312a03cd75f74bff0f5a3",
+  "source_clean": true,
+  "source_unchanged_after": true,
+  "passed": true,
+  "baseline_source": "54fda85e112dfcc901c6635eecb222e4d90e2c94",
+  "baseline_expected_failures": {
+    "canonical_stable_uuid": true,
+    "stopped_journal_cases": 3,
+    "unsupported_receipt_cases": 30
+  },
+  "host_go": "go version go1.26.6 darwin/arm64",
+  "linux_runtime": {
+    "arch": "arm64",
+    "binary_sha256": {
+      "ircd": "2e5e9c06ad81266a491988bf3474e3c9a3b150d476fe10b0c6424af94c46a686",
+      "nativepty": "fbaf3b1505a550d60659564379a8d359d5dde9d3cf9be9883176ce0a5a280610"
+    },
+    "go": "go version go1.26.6 linux/arm64",
+    "image": "golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36",
+    "kernel": "Linux 6.8.0-100-generic aarch64",
+    "network": "none",
+    "no_host_mounts": true,
+    "os": "linux",
+    "race_instrumented": false
+  },
+  "cleanup": {
+    "exact_owned_container_absent": true,
+    "failures": []
+  },
+  "test_source_sha256": {
+    "ircd_peer_boot_identity_test.go.txt": "649c705182d5b8fd944284d68ac2c213f3750ecaa63e8386453fc2f73f912f91",
+    "native_peer_boot_identity_test.go.txt": "b96696a56afef25cfc03f7bdede6372365eafeba1c9092f3d23fe47d6ca3fa90"
+  },
+  "private_original_receipt_sha256": "731ea260f0956963bbaeca7e11a36b4c34bc7e6a160812c35fc0369684dac1cd",
+  "integrated_repair_commit": "8408dff",
+  "all_nine_repair_files_byte_identical_to_peer_source": true,
+  "darwin_race": {
+    "main_tests_passed": 9,
+    "passed": true,
+    "subcases_passed": 39
+  },
+  "linux_functional": {
+    "ircd": {
+      "main_tests_passed": 1,
+      "passed": true,
+      "subcases_passed": 3
+    },
+    "nativepty": {
+      "main_tests_passed": 6,
+      "passed": true,
+      "subcases_passed": 30
+    }
+  },
+  "limitations": [
+    "Synthetic receipt review; no actual reboot or clock adjustment",
+    "No service/model child launched by peer; release packages require separate qualification"
+  ]
+}

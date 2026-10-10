@@ -1,0 +1,7 @@
+# Native boot authority repair review
+
+Independent review passed clean frozen repair `6355b37d60b25959638412a10bfed847b718f2a0` (tree `a70ba5231a7963ffb05312a03cd75f74bff0f5a3`). All nine repair files are byte-identical to captain integration `8408dff`. See the [finite receipt](native-boot-identity-peer-6355b37.json) and [original incident](native-boot-identity-incident-2026-10-10.md).
+
+macOS arm64 race checks passed nine main tests and 39 subcases. A fresh isolated Linux arm64 runtime passed seven main tests and 33 subcases. Thirty unsupported receipt combinations remain unavailable across all five lifecycle stages and seven public API paths, preserving receipt bytes. Stopped IRC journals now require observation: unknown and live outcomes refuse replacement; confirmed death preserves stopped state. A valid same-platform boot UUID change proves reboot, while a missing supervisor on the same boot remains uncertain.
+
+The old candidate fails the independent canonical-UUID, unsupported-receipt and stopped-journal checks. The repair passes them. The reviewer found no actionable source issue. Test containers were removed and independently confirmed absent; cleanup failures were empty. These synthetic tests launched no service or model child and did not touch original test processes. Actual reboot and clock adjustment were not performed. Installed release packages and hosted CI are separate gates.

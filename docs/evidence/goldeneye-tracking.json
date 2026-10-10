@@ -160,5 +160,19 @@
     "write_status": 201,
     "read_status": 200,
     "exact_body_read_verified": true
+  },
+  "release_v020_candidate_qualification": {
+    "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+    "comment_id": "d03dfbe9-10f5-49c5-bd53-e4cd0c40b916",
+    "write_status": 201,
+    "read_status": 200,
+    "exact_body_read_verified": true
+  },
+  "native_boot_identity_blocker": {
+    "issue_id": "c9291318-8eb9-415f-95cb-a3e81608f3bc",
+    "comment_id": "28a99a08-924c-45c6-9bdb-b35ebff9f995",
+    "write_status": 201,
+    "read_status": 200,
+    "exact_body_read_verified": true
   }
 }
