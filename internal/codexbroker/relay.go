@@ -183,11 +183,27 @@ func (c *Channel) readUpstream() {
 	for {
 		raw, err := c.upstream.Read(c.ctx)
 		if err != nil {
+			if c.ctx.Err() == nil {
+				// An unexpected owned-source loss cannot establish that every
+				// privileged event was read. Explicit controller Close cancels
+				// this context first; every other loss remains a repair blocker.
+				if retainErr := c.quarantine(nil, []byte(`{"quarantine":"owned upstream became unavailable before controller close"}`)); retainErr != nil {
+					c.finish(retainErr)
+					return
+				}
+			}
 			c.finish(err)
 			return
 		}
 		frame, err := c.relay.policy.Decode(raw)
 		if err != nil {
+			// Preserve the actual malformed source without inventing a native
+			// request ID. The authority retains a bounded digest when these
+			// bytes are not JSON and never makes this quarantine actionable.
+			if retainErr := c.quarantine(nil, raw); retainErr != nil {
+				c.finish(retainErr)
+				return
+			}
 			c.finish(errors.New("owned upstream sent an invalid pinned frame"))
 			return
 		}
