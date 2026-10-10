@@ -279,6 +279,9 @@ func (m *Manager) Config() (Config, error) {
 	if e != nil {
 		return Config{}, e
 	}
+	if r.Stage != "ready" {
+		return Config{}, ErrUncertain
+	}
 	return r.Config, nil
 }
 func (m *Manager) ScopedTLS() (*tls.Config, error) {

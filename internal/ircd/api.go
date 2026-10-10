@@ -133,7 +133,7 @@ func (m *Manager) probe(ctx context.Context, c Config) (apiStatus, error) {
 	if e := m.api(ctx, c, "/v1/status", struct{}{}, &s); e != nil {
 		return s, e
 	}
-	if !s.Success || s.Version != Version || !validTimestamp(s.StartTime) || s.Servers != 1 || s.Channels < 0 || s.Channels > 256 || s.GoVersion == "" || (s.Commit != "" && (len(s.Commit) < 7 || !strings.HasPrefix(SourceCommit, s.Commit))) {
+	if !s.Success || s.Version != Version || !validTimestamp(s.StartTime) || s.Servers != 1 || s.Channels < 0 || s.Channels > 256 || !validGoVersion(s.GoVersion) || (s.Commit != "" && (len(s.Commit) < 7 || !strings.HasPrefix(SourceCommit, s.Commit))) {
 		return apiStatus{}, ErrConflict
 	}
 	return s, nil
@@ -256,4 +256,16 @@ func schemaFields(t reflect.Type, fields map[string]reflect.Type) {
 			fields[key] = f.Type
 		}
 	}
+}
+
+func validGoVersion(s string) bool {
+	if len(s) < 7 || len(s) > 64 || !strings.HasPrefix(s, "go1.") {
+		return false
+	}
+	for _, r := range s[4:] {
+		if !(r >= '0' && r <= '9' || r == '.' || r == 'r' || r == 'c' || r == 'b' || r == 'e' || r == 't' || r == 'a') {
+			return false
+		}
+	}
+	return true
 }

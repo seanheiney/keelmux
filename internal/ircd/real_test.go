@@ -146,3 +146,67 @@ func TestRealPinnedServer(t *testing.T) {
 		t.Fatal("bad API token accepted")
 	}
 }
+
+// A manually running server with the same private configuration is still not
+// owned by the Manager's new execution. A shared TLS identity is insufficient.
+func TestRealPinnedForeignPortRefusal(t *testing.T) {
+	archive := os.Getenv("KEELMUX_ERGO_ARCHIVE")
+	if archive == "" {
+		t.Skip("explicit pinned real Ergo archive required")
+	}
+	b, e := os.ReadFile(archive)
+	if e != nil {
+		t.Fatal(e)
+	}
+	dir := filepath.Join(t.TempDir(), "server")
+	m, e := New(dir)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if _, e = m.InstallArchive(context.Background(), bytes.NewReader(b)); e != nil {
+		t.Fatal(e)
+	}
+	c, e := m.Init(context.Background(), InitOptions{})
+	if e != nil {
+		t.Fatal(e)
+	}
+	foreign := newTestSupervisor(dir)
+	t.Cleanup(foreign.cleanup)
+	s := domain.NewSession(domain.NewID("host"), "unmanaged fixture", dir, "ergo", Version)
+	foreignRef, e := foreign.LaunchProcess(context.Background(), domain.LaunchSpec{Session: s, OperationID: domain.NewID("operation"), Argv: []string{c.Runtime.Path, "run", "--conf", filepath.Join(dir, "ergo.yaml"), "--quiet"}, Env: []string{"PATH=/usr/bin:/bin", "HOME=" + dir}})
+	if e != nil {
+		t.Fatal(e)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, e = m.probe(context.Background(), c); e == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("unmanaged fixture not ready", e)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	time.Sleep(5 * time.Millisecond) // separate the upstream millisecond epoch
+	own := newTestSupervisor(dir)
+	t.Cleanup(own.cleanup)
+	m, e = NewWithSupervisor(dir, own)
+	if e != nil {
+		t.Fatal(e)
+	}
+	status, e := m.Start(context.Background(), domain.NewID("operation"))
+	if e == nil || status.Alive || own.launches != 1 {
+		t.Fatal("adopted foreign listener", e)
+	}
+	observation, e := foreign.Inspect(context.Background(), foreignRef)
+	if e != nil || !observation.Alive || foreign.stops != 0 {
+		t.Fatal("foreign fixture was stopped", e)
+	}
+	if e = m.Stop(context.Background(), status.Instance); e != nil {
+		t.Fatal("owned failed child cleanup", e)
+	}
+	observation, e = foreign.Inspect(context.Background(), foreignRef)
+	if e != nil || !observation.Alive {
+		t.Fatal("stop reached foreign server", e)
+	}
+}

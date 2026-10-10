@@ -51,6 +51,9 @@ func TestPrivatePathsAndFiles(t *testing.T) {
 	}
 }
 func TestStrictResponse(t *testing.T) {
+	if !validGoVersion("go1.26.5") || validGoVersion("private-token") || validGoVersion("go1.26.5\nprivate") {
+		t.Fatal("Go version proof syntax")
+	}
 	valid := []byte(`{"success":true,"accountName":"keelmux-bot"}`)
 	var a authResponse
 	if strictJSON(valid, &a) != nil || !a.Success {

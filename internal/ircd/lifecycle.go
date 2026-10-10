@@ -27,7 +27,7 @@ func (m *Manager) operationPath(id domain.ID) string {
 func (m *Manager) lifecyclePath() string { return filepath.Join(m.dir, "lifecycle.json") }
 func (m *Manager) validateLifecycle(c configRecord, r lifecycleRecord) error {
 	s := r.Session
-	if r.Format != 1 || r.ServerID != c.Config.ID || !validOperationID(r.OperationID) || !validLocalID(s.ID, "session") || !validLocalID(s.HostID, "host") || !validLocalID(s.Execution.ID, "execution") || s.Execution.Generation != 1 || s.Workspace != m.dir || s.Execution.Provider != "ergo" || s.Execution.ProviderVersion != Version || r.ConfigSHA256 != c.YAMLSHA256 || r.BinarySHA256 != c.Config.Runtime.BinarySHA256 || r.UpdatedAt.IsZero() {
+	if r.Format != 1 || r.ServerID != c.Config.ID || !validOperationID(r.OperationID) || !validLocalID(s.ID, "session") || !validLocalID(s.HostID, "host") || !validLocalID(s.Execution.ID, "execution") || s.Execution.Generation != 1 || s.Workspace != m.dir || s.Execution.Provider != "ergo" || s.Execution.ProviderVersion != Version || r.ConfigSHA256 != c.YAMLSHA256 || r.BinarySHA256 != c.Config.Runtime.BinarySHA256 || r.UpdatedAt.IsZero() || s.CreatedAt.IsZero() {
 		return ErrRepair
 	}
 	switch r.State {
@@ -113,6 +113,11 @@ func (m *Manager) inspectStatus(ctx context.Context, c configRecord, r lifecycle
 	if e != nil {
 		s.State = "uncertain"
 		return s, e
+	}
+	apiStarted, _ := time.Parse(time.RFC3339Nano, proof.StartTime)
+	if apiStarted.Before(r.Session.CreatedAt.Truncate(time.Millisecond)) {
+		s.State = "uncertain"
+		return s, ErrConflict
 	}
 	if r.StartTime != "" && r.StartTime != proof.StartTime {
 		s.State = "uncertain"
