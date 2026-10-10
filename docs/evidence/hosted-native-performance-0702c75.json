@@ -1,0 +1,116 @@
+{
+  "source": "0702c75df200e76a173e967654eda2124e925ffa",
+  "base": "54fda85e112dfcc901c6635eecb222e4d90e2c94",
+  "branch": "codex/hosted-native-performance",
+  "hosted_failure": {
+    "run": "https://github.com/seanheiney/keelmux/actions/runs/38089912539",
+    "source": "54fda85e112dfcc901c6635eecb222e4d90e2c94",
+    "macos_slow_reader_seconds": 8.1,
+    "ubuntu_slow_reader_seconds": 8.43,
+    "ubuntu_detach_error": "native detach did not return cleanly EOF",
+    "command": "go test -race ./...",
+    "command_package_seconds": {
+      "macos_cmd_bp": 34.108,
+      "macos_cmd_bpd": 36.026,
+      "ubuntu_cmd_bp": 50.378,
+      "ubuntu_cmd_bpd": 50.189
+    }
+  },
+  "behavior": "Read fully buffered frames after peer closure; set the existing bounded read deadline only before an underlying connection read is needed.",
+  "hashes_sha256": {
+    "internal/transport/stream.go": "4b93d9fc70466468ea748ae47f55123dc0f64a1ee2d061e52cfc4929cc9062aa",
+    "internal/transport/stream_close_test.go": "20b010d5103d75547ee8684edbae6c787560b75135130d1a08e596a4338ec608",
+    "internal/adapters/nativepty/screen_test.go": "fc0a8a1f111333ed1288660e57f806d599cb25e5da2ead16f250daa9bcb05958",
+    "internal/adapters/nativepty/filter.go": "c7fac861fadbd01321d4ab36977505fa782a47c0356c5ca969b30156e48dcb25"
+  },
+  "environment": {
+    "platform": "macOS-26.7.1-arm64-arm-64bit-Mach-O",
+    "go": "go version go1.26.6 darwin/arm64",
+    "cpu": "Apple M4 Max",
+    "logical_cpu": 14
+  },
+  "checks": [
+    {
+      "command": "go test -race ./internal/transport -run ^TestReadBufferedFrameAfterPeerClose$ -count=1 -v",
+      "source": "base stream.go with new regression",
+      "result": "EXPECTED FAIL",
+      "errors": [
+        "complete buffered Close: io: read/write on closed pipe",
+        "complete buffered Failure: io: read/write on closed pipe",
+        "complete buffered Output: io: read/write on closed pipe"
+      ]
+    },
+    {
+      "command": "go test -race -overlay work/hosted-native-performance/baseline-overlay.json ./internal/transport -run ^TestBridgePreservesBufferedCloseAfterPeerClose$ -count=1 -v",
+      "source": "base stream.go overlaid with new regression",
+      "result": "EXPECTED FAIL",
+      "error": "bridge lost the native host final Close: EOF"
+    },
+    {
+      "command": "go test -race ./internal/transport -run ^Test(ReadBufferedFrameAfterPeerClose|BridgePreservesBufferedCloseAfterPeerClose)$ -count=10 -v",
+      "result": "PASS",
+      "seconds": 1.349
+    },
+    {
+      "command": "go test -race ./internal/transport -count=3",
+      "result": "PASS",
+      "seconds": 21.522,
+      "coverage": [
+        "actual native and optional tmux detach/reconnect, Unicode keys, resize, terminal restoration, input-reader join",
+        "complete buffered Close/Failure/Output and bridge Close",
+        "malformed and truncated frames rejected",
+        "partial header and payload retain bounded timeout, no deadline extension"
+      ]
+    },
+    {
+      "command": "go vet ./internal/transport",
+      "result": "PASS"
+    },
+    {
+      "command": "go test -race ./internal/transport -run ^TestDriveNativeDetachReturnsCallerAndReleasesHost$/native$ -count=20 -v",
+      "source": "baseline compiled before repair",
+      "result": "PASS",
+      "seconds": 27.113,
+      "limitation": "The stochastic native failure was not reproduced locally."
+    },
+    {
+      "command": "go test -race ./internal/adapters/nativepty -run ^TestSlowReaderDoesNotBlockNativeOutput$ -count=3 -v",
+      "result": "PASS",
+      "deadline_seconds": 8,
+      "individual_seconds": [
+        6.27,
+        5.65,
+        6.74
+      ],
+      "seconds": 20.345,
+      "concurrency": "20 baseline native transport iterations, each rebuilding the helper"
+    },
+    {
+      "command": "go test -race ./internal/adapters/nativepty -run ^$ -bench ^BenchmarkScreenASCIIBurst$ -benchtime=1x -count=1",
+      "result": "PASS",
+      "nanoseconds_per_2mib": 2967468125,
+      "bytes_allocated": 284811512,
+      "allocations": 2123611
+    }
+  ],
+  "contention_assessment": {
+    "conclusion": "Likely package test and nested compiler contention; hosted single-package or serialized comparison still needed.",
+    "source_evidence": [
+      "cmd/bp startup tests build actual executables",
+      "cmd/bpd native and managed product tests perform recursive go builds",
+      "nativepty TestMain builds race supervisor before its timed drain",
+      "default full-suite go test can run those package test processes concurrently"
+    ],
+    "reviewed_option": "go test -race -p 1 ./... preserves packages, assertions, deadlines, race instrumentation; root owns CI change.",
+    "production_screen_change": "none"
+  },
+  "missing_evidence": [
+    "hosted repaired/serialized run",
+    "actual Linux runtime for this transport repair",
+    "Linux amd64 exact release artifact and real provider proof"
+  ],
+  "provider_or_model_activity": false,
+  "shared_manifest_changes": false,
+  "native_production_changes": false,
+  "publication": false
+}
