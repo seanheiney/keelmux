@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import secrets
 import signal
 import ssl
@@ -94,10 +95,12 @@ class Harness:
         try:
             with self.opener.open(req, timeout=15) as response:
                 raw = response.read(1 << 20)
-                return json.loads(raw), dict(response.headers)
+                return json.loads(raw), {k.lower(): v for k, v in response.headers.items()}
         except Exception as exc:
             # Original diagnostic stays private and is never interpolated into a receipt.
             private(self.state / "http-error.txt", repr(exc))
+            if isinstance(exc, urllib.error.HTTPError):
+                private(self.state / "http-error-body.txt", exc.read(1 << 20))
             raise Failure("fixture_api_failed") from exc
 
     def start(self):
@@ -175,7 +178,7 @@ class Harness:
             try:
                 ping, headers = self.request("GET", "/system/ping")
                 if ping.get("status") == "OK":
-                    ready = True; self.receipt["mattermost_version"] = ".".join(headers.get("X-Version", "unknown").split(".")[0:3]); break
+                    ready = True; break
             except Failure as exc:
                 cause = exc.__cause__
                 if isinstance(cause, urllib.error.URLError) and isinstance(cause.reason, ssl.SSLCertVerificationError):
@@ -183,6 +186,11 @@ class Harness:
             time.sleep(1)
         if not ready:
             raise Failure("mattermost_not_ready")
+        # This server deliberately does not disclose a version in ping headers.
+        # Query the exact live owned container's installed server binary instead.
+        version_output = self.run(["docker", "exec", self.ids["server"], "/mattermost/bin/mattermost", "version"]).decode()
+        version = re.search(r"(?m)^Version:\s*(\d+\.\d+\.\d+)\s*$", version_output)
+        self.receipt["mattermost_version"] = version.group(1) if version else "unverified"
         if self.receipt["mattermost_version"] != "11.11.1":
             raise Failure("mattermost_version_mismatch")
         self.receipt["runtime"] = {"image_os": "linux", "image_arch": "amd64", "engine_arch": engine["Arch"], "emulated": engine["Arch"] != "amd64", "server_uid": uid, "tls_verified": True, "network_internal": False, "egress_isolation_proven": False}
@@ -193,7 +201,7 @@ class Harness:
             pw = secrets.token_urlsafe(24) + "Aa1!"
             u, _ = self.request("POST", "/users", body={"email": name + "@keelmux.invalid", "username": name, "password": pw})
             _, headers = self.request("POST", "/users/login", body={"login_id": name, "password": pw})
-            token = headers.get("Token")
+            token = headers.get("token")
             if not token:
                 raise Failure("fixture_login_missing_token")
             return u["id"], token
