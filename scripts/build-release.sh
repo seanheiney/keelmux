@@ -41,7 +41,7 @@ for platform do
     arch=${platform#*/}
     dir="$stage/${os}_${arch}"
     mkdir -p "$dir"
-    for pair in keelmux:bp keelmuxd:bpd keelmux-entry:bpg; do
+    for pair in keelmux:bp keelmuxd:bpd keelmux-entry:bpg keelmux-supervisor:keelmux-supervisor; do
         name=${pair%:*}
         pkg=${pair#*:}
         GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags "$flags" -o "$dir/$name" "./cmd/$pkg"

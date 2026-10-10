@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 import tarfile
 
-CANONICAL = ("keelmux", "keelmuxd", "keelmux-entry")
+CANONICAL = ("keelmux", "keelmuxd", "keelmux-entry", "keelmux-supervisor")
 FILES = CANONICAL + ("LICENSE", "README.md")
 ALIASES = {"bp": "keelmux", "bpd": "keelmuxd", "bpg": "keelmux-entry"}
 
@@ -33,7 +33,7 @@ def main():
     epoch = int(sys.argv[9])
     source_dirty, dev_test = sys.argv[10] == "true", sys.argv[11] == "1"
     manifest = {
-        "schema": 1, "product": "Keelmux", "version": version, "commit": commit,
+        "schema": 2, "product": "Keelmux", "version": version, "commit": commit,
         "built_at": built_at, "os": target_os, "arch": arch,
         "go_version": go_version,
         "files": {name: digest(directory / name) for name in FILES},

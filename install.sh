@@ -17,7 +17,7 @@ die() { printf 'Keelmux: %s\n' "$*" >&2; exit 1; }
 validate_manifest() {
     # Standalone finite JSON parser: no jq/Python dependency, duplicate keys or
     # ambiguous scalar coercion. The release schema contains only ASCII public
-    # provenance, five file digests and three exact relative aliases.
+    # provenance, five or six file digests and three exact relative aliases.
     awk -v expected_version="$version" -v expected_os="$os" -v expected_arch="$arch" -v development_allowed="$test_http" '
     function bad() { failed=1; exit 1 }
     function ws() { while (substr(src,pos,1) ~ /^[ \t\r\n]$/) pos++ }
@@ -98,12 +98,13 @@ validate_manifest() {
                 path == "/go_version" || path == "/files" || path == "/aliases" ||
                 path == "/source_clean" || path == "/development_test" ||
                 path == "/files/keelmux" || path == "/files/keelmuxd" ||
-                path == "/files/keelmux-entry" || path == "/files/LICENSE" ||
+                path == "/files/keelmux-entry" || path == "/files/keelmux-supervisor" || path == "/files/LICENSE" ||
                 path == "/files/README.md" || path == "/aliases/bp" ||
                 path == "/aliases/bpd" || path == "/aliases/bpg") continue
             bad()
         }
-        exact("/schema","number","1"); exact("/product","string","Keelmux")
+        need("/schema","number"); if (val["/schema"] != "1" && val["/schema"] != "2") bad()
+        exact("/product","string","Keelmux")
         exact("/version","string",expected_version)
         exact("/os","string",expected_os); exact("/arch","string",expected_arch)
         need("/commit","string")
@@ -112,7 +113,9 @@ validate_manifest() {
         if (val["/built_at"] !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z$/) bad()
         need("/go_version","string")
         if (val["/go_version"] !~ /^go[0-9]+\.[0-9]+(\.[0-9]+)?$/) bad()
-        need("/files","object"); if (count["/files"] != 5) bad()
+        need("/files","object"); if (count["/files"] != (val["/schema"] == "2" ? 6 : 5)) bad()
+        if (val["/schema"] == "2") hash("/files/keelmux-supervisor")
+        else if ("/files/keelmux-supervisor" in kind) bad()
         hash("/files/keelmux"); hash("/files/keelmuxd"); hash("/files/keelmux-entry")
         hash("/files/LICENSE"); hash("/files/README.md")
         need("/aliases","object"); if (count["/aliases"] != 3) bad()
@@ -250,9 +253,14 @@ verify_version() {
     for meta in .keelmux-version .keelmux-files.sha256 .keelmux-archive.sha256; do
         [ -f "$dir/$meta" ] && [ ! -L "$dir/$meta" ] && [ "$(owner "$dir/$meta")" = "$uid" ] || return 1
     done
-    [ "$(cat "$dir/.keelmux-version")" = keelmux-installed-v1 ] || return 1
-    [ "$(wc -l < "$dir/.keelmux-files.sha256" | tr -d ' ')" = 6 ] || return 1
-    for name in keelmux keelmuxd keelmux-entry LICENSE README.md RELEASE.json; do
+    verified_files="keelmux keelmuxd keelmux-entry LICENSE README.md RELEASE.json"
+    case "$(cat "$dir/.keelmux-version")" in
+        keelmux-installed-v1) verified_count=6;;
+        keelmux-installed-v2) verified_count=7; verified_files="$verified_files keelmux-supervisor";;
+        *) return 1;;
+    esac
+    [ "$(wc -l < "$dir/.keelmux-files.sha256" | tr -d ' ')" = "$verified_count" ] || return 1
+    for name in $verified_files; do
         [ -f "$dir/$name" ] && [ ! -L "$dir/$name" ] && [ "$(owner "$dir/$name")" = "$uid" ] || return 1
         actual=$(sha "$dir/$name") || return 1
         [ "$(awk -v expected="$actual  $name" '$0 == expected {n++} END {print n+0}' "$dir/.keelmux-files.sha256")" = 1 ] || return 1
@@ -262,7 +270,7 @@ verify_version() {
 remove_version() {
     dir=$1
     verify_version "$dir" || return 1
-    for name in keelmux keelmuxd keelmux-entry LICENSE README.md RELEASE.json bp bpd bpg .keelmux-files.sha256 .keelmux-archive.sha256 .keelmux-version; do rm "$dir/$name"; done
+    for name in $verified_files bp bpd bpg .keelmux-files.sha256 .keelmux-archive.sha256 .keelmux-version; do rm "$dir/$name"; done
     # Extra state/auth/skills entries are never recursively removed.
     rmdir "$dir" 2>/dev/null || :
 }
@@ -351,15 +359,16 @@ download "$base/$version/$asset" "$stage/archive.tar.gz" || die 'Release archive
 
 tar -tzf "$stage/archive.tar.gz" > "$stage/names" || die 'Invalid release archive.'
 tar -tvzf "$stage/archive.tar.gz" > "$stage/details" || die 'Invalid release archive headers.'
-[ "$(wc -l < "$stage/names" | tr -d ' ')" = 9 ] || die 'Release archive must contain exactly nine flat entries.'
-[ "$(sort -u "$stage/names" | wc -l | tr -d ' ')" = 9 ] || die 'Release archive contains duplicate entries.'
+archive_count=$(wc -l < "$stage/names" | tr -d ' ')
+case "$archive_count" in 9|10) ;; *) die 'Release archive must contain exactly nine legacy or ten native flat entries.';; esac
+[ "$(sort -u "$stage/names" | wc -l | tr -d ' ')" = "$archive_count" ] || die 'Release archive contains duplicate entries.'
 exec 3< "$stage/details"
 while IFS= read -r name; do
     IFS= read -r detail <&3 || die 'Archive header count differs.'
     first=$(printf '%s' "$detail" | cut -c 1)
     last=$(printf '%s\n' "$detail" | awk '{print $NF}')
     case "$name" in
-        keelmux|keelmuxd|keelmux-entry|LICENSE|README.md|RELEASE.json)
+        keelmux|keelmuxd|keelmux-entry|keelmux-supervisor|LICENSE|README.md|RELEASE.json)
             [ "$first" = - ] && [ "$last" = "$name" ] || die 'Archive includes a nonregular code or metadata entry.';;
         bp|bpd|bpg)
             [ "$first" = l ] && [ "$last" = "$(target_for "$name")" ] || die 'Archive alias points outside its canonical binary.'
@@ -370,21 +379,27 @@ done < "$stage/names"
 exec 3<&-
 mkdir "$stage/release"
 tar --no-same-owner --no-same-permissions -xzf "$stage/archive.tar.gz" -C "$stage/release" || die 'Could not extract reviewed release.'
-for name in keelmux keelmuxd keelmux-entry; do chmod 700 "$stage/release/$name"; done
+release_executables="keelmux keelmuxd keelmux-entry"
+if [ "$archive_count" = 10 ]; then release_executables="$release_executables keelmux-supervisor"; fi
+for name in $release_executables; do chmod 700 "$stage/release/$name"; done
 for name in LICENSE README.md RELEASE.json; do chmod 600 "$stage/release/$name"; done
 [ "$(wc -c < "$stage/release/RELEASE.json" | tr -d ' ')" -le 65536 ] || die 'Release manifest is too large.'
 validate_manifest "$stage/release/RELEASE.json" "$stage/fields" || die 'Release manifest does not match the requested provenance.'
-for name in keelmux keelmuxd keelmux-entry LICENSE README.md; do
+manifest_schema=$(awk -F= '$1 == "/schema" {print $2}' "$stage/fields")
+case "$manifest_schema:$archive_count" in 1:9|2:10) ;; *) die 'Release archive entries differ from the declared manifest schema.';; esac
+for name in $release_executables LICENSE README.md; do
     wanted=$(awk -F= -v field="/files/$name" '$1 == field {print $2}' "$stage/fields")
     [ "$(sha "$stage/release/$name")" = "$wanted" ] || die 'Release file digest differs from its manifest.'
 done
 manifest_commit=$(awk -F= '$1 == "/commit" {print $2}' "$stage/fields")
 manifest_built=$(awk -F= '$1 == "/built_at" {print $2}' "$stage/fields")
-loaded=$("$stage/release/keelmux" version 2> "$stage/version.stderr") || die 'Verified release executable could not report its version.'
-[ "$loaded" = "Keelmux $version (commit $manifest_commit, protocol bp/1)" ] || die 'Loaded release executable differs from its requested version or commit.'
-printf '%s\n' keelmux-installed-v1 > "$stage/release/.keelmux-version"
+for name in $release_executables; do
+    loaded=$("$stage/release/$name" --version 2> "$stage/version.stderr") || die 'Verified release executable could not report its version.'
+    [ "$loaded" = "Keelmux $version (commit $manifest_commit, protocol bp/1)" ] || die 'Loaded release executable differs from its requested version or commit.'
+done
+printf 'keelmux-installed-v%s\n' "$manifest_schema" > "$stage/release/.keelmux-version"
 printf '%s\n' "$expected" > "$stage/release/.keelmux-archive.sha256"
-for name in keelmux keelmuxd keelmux-entry LICENSE README.md RELEASE.json; do printf '%s  %s\n' "$(sha "$stage/release/$name")" "$name"; done > "$stage/release/.keelmux-files.sha256"
+for name in $release_executables LICENSE README.md RELEASE.json; do printf '%s  %s\n' "$(sha "$stage/release/$name")" "$name"; done > "$stage/release/.keelmux-files.sha256"
 dir="$prefix/versions/${version}_${os}_${arch}"
 if [ -e "$dir" ] || [ -L "$dir" ]; then
     verify_version "$dir" && [ "$(cat "$dir/.keelmux-archive.sha256")" = "$expected" ] || die 'An existing immutable version differs; refusing to overwrite it.'
@@ -408,4 +423,4 @@ if [ "$stat_mode" = bsd ]; then mv -fh "$stage/current" "$prefix/current"; else 
 committed=1
 printf 'Keelmux %s installed. Commands: %s\n' "$version" "$bin_dir"
 case ":$PATH:" in *":$bin_dir:"*) ;; *) printf 'Add to PATH: export PATH="%s:$PATH"\n' "$bin_dir";; esac
-if ! command -v tmux >/dev/null 2>&1; then printf '%s\n' 'Install tmux with your platform package manager before managed sessions.'; fi
+if [ "$manifest_schema" = 1 ] && ! command -v tmux >/dev/null 2>&1; then printf '%s\n' 'This legacy release uses tmux; native supervision is included in newer releases.'; fi
