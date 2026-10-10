@@ -104,6 +104,28 @@
     "id": "2e2f680e-bd3f-41ef-8ee7-b3047221e8fa",
     "http_status": 201
   },
-  "updated_at": "2026-10-10T20:48:44.915199+00:00",
-  "scope": "Dedicated project coordination and acceptance evidence; no credentials included."
+  "updated_at": "2026-10-10T21:09:08.774247+00:00",
+  "scope": "Dedicated project coordination and acceptance evidence; no credentials included.",
+  "native_milestone_comments": [
+    {
+      "issue_id": "c9291318-8eb9-415f-95cb-a3e81608f3bc",
+      "comment_id": "e305bd82-2f13-4e47-98c8-11e32c109eca",
+      "write_status": 201,
+      "read_status": 200
+    },
+    {
+      "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+      "comment_id": "d8657ad0-bc41-42dd-9d84-b935a04c2010",
+      "write_status": 201,
+      "read_status": 200
+    }
+  ],
+  "native_mattermost_milestone": {
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "post_id": "s69t9mg4kpy7jyzxkjfezcxuye",
+    "url": "https://chat.sean.net/seannet/pl/s69t9mg4kpy7jyzxkjfezcxuye",
+    "message_sha256": "f50b30d4be6fead7ff4c9e5744eee8067e61842ce0c9dc0558869058f13cf4a1",
+    "read_status": 200,
+    "unique_exact_message": true
+  }
 }
