@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "tested_sha": "530b7feae91b64619739e7b20c665530acfdd085",
+  "utc": "2026-10-10T18:43:17Z",
+  "platform": "Darwin 25.6.0",
+  "harness_sha256": "d5fabe4e13c57b0979f16ada2d129e3617ed4c23f79dfd72f00d6c7be0575c1a",
+  "go_helper_sha256": "73402ad105288705441884673205365a6588d1cbf1eb8ecd4637c90d31483870",
+  "working_tree_dirty": true,
+  "native_binary_sha256": "e89718aa1969bfc4a471277bdc4679a3a3529293de0a309909822dfd67ddb77a",
+  "auth_mode": "isolated HOME/CODEX_HOME, no copied auth, no-auth loopback port 1 provider",
+  "model_turns_submitted": 0,
+  "missing_evidence": [
+    "product bpd app-server launcher",
+    "authenticated model work",
+    "nonempty history",
+    "native approvals",
+    "restart recovery",
+    "remote hosts",
+    "writer handover"
+  ],
+  "proof": {
+    "failure": "fresh fixture did not produce durable rollout metadata",
+    "model_turns_submitted": 0,
+    "native_binary_sha256": "e89718aa1969bfc4a471277bdc4679a3a3529293de0a309909822dfd67ddb77a",
+    "native_version": "codex-cli 0.159.0",
+    "passed": false,
+    "stage": "fixture_before_grant"
+  },
+  "result": "fail"
+}

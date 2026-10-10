@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "tested_sha": "530b7feae91b64619739e7b20c665530acfdd085",
+  "utc": "2026-10-10T18:44:43Z",
+  "platform": "Darwin 25.6.0",
+  "harness_sha256": "d5fabe4e13c57b0979f16ada2d129e3617ed4c23f79dfd72f00d6c7be0575c1a",
+  "go_helper_sha256": "5ce4f441267999a743547df22886e20fd7b4e16ccaa27c8ee98dd684a7ae2506",
+  "working_tree_dirty": true,
+  "native_binary_sha256": "e89718aa1969bfc4a471277bdc4679a3a3529293de0a309909822dfd67ddb77a",
+  "auth_mode": "isolated HOME/CODEX_HOME, no copied auth, no-auth loopback port 1 provider",
+  "model_turns_submitted": 0,
+  "missing_evidence": [
+    "product bpd app-server launcher",
+    "authenticated model work",
+    "nonempty history",
+    "native approvals",
+    "restart recovery",
+    "remote hosts",
+    "writer handover"
+  ],
+  "proof": {
+    "broker_frame_counts": {
+      "initialize": 1
+    },
+    "broker_methods_forwarded": [
+      "initialize"
+    ],
+    "durable_fixture_resume_exact": true,
+    "durable_fixture_rollout_observed": true,
+    "failure": "native composer or exact projected resume acknowledgement unavailable",
+    "forged_primary_provenance_refused": true,
+    "model_turn_writes": 0,
+    "model_turns_submitted": 0,
+    "native_binary_sha256": "e89718aa1969bfc4a471277bdc4679a3a3529293de0a309909822dfd67ddb77a",
+    "native_version": "codex-cli 0.159.0",
+    "native_view_1": {
+      "composer": true,
+      "dedicated_endpoint_inode": true,
+      "exact_resume_ack": false,
+      "owned_pid_boot_start": true,
+      "screen_bytes": 1377,
+      "terminal_input": "device-status replies only",
+      "unix_peer_pid_matches_spawned_child": true
+    },
+    "owned_primary_proof": {
+      "boot_and_start_verified_live": true,
+      "parent_mode": "0700",
+      "pid": 76445,
+      "shared_parent_changed": false,
+      "socket_inode_verified": true,
+      "socket_mode": "0600",
+      "spawned_child_handle": true,
+      "unix_peer_pid_matches_spawned_child": true
+    },
+    "passed": false,
+    "policy_denials": 0,
+    "pregrant_admin_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "thread/name/set",
+      "thread/settings/update",
+      "thread/resume"
+    ],
+    "projection_errors": 0,
+    "real_shared_store_authority": true,
+    "resume_acknowledgements": 0,
+    "safe_shape_gaps": null,
+    "stage": "native_view_1",
+    "upstream_rpc_errors": 0
+  },
+  "result": "fail"
+}
