@@ -271,18 +271,16 @@ class Harness:
         runtime = self.metadata("container", self.ids["runtime"])
         if runtime.get("Mounts") or runtime["HostConfig"]["NetworkMode"] != "container:" + self.ids["server"]:
             raise Failure("source_runtime_isolation_mismatch")
-        # Only this disposable fixture container receives a dependency. It has
-        # no user mounts, native credentials, or generated bot credentials yet.
-        self.run(["docker", "exec", self.ids["runtime"], "apt-get", "update", "-qq"], timeout=120)
-        self.run(["docker", "exec", "-e", "DEBIAN_FRONTEND=noninteractive", self.ids["runtime"], "apt-get", "install", "-y", "-qq", "--no-install-recommends", "tmux"], timeout=120)
-        tmux_version = self.run(["docker", "exec", self.ids["runtime"], "tmux", "-V"]).decode().strip()
-        if not re.fullmatch(r"tmux \d+\.\d+[a-z]?", tmux_version):
-            raise Failure("source_runtime_tmux_version_unknown")
+        # The product runtime is native. The exact owned image must not hide
+        # a legacy dependency; no package installation is needed for this phase.
+        dependency_probe = self.run(["docker", "exec", self.ids["runtime"], "sh", "-c", "if command -v tmux >/dev/null 2>&1; then exit 1; fi; printf absent"])
+        if dependency_probe != b"absent":
+            raise Failure("source_runtime_optional_dependency_present")
         outputs = self.state / "source-binaries"; outputs.mkdir(mode=0o700)
         buildenv = dict(os.environ, CGO_ENABLED="0", GOOS="linux", GOARCH="arm64")
         stamp = self.run(["git", "show", "-s", "--format=%cI", "HEAD"]).decode().strip()
         flags = "-X github.com/seanheiney/keelmux/internal/buildinfo.Version=development -X github.com/seanheiney/keelmux/internal/buildinfo.Commit=" + self.receipt["source"] + " -X github.com/seanheiney/keelmux/internal/buildinfo.BuiltAt=" + stamp
-        for name, package in (("keelmux", "./cmd/bp"), ("keelmuxd", "./cmd/bpd")):
+        for name, package in (("keelmux", "./cmd/bp"), ("keelmuxd", "./cmd/bpd"), ("keelmux-supervisor", "./cmd/keelmux-supervisor")):
             self.run(["go", "build", "-trimpath", "-ldflags", flags, "-o", str(outputs / name), package], timeout=120, env=buildenv)
         self.run(["go", "test", "-c", "-trimpath", "-o", str(outputs / "acceptance.test"), "./internal/channelservice"], timeout=120, env=buildenv)
         original = json.loads(self.fixture.read_text())
@@ -292,15 +290,15 @@ class Harness:
         with tarfile.open(fileobj=payload, mode="w") as archive:
             for name in ("keelmux-bin", "keelmux-fixture"):
                 info = tarfile.TarInfo(name); info.type = tarfile.DIRTYPE; info.mode = 0o700; archive.addfile(info)
-            files = [("keelmux-bin/" + name, path.read_bytes(), 0o700) for name, path in ((n, outputs / n) for n in ("keelmux", "keelmuxd", "acceptance.test"))]
+            files = [("keelmux-bin/" + name, path.read_bytes(), 0o700) for name, path in ((n, outputs / n) for n in ("keelmux", "keelmuxd", "keelmux-supervisor", "acceptance.test"))]
             files += [("keelmux-fixture/ca.pem", self.ca.read_bytes(), 0o600), ("keelmux-fixture/fixture.json", json.dumps(original).encode(), 0o600)]
             files += [("keelmux-fixture/" + key + "-token", Path(path).read_bytes(), 0o600) for key, path in json.loads(self.fixture.read_text())["token_paths"].items()]
             for name, data, mode in files:
                 info = tarfile.TarInfo(name); info.size = len(data); info.mode = mode; archive.addfile(info, io.BytesIO(data))
         self.run(["docker", "cp", "-a", "-", self.ids["runtime"] + ":/tmp"], data=payload.getvalue())
-        self.receipt["source_daemon_runtime"] = {"image": RUNTIME_IMAGE, "os": "linux", "arch": "arm64", "uid": 0, "tmux": tmux_version,
+        self.receipt["source_daemon_runtime"] = {"image": RUNTIME_IMAGE, "os": "linux", "arch": "arm64", "uid": 0, "tmux_present": False, "runtime_backend": "native",
             "network_namespace": "exact owned Mattermost container", "endpoint": "https://127.0.0.1:8065", "ssl_cert_file_child_only": True,
-            "no_host_mounts": True, "binary_sha256": {name: hashlib.sha256((outputs / name).read_bytes()).hexdigest() for name in ("keelmux", "keelmuxd", "acceptance.test")},
+            "no_host_mounts": True, "binary_sha256": {name: hashlib.sha256((outputs / name).read_bytes()).hexdigest() for name in ("keelmux", "keelmuxd", "keelmux-supervisor", "acceptance.test")},
             "functional_test_not_race_instrumented": True}
         command = ["docker", "exec", "-e", "KEELMUX_MM_ACCEPTANCE_FIXTURE=/tmp/keelmux-fixture/fixture.json", "-e", "KEELMUX_MM_ACCEPTANCE_BIN_DIR=/tmp/keelmux-bin", "-e", "KEELMUX_MM_ACCEPTANCE_SOURCE=" + self.receipt["source"], self.ids["runtime"],
                    "/tmp/keelmux-bin/acceptance.test", "-test.run", "^(TestMattermostOwnedDaemonAcceptance|TestMMAcceptancePrivateFixtureFiles)$", "-test.timeout", "120s", "-test.v"]
