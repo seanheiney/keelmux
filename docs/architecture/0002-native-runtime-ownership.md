@@ -30,6 +30,8 @@ Launch persists and fsyncs an immutable operation/content receipt before spawnin
 
 References bind execution/operation IDs, a random supervisor instance, exact private socket, child PID/start and host boot. Kernel peer credentials and supervisor PID/start independently verify the connection. Stop addresses the authenticated helper and its retained direct child process handle, rather than a saved PID or process group. Files are private and opened without following symlinks; nonblocking opens reject special-file traps before reads.
 
+Native boot identity uses the kernel boot-session UUID: `kern.bootsessionuuid` on macOS and `/proc/sys/kernel/random/boot_id` on Linux. Calendar timestamps cannot establish a reboot. Unsupported historical Darwin timestamp receipts remain unavailable without mutation or adoption. Even an IRC journal already marked stopped must reobserve its exact runtime before authorizing a replacement; a live or unavailable result remains uncertain. The [clock-adjustment incident](../evidence/native-boot-identity-incident-2026-10-10.md) records the reproduced failure and its owned cleanup.
+
 An attach helper enters raw mode before the home confirms its actual peer PID/start and grants input readiness. The runtime enforces one cooperating writer independently of the registry grant. Read-only clients cannot write or resize. Disconnect fences admitted input before releasing the writer; reconnect never replays input.
 
 ## Terminal state

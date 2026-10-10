@@ -16,6 +16,8 @@ After client loss, reopen the same state. Pending attachment identity remains sa
 
 After a lost launch or stop response, retry only the same operation and request. **Completed**, **failed** and **outcome uncertain** are distinct. Unknown effects do not trigger automatic replay. Preserve the original execution and inspect it before taking another action.
 
+Native runtimes use stable kernel boot-session UUIDs. Earlier development builds recorded a mutable macOS boot timestamp; those historical native references now report unavailable and need an operator review of the original private authority. Preserve the receipts and execution instead of clearing or rewriting them to force a new launch. This does not change the published v0.1.0 tmux compatibility path. A retained managed IRC journal marked stopped also needs current exact death proof before a replacement can start.
+
 The tested daemon-restart journey preserves surviving owned executions. The 0.2 native runtime survives actual control-daemon loss without tmux; historical v0.1.0 uses its qualified tmux adapter. It does not prove native conversation resume after provider exit or host reboot. If the native CLI exits, keep the registry and its native history and use that provider's supported recovery workflow separately. Keelmux's product native-resume command is unfinished.
 
 ## Operate the daemon

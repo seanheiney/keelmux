@@ -20,6 +20,7 @@ Start with the selected state and exact session. Preserve operation IDs and draf
 | Runtime observation is `(stale)` | Offline connection versus retained inventory | r refreshes/reconnects; a retained running observation does not authorize attachment |
 | Missing runtime | `keelmux inspect SESSION`, then `keelmux reconcile` | Retain the record and inspect native history; no automatic replacement is started |
 | Runtime outcome uncertain | Exact execution and operation receipt | Reconcile the original attempt; a missing helper or reply does not prove child exit or authorize another launch |
+| Historical macOS native boot identity unavailable | Original private receipt from an earlier development build | Preserve the receipt and execution for operator review; do not rewrite its boot identity or erase it to authorize a replacement |
 | Lost launch/stop response | Printed operation ID and full original request | Retry only that operation; uncertainty stays explicit until reconciled |
 | Skill missing in native selector | Setup receipt, provider mapping and native reload | Reopen/reload the supported catalogue; installation is not loading |
 | Skill collision or modified bundle | Per-provider setup/removal receipt | Preserve the existing file; resolve ownership or choose the intended scope before applying |
