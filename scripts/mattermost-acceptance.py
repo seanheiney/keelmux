@@ -99,6 +99,7 @@ class Harness:
         except Exception as exc:
             # Original diagnostic stays private and is never interpolated into a receipt.
             private(self.state / "http-error.txt", repr(exc))
+            private(self.state / "http-error-request.json", json.dumps({"method": method, "path": path}))
             if isinstance(exc, urllib.error.HTTPError):
                 private(self.state / "http-error-body.txt", exc.read(1 << 20))
             raise Failure("fixture_api_failed") from exc
@@ -186,7 +187,7 @@ class Harness:
             time.sleep(1)
         if not ready:
             raise Failure("mattermost_not_ready")
-        # This server deliberately does not disclose a version in ping headers.
+        # The observed ping response does not disclose a version header.
         # Query the exact live owned container's installed server binary instead.
         version_output = self.run(["docker", "exec", self.ids["server"], "/mattermost/bin/mattermost", "version"]).decode()
         version = re.search(r"(?m)^Version:\s*(\d+\.\d+\.\d+)\s*$", version_output)
@@ -211,11 +212,11 @@ class Harness:
         bot, _ = self.request("POST", "/bots", admin, {"username": "owned_bot", "display_name": "Owned Keelmux Fixture"})
         bot_id = bot["user_id"]
         access, _ = self.request("POST", "/users/" + bot_id + "/tokens", admin, {"description": "Owned isolated fixture"})
-        team, _ = self.request("POST", "/teams", admin, {"name": "owned_fixture", "display_name": "Owned Fixture", "type": "O"})
+        team, _ = self.request("POST", "/teams", admin, {"name": "ownedfixture", "display_name": "Owned Fixture", "type": "O"})
         team_id = team["id"]
         for uid in (human_id, outsider_id, bot_id):
             self.request("POST", "/teams/" + team_id + "/members", admin, {"team_id": team_id, "user_id": uid})
-        channel, _ = self.request("POST", "/channels", admin, {"team_id": team_id, "name": "owned_channel", "display_name": "Owned Channel", "type": "O"})
+        channel, _ = self.request("POST", "/channels", admin, {"team_id": team_id, "name": "ownedchannel", "display_name": "Owned Channel", "type": "O"})
         channel_id = channel["id"]
         for uid in (human_id, outsider_id, bot_id):
             self.request("POST", "/channels/" + channel_id + "/members", admin, {"user_id": uid})
