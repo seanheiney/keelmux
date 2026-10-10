@@ -660,7 +660,13 @@ func (m *model) View() string {
 	if m.width < 52 && !m.busy && !m.searching && m.state.Pending == nil {
 		help = "Enter attach  v view  / find  g groups  q quit"
 	}
-	return m.fit(lines, []string{status, help})
+	footer := []string{status, help}
+	if m.offline != nil && m.state.Pending != nil && m.status != "" {
+		// Connection failure must not hide the saved acquisition's recovery
+		// state. Its exact intent still needs reconciliation after reconnect.
+		footer = []string{status, m.status, help}
+	}
+	return m.fit(lines, footer)
 }
 func (m *model) groupsView() string {
 	lines := []string{"BACKPLANE / groups", "Optional collections; All work includes ungrouped sessions."}

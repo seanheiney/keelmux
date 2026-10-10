@@ -225,6 +225,12 @@ func TestFailedReleaseSurvivesReconnectAndNewTargetCannotReplaceIntent(t *testin
 	m.save()
 	req := request(*p)
 	m.Update(releasedMsg{req: req, err: errors.New("daemon vanished")})
+	m.Update(inventoryMsg{err: errors.New("connection lost")})
+	view := m.View()
+	if !strings.Contains(view, "Connection offline") || !strings.Contains(view, "lease release pending") || !strings.Contains(view, "x reconcile/release") {
+		t.Fatal("connection failure hid the exact pending release recovery action")
+	}
+	m.Update(inventoryMsg{sessions: []domain.Session{a, b}})
 	m.selectSession(b)
 	if m.acquire(false) != nil || m.state.Pending.OperationID != req.OperationID {
 		t.Fatal("new target overwrote unreconciled lease")
