@@ -12,6 +12,8 @@ Internal native-controller integration now uses the existing Service gate and du
 
 The first combined race run retained an existing Darwin shell-read fixture failure after real SIGINT and reconnect. Independent raw-line controls located the truncation in the fixture before product output; a finite Go child passed 100 signal and 100 no-signal controls with original deadlines and complete-payload assertions. [Fixture investigation](../../internal/adapters/nativepty/LIFECYCLE_FIXTURE_EVIDENCE.md) preserves that failure and correction. Complete local combined acceptance passed at `6a6b20c`; the separate hosted screen-readiness failure described above remains retained. Fast-food work is excluded from Keelmux.
 
+The screen-readiness correction now acknowledges the full rendered marker with an exact terminal cursor response before attachment. It passed 100 corrected cases, 100 deterministic gated negative controls, complete nativepty race and vet on macOS without production changes or relaxed deadlines. [Ordering evidence](../evidence/native-pre-attach-readiness-2026-10-10.md) retains the hosted failure and the unexecuted Linux mount attempts. Candidate v0.3.0 will qualify the final clean source and all four archives, with separate installed macOS native/IRC and Linux fixture/installer gates. No tag or new release is implied by this preparation.
+
 ## Historical implementation milestones
 
 ### Held v0.2.0 candidate
