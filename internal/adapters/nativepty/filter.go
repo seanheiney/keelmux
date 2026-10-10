@@ -175,14 +175,24 @@ func (s *terminalScreen) process(data []byte) (visible, replies []byte) {
 func (s *terminalScreen) writeASCII(data []byte) {
 	s.writeGlyph(rune(data[0]))
 	data = data[1:]
+	width := s.emulator.Width()
+	// The emulator does not expose its internal delayed-wrap bit. After a
+	// control it can disagree with our shadow flag even at the same cursor
+	// position. Enter the arithmetic fast path only after an ASCII glyph
+	// establishes an unambiguous interior cursor and matching tracked cell.
+	// Otherwise preserve the bytewise behavior until that state is observed.
+	for len(data) > 0 {
+		pos := s.emulator.CursorPosition()
+		if !s.modes[7] || (pos.X > 0 && pos.X < width-1 && !s.pendingWrap && s.glyphX == pos.X-1 && s.glyphY == pos.Y) {
+			break
+		}
+		s.writeGlyph(rune(data[0]))
+		data = data[1:]
+	}
 	if len(data) == 0 {
 		return
 	}
 	x := s.emulator.CursorPosition().X
-	width := s.emulator.Width()
-	if s.pendingWrap && s.modes[7] {
-		x++ // the cursor is logically one column beyond the right edge
-	}
 	_, _ = s.emulator.Write(data)
 	pos := s.emulator.CursorPosition()
 	s.glyph = string(data[len(data)-1])

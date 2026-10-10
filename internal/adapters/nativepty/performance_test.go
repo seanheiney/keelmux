@@ -22,6 +22,9 @@ func TestASCIIBatchMatchesBytewise(t *testing.T) {
 		"1234567\x1b(BABC\u0301",
 		"1234567\x0fABC\u0301",
 		"1234567\tABC\u0301",
+		"1234567\x1b[?25lABC\u0301",
+		"1234567\x1b[3bABC\u0301",
+		"1234567\x1b[2JABC\u0301",
 	}
 	for index, text := range cases {
 		t.Run(fmt.Sprint(index), func(t *testing.T) {
@@ -58,7 +61,7 @@ func TestASCIIBatchMatchesBytewise(t *testing.T) {
 }
 
 func TestASCIITailAfterWrapPreservingControls(t *testing.T) {
-	for _, control := range []string{"\x1b(B", "\x0f", "\x0e", "\t", "\a", "\x00", "\x7f", "\x1b7", "\x1bH", "\x1b]0;title\a"} {
+	for _, control := range []string{"\x1b(B", "\x0f", "\x0e", "\t", "\a", "\x00", "\x7f", "\x1b7", "\x1bH", "\x1b]0;title\a", "\x1b[?25l"} {
 		t.Run(fmt.Sprintf("%q", control), func(t *testing.T) {
 			for _, chunk := range []int{1, 2, 5, 64} {
 				s := newTerminalScreen(7, 4)
