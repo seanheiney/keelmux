@@ -541,6 +541,13 @@ func (s *Store) Acquire(ctx context.Context, l domain.Lease, readOnly bool, payl
 		return l, errors.New("attachment requires client, operation and lease token")
 	}
 	if !readOnly {
+		blocked, e := codexEffectsBlocked(ctx, tx, l.SessionID, nil)
+		if e != nil {
+			return l, e
+		}
+		if blocked {
+			return l, conflict("unresolved broker effects reserve the shared writer slot")
+		}
 		var count int
 		if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM grants WHERE session_id=? AND active=1 AND read_only=0`, l.SessionID).Scan(&count); err != nil {
 			return l, err

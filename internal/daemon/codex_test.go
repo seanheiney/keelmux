@@ -583,7 +583,7 @@ func TestCodexNativeProcessAndEndpointNeverRearm(t *testing.T) {
 }
 
 func TestCodexUnknownCallbackTargetsAndWireBoundRemainBlocking(t *testing.T) {
-	for _, shape := range []string{"unscoped", "foreign", "large-valid", "oversize", "malformed"} {
+	for _, shape := range []string{"unscoped", "foreign", "large-valid", "oversize", "malformed", "malformed-no-id"} {
 		t.Run(shape, func(t *testing.T) {
 			x := actorSetup(t)
 			g := x.acquire(t, "grant", cb.NativeWriter, false)
@@ -599,10 +599,23 @@ func TestCodexUnknownCallbackTargetsAndWireBoundRemainBlocking(t *testing.T) {
 				body = payload(map[string]string{"data": strings.Repeat("x", (1<<20)+1)})
 			case "malformed":
 				body = json.RawMessage("{unfinished")
+			case "malformed-no-id":
+				key.RequestID = nil
+				body = json.RawMessage("{unfinished")
 			}
-			got, err := x.a.RecordCallback(context.Background(), cb.CallbackRecord{ID: "callback", Origin: c, Key: key, Payload: body})
+			// Caller-supplied attribution must never make quarantine actionable.
+			got, err := x.a.RecordCallback(context.Background(), cb.CallbackRecord{ID: "callback", Origin: c, Key: key, Payload: body, Attributed: true, Allowed: []cb.DecisionAction{cb.Accept}, Resolved: true, DecisionState: cb.Completed, DecisionOperationID: "forged-decision", DisplayConnectionID: c.ID})
 			if err != nil || got.Resolved || got.Attributed || got.Key.ThreadID != key.ThreadID {
 				t.Fatal("unknown callback disappeared or invented target", err)
+			}
+			if len(got.Allowed) != 0 || got.DecisionState != cb.Uncertain || got.DecisionOperationID != "" || got.DisplayConnectionID != "" || !bytes.Equal(got.Key.RequestID, key.RequestID) {
+				t.Fatal("callback acquired a request ID or decision authority")
+			}
+			if shape == "malformed-no-id" && (!json.Valid(got.Payload) || !bytes.Contains(got.Payload, []byte("malformed owned callback retained as blocker"))) {
+				t.Fatal("missing-ID malformed bytes were not retained as digest quarantine")
+			}
+			if _, err = x.a.RecordCallback(context.Background(), cb.CallbackRecord{ID: "callback", Origin: c, Key: key, Payload: body}); err != nil {
+				t.Fatal("exact callback retry did not return its quarantine", err)
 			}
 			_, err = x.a.Handover(context.Background(), x.handover(g, "next", cb.SemanticWriter))
 			assertConflict(t, err)
@@ -610,6 +623,9 @@ func TestCodexUnknownCallbackTargetsAndWireBoundRemainBlocking(t *testing.T) {
 			x.reset()
 			_, err = x.a.Handover(context.Background(), x.handover(g, "next-after-restart", cb.SemanticWriter))
 			assertConflict(t, err)
+			if x.sender.count() != 0 {
+				t.Fatal("quarantine sent an upstream decision")
+			}
 		})
 	}
 }

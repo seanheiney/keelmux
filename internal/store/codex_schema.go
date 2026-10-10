@@ -99,7 +99,7 @@ func validateCodexSchema(ctx context.Context, db *sql.DB) error {
 	if normalized != "createuniqueindexone_writerongrants(session_id,execution_id)whereactive=1andread_only=0" {
 		return repair("changed writer constraint")
 	}
-	rows, err := db.QueryContext(ctx, `SELECT g.operation_id,g.data,g.read_only,o.data,c.data,c.agent,a.data,e.value
+	rows, err := db.QueryContext(ctx, `SELECT g.operation_id,g.data,g.read_only,g.active,o.data,c.data,c.agent,a.data,e.value
 FROM grants g JOIN operations o ON o.id=g.operation_id
 LEFT JOIN codex_grants c ON c.operation_id=g.operation_id
 LEFT JOIN codex_agents a ON a.session_id=g.session_id AND a.execution_id=g.execution_id
@@ -111,8 +111,9 @@ LEFT JOIN codex_epochs e ON e.session_id=g.session_id`)
 		var id domain.ID
 		var base, opBytes, meta, agent, registered []byte
 		var ro bool
+		var active int
 		var epoch sql.NullInt64
-		if err = rows.Scan(&id, &base, &ro, &opBytes, &meta, &agent, &registered, &epoch); err != nil {
+		if err = rows.Scan(&id, &base, &ro, &active, &opBytes, &meta, &agent, &registered, &epoch); err != nil {
 			rows.Close()
 			return err
 		}
@@ -133,6 +134,7 @@ LEFT JOIN codex_epochs e ON e.session_id=g.session_id`)
 		var view cb.Grant
 		var a cb.AgentBinding
 		if json.Unmarshal(meta, &view) != nil || json.Unmarshal(agent, &a) != nil || view.Lease != g.Lease || view.ReadOnly != ro || view.Lease.OperationID != id || view.PrincipalID == "" || view.Epoch == 0 ||
+			(active != 0 && active != 1) || view.Active != (active == 1) || (view.Admission == cb.Retired) != !view.Active ||
 			view.Lease.Token == "" || view.Lease.ClientID == "" || view.Lease.SessionID != op.SessionID || view.Lease.ExecutionID != op.ExecutionID || op.ID != id ||
 			(view.Admission != cb.Admitting && view.Admission != cb.Fenced && view.Admission != cb.Retired) ||
 			(view.Kind != cb.NativeWriter && view.Kind != cb.SemanticWriter) || a.SessionID != g.Lease.SessionID || a.ExecutionID != g.Lease.ExecutionID || a.Generation != g.Lease.Generation ||
@@ -177,7 +179,32 @@ LEFT JOIN codex_epochs e ON e.session_id=g.session_id`)
 			return repair("broker RPC missing immutable attempted receipt")
 		}
 	}
-	if err = rows.Err(); err != nil {
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return err
+	}
+	// Callback request IDs can be absent only in durable, non-actionable
+	// quarantine. JSON null is the stored representation of an absent raw ID.
+	rows, err = db.QueryContext(ctx, `SELECT data FROM codex_callbacks`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var b []byte
+		var c cb.CallbackRecord
+		if err = rows.Scan(&b); err != nil {
+			rows.Close()
+			return err
+		}
+		if json.Unmarshal(b, &c) != nil || !validCallbackQuarantine(c) {
+			rows.Close()
+			return repair("callback without native request ID is not quarantined")
+		}
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
 		return err
 	}
 	return nil

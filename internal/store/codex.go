@@ -134,6 +134,13 @@ func (s *Store) CodexAcquire(ctx context.Context, req cb.WriterRequest) (cb.Gran
 		return cb.Grant{}, conflict("legacy native writer owns the shared slot")
 	}
 	if !req.ReadOnly {
+		blocked, e := codexEffectsBlocked(ctx, tx, v.ID, nil)
+		if e != nil {
+			return cb.Grant{}, e
+		}
+		if blocked {
+			return cb.Grant{}, conflict("unresolved broker effects reserve the shared writer slot")
+		}
 		if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM grants WHERE session_id=? AND active=1 AND read_only=0`, v.ID).Scan(&writers); err != nil {
 			return cb.Grant{}, err
 		}
@@ -509,7 +516,14 @@ func (s *Store) CodexFence(ctx context.Context, ref cb.WriterRef) (cb.Grant, err
 }
 
 func codexBlocked(ctx context.Context, tx *sql.Tx, a cb.AgentBinding) (bool, error) {
-	rows, err := tx.QueryContext(ctx, `SELECT r.data,r.effect_class FROM codex_receipts r JOIN operations o ON o.id=r.operation_id WHERE o.session_id=? AND o.generation=?`, a.SessionID, a.Generation)
+	return codexEffectsBlocked(ctx, tx, a.SessionID, &a)
+}
+
+// A new acquisition must not leap an unresolved effect merely because a grant
+// is inactive or the session projection now points at a later execution.
+// Handover uses the exact agent; ordinary acquisition checks the whole session.
+func codexEffectsBlocked(ctx context.Context, tx *sql.Tx, id domain.ID, agent *cb.AgentBinding) (bool, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT r.data,r.effect_class FROM codex_receipts r JOIN operations o ON o.id=r.operation_id WHERE o.session_id=?`, id)
 	if err != nil {
 		return true, err
 	}
@@ -526,7 +540,8 @@ func codexBlocked(ctx context.Context, tx *sql.Tx, a cb.AgentBinding) (bool, err
 			return true, err
 		}
 		resolved := r.State == cb.Completed || r.State == cb.Failed || r.State == cb.Acknowledged && class != cb.Mutation
-		if r.Intent.Origin.Agent.ExecutionID == a.ExecutionID && !resolved {
+		origin := r.Intent.Origin.Agent
+		if !resolved && (agent == nil || origin.ExecutionID == agent.ExecutionID && origin.Generation == agent.Generation) {
 			blocked = true
 		}
 	}
@@ -549,7 +564,7 @@ func codexBlocked(ctx context.Context, tx *sql.Tx, a cb.AgentBinding) (bool, err
 		if err != nil {
 			return true, err
 		}
-		if same(c.Origin.Agent, a) && !c.Resolved {
+		if c.Origin.Agent.SessionID == id && !c.Resolved && (agent == nil || same(c.Origin.Agent, *agent)) {
 			blocked = true
 		}
 	}
@@ -615,9 +630,21 @@ func (s *Store) CodexHandover(ctx context.Context, h cb.Handover) (cb.Grant, err
 	return g, tx.Commit()
 }
 
+// Missing native IDs are retained exactly as absent quarantine evidence, never
+// usable for attribution or a decision. No wire/request ID is invented here.
+func validCallbackQuarantine(c cb.CallbackRecord) bool {
+	if len(c.Key.RequestID) != 0 && !bytes.Equal(bytes.TrimSpace(c.Key.RequestID), []byte("null")) {
+		return true
+	}
+	return !c.Attributed && !c.Resolved && len(c.Allowed) == 0 && c.DisplayConnectionID == "" && c.DecisionOperationID == "" && c.DecisionState == cb.Uncertain
+}
+
 func (s *Store) CodexCallback(ctx context.Context, c cb.CallbackRecord) (cb.CallbackRecord, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !validCallbackQuarantine(c) {
+		return c, conflict("callback without native request ID requires non-actionable quarantine")
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return c, err

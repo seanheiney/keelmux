@@ -10,7 +10,7 @@ On one physical macOS arm64 computer, these checks passed:
 - `go vet ./internal/store ./internal/daemon`
 - `git diff --check`
 
-The new tests contain 18 daemon actor groups and 6 store groups. Fixtures use
+The tests now contain 19 daemon actor groups and 9 store groups. Fixtures use
 private temporary SQLite files, registered home provenance, controlled senders
 and probes, and owned FIFO/directory fixtures. They execute no vendor CLI,
 model turn, external host, network mutation or user-home configuration write.
@@ -35,6 +35,36 @@ the expected table/column/primary-key shape, exact unique writer predicate and
 matching broker grant/agent/epoch/RPC receipt metadata. Losing grant metadata
 cannot authorize legacy release. Directory creation uses the existing supported
 platform parent-sync helper; SQLite uses FULL synchronous transactions.
+
+The bounded authority repair based on `efb0111` adds a registration barrier
+between the final handover callback check and its store commit. Deterministic
+fixtures hold the existing store mutex at the independent review's boundary:
+registration before the barrier prevents retirement; a reader waiting behind
+the commit records its original source afterward and fences the replacement.
+The test does not wait for registration while the commit barrier is held.
+
+Established v2 now requires master and broker Active values to agree, with
+Retired exactly inactive and Admitting/Fenced active. Five damaged-state fixtures
+(including the lost master reservation and inverse retired-active case) refuse
+reopen with repair required and preserve original master, metadata, operation,
+payload and unresolved receipt bytes. New broker and legacy writer acquisitions
+also refuse unresolved receipts or callbacks across the entire session, even
+after a coherent retired row or a replacement execution projection. Exact
+historical settlement clears only its own receipt blocker.
+
+Malformed owned callbacks may omit their native request ID; no ID is fabricated.
+They retain digest quarantine and remain unattributed, unresolved and without
+decision/display authority across retry and restart. Store admission and v2
+schema validation refuse absent-ID records with actionable metadata. JSON null
+is the persisted representation of an absent raw ID. The zero-turn decision
+profile remains unsupported.
+
+These focused regressions were also run with an ignored overlay restoring only
+the `efb0111` production files. The original source failed the commit-gap,
+reservation/coherence, unresolved acquisition and absent-ID quarantine checks;
+the repaired source passed. Final scoped race/vet and whitespace checks passed
+with Go 1.26.6 on Darwin arm64. No root relay or shared contract was changed by
+this repair.
 
 The home controller must still prove real app-server and native launch ownership,
 map owned upstream channels to immutable bindings, quarantine unmatched replies,

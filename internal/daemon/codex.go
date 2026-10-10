@@ -454,6 +454,11 @@ func (a *codexAuthority) Handover(ctx context.Context, h cb.Handover) (cb.Grant,
 	if err != nil || !coherent(q, agent) || !q.Idle || !q.EmptyQueue || !q.EmptyBackground || !q.NativeWritersDetached {
 		return g, conflict("coherent idle, queue, background and detached-writer evidence required")
 	}
+	// No registration may slip between the final check and durable retirement.
+	// Readers behind this barrier linearize after the handover, then quarantine
+	// their original source and fence the replacement under the same actor gate.
+	a.service.codexRegistration.Lock()
+	defer a.service.codexRegistration.Unlock()
 	if err = a.noWaitingCallback(); err != nil {
 		return g, err
 	}
@@ -515,7 +520,9 @@ func (a *codexAuthority) RecordCallback(ctx context.Context, c cb.CallbackRecord
 	if err := a.ready(ctx); err != nil {
 		return cb.CallbackRecord{}, err
 	}
+	a.service.codexRegistration.Lock()
 	a.service.codexCallbacks.Add(1)
+	a.service.codexRegistration.Unlock()
 	defer a.service.codexCallbacks.Add(-1)
 	a.service.mu.Lock()
 	defer a.service.mu.Unlock()
@@ -526,7 +533,10 @@ func (a *codexAuthority) RecordCallback(ctx context.Context, c cb.CallbackRecord
 		return c, err
 	}
 	var err error
-	c.Key.RequestID, err = canonicalID(c.Key.RequestID, false)
+	// A malformed owned frame may have no native request ID. Keep that absence
+	// as private quarantine evidence; never fabricate an ID or approval target.
+	// Every record in this profile is forced non-actionable below and in store.
+	c.Key.RequestID, err = canonicalID(c.Key.RequestID, true)
 	if err != nil {
 		return c, err
 	}

@@ -31,6 +31,9 @@ type Service struct {
 	// Reader registration announces callbacks before waiting for the actor
 	// gate. Admission cannot overtake a callback already awaiting persistence.
 	codexCallbacks atomic.Int64
+	// Registration and the final handover check/commit share this barrier.
+	// A reader releases it before waiting for mu; handover never holds it over IO.
+	codexRegistration sync.Mutex
 }
 
 func New(st *store.Store, backend runtime.Backend, hostID domain.ID) (*Service, error) {
