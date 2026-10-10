@@ -68,6 +68,24 @@ type ConnectionBinding struct {
 	NativeProcessStart                  string
 }
 
+// WriterRequest is issued by a verified home controller, never decoded from
+// native clientInfo. The authority generates the token and monotonic epoch.
+type WriterRequest struct {
+	Agent                 AgentBinding
+	OperationID           domain.ID
+	PrincipalID, ClientID string
+	Kind                  WriterKind
+	ReadOnly              bool
+}
+
+// Verifier proves owned app-server and per-launch capability/process evidence.
+// Nil/unavailable verification fails closed; it cannot accept public IDs alone.
+type Verifier interface {
+	VerifyAgent(context.Context, AgentBinding) error
+	VerifyWriter(context.Context, WriterRequest) error
+	VerifyConnection(context.Context, ConnectionBinding) error
+}
+
 const (
 	Request      FrameKind = "request"
 	Notification FrameKind = "notification"
@@ -199,6 +217,7 @@ type Observation struct {
 // Authority serializes admission->Attempted->bounded send with revoke/handover.
 // No DB transaction spans IO; no gate waits for a turn; unknowns NEVER replay.
 type Authority interface {
+	Acquire(context.Context, WriterRequest) (Grant, error)
 	Bind(context.Context, ConnectionBinding) (ConnectionBinding, error)
 	Dispatch(context.Context, Intent) (Receipt, error)
 	RecordCallback(context.Context, CallbackRecord) (CallbackRecord, error)
