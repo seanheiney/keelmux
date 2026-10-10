@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shlex
 import shutil
 import signal
 import socket
@@ -100,6 +101,57 @@ class Fixture:
         self.thread.join(timeout=2)
 
 
+class AuthorityFixture:
+    """A real private Unix HTTP authority with deliberately controlled replies."""
+    def __init__(self, path, status, body):
+        self.path, self.status, self.body = path, status, body
+        self.requests = []
+        self.done = threading.Event()
+        self.server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.server.bind(str(path))
+        path.chmod(0o600)
+        self.identity = (path.stat().st_dev, path.stat().st_ino)
+        self.server.listen(4)
+        self.server.settimeout(0.1)
+        self.thread = threading.Thread(target=self.serve, daemon=True)
+
+    def serve(self):
+        while not self.done.is_set():
+            try:
+                connection, _ = self.server.accept()
+            except (TimeoutError, OSError):
+                continue
+            with connection:
+                connection.settimeout(1)
+                request = b""
+                try:
+                    while b"\r\n\r\n" not in request and len(request) < 8192:
+                        chunk = connection.recv(1024)
+                        if not chunk:
+                            break
+                        request += chunk
+                    self.requests.append(request)
+                    if self.status is not None:
+                        response = ("HTTP/1.1 %d Fixture\r\nContent-Length: %d\r\n"
+                                    "Content-Type: application/json\r\nConnection: close\r\n\r\n"
+                                    % (self.status, len(self.body))).encode() + self.body
+                        connection.sendall(response)
+                except (OSError, TimeoutError):
+                    pass
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, *_):
+        self.done.set()
+        self.thread.join(timeout=2)
+        self.server.close()
+        info = self.path.lstat()
+        need((info.st_dev, info.st_ino) == self.identity, "fixture_authority_inode_changed")
+        self.path.unlink()
+
+
 class Harness:
     def __init__(self, args):
         self.args = args
@@ -108,6 +160,11 @@ class Harness:
         os.chmod(self.state, 0o700)
         self.private = self.state / "diagnostics"
         self.private.mkdir(mode=0o700)
+        self.tools = self.state / "tools"
+        self.tools.mkdir(mode=0o700)
+        tmux = shutil.which("tmux")
+        if tmux:
+            (self.tools / "tmux").symlink_to(Path(tmux).resolve())
         self.commands = 0
         self.cases = 0
         self.results = []
@@ -137,7 +194,10 @@ class Harness:
         prefix = base / "install"
         bindir = base / "bin"
         bindir.mkdir(mode=0o700)
-        env = {"HOME": str(home), "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        # A fresh-install fixture must not inherit a real user's product PATH
+        # collisions. OS tools plus a link to the existing tmux prerequisite
+        # are enough; no dependency is installed or upgraded by this harness.
+        env = {"HOME": str(home), "PATH": str(self.tools) + ":/usr/bin:/bin:/usr/sbin:/sbin",
                "LC_ALL": "C", "TMPDIR": str(base), "TERM": "xterm-256color"}
         return base, home, prefix, bindir, env
 
@@ -201,6 +261,8 @@ class Harness:
             need(set(NAMES).issubset(members), "archive_command_missing")
             need("LICENSE" in members and "README.md" in members, "archive_documents_missing")
             need("RELEASE.json" in members, "archive_manifest_missing")
+            need(set(members) == set(NAMES) | {"LICENSE", "README.md", "RELEASE.json"},
+                 "archive_member_set_mismatch")
             manifest = json.loads(package.extractfile(members["RELEASE.json"]).read())
             self.manifest = manifest
             need(manifest.get("schema") == 1 and manifest.get("product") == "Keelmux"
@@ -334,7 +396,29 @@ class Harness:
                  "unowned_symlink_collision_accepted")
         need((snapshot(home), snapshot(prefix), snapshot(bindir)) == before,
              "collision_mutated_unowned_symlink")
-        return {"unowned_names_checked": checked, "unowned_symlink_preserved": True}
+        _, home, prefix, bindir, env = self.case("collision_prospective_link")
+        # Knowing a future public target is not an installer ownership receipt.
+        (bindir / "bp").symlink_to(prefix / "current/keelmux")
+        before = (snapshot(home), snapshot(bindir))
+        with Fixture(self.files, self.args.version) as fixture:
+            need(self.install(fixture, prefix, bindir, env).returncode != 0,
+                 "fresh_install_adopted_unowned_matching_link")
+        need((snapshot(home), snapshot(bindir)) == before,
+             "prospective_link_collision_mutated_unowned_files")
+        base, home, prefix, bindir, env = self.case("collision_path")
+        pathbin = base / "unowned-path"
+        pathbin.mkdir(mode=0o700)
+        (pathbin / "bp").write_text("#!/bin/sh\nexit 7\n")
+        (pathbin / "bp").chmod(0o755)
+        env["PATH"] = str(pathbin) + ":" + env["PATH"]
+        before = (snapshot(home), snapshot(bindir), snapshot(pathbin))
+        with Fixture(self.files, self.args.version) as fixture:
+            need(self.install(fixture, prefix, bindir, env).returncode != 0,
+                 "unowned_path_command_was_shadowed")
+        need((snapshot(home), snapshot(bindir), snapshot(pathbin)) == before,
+             "path_collision_mutated_unowned_files")
+        return {"unowned_names_checked": checked, "unowned_symlink_preserved": True,
+                "unowned_path_command_preserved": True}
 
     def archive_boundaries(self):
         for mode in ("alias_traversal", "duplicate_command", "absolute_member", "hardlink_command"):
@@ -589,6 +673,100 @@ class Harness:
                 "unsafe_legacy_refusals": 3, "owned_daemons_stopped": True,
                 "native_processes_launched": 0}
 
+    def readonly_information(self):
+        base, home, prefix, bindir, env = self.case("readonly_information")
+        with Fixture(self.files, self.args.version) as fixture:
+            need(self.install(fixture, prefix, bindir, env).returncode == 0,
+                 "readonly_package_install_failed")
+        before = snapshot(home)
+        state = base / "must-stay-absent"
+        count = 0
+        for alias in ("keelmux", "bp"):
+            for args in (("--version",), ("version",), ("version", "--json"),
+                         ("--help",), ("help",), ("run", "--help"), ("stop", "--help")):
+                result = self.run([str(bindir / alias), "--state", str(state), *args], env)
+                need(result.returncode == 0, "readonly_product_command_failed")
+                need(not state.exists(), "readonly_product_command_created_state")
+                count += 1
+            for args in (("version", "extra"), ("--version", "list")):
+                need(self.run([str(bindir / alias), "--state", str(state), *args], env).returncode != 0,
+                     "invalid_metadata_arguments_accepted")
+                need(not state.exists(), "invalid_metadata_command_created_state")
+                count += 1
+        need(snapshot(home) == before, "readonly_product_mutated_home")
+        return {"actual_packaged_command_cases": count, "state_not_created": True}
+
+    def authority_refusals(self):
+        need(shutil.which("tmux") is not None, "runtime_tmux_prerequisite_missing")
+        _, _, prefix, bindir, env = self.case("authority_install")
+        with Fixture(self.files, self.args.version) as fixture:
+            need(self.install(fixture, prefix, bindir, env).returncode == 0,
+                 "authority_package_install_failed")
+        original_cli = (bindir / "keelmux").resolve()
+        real_daemon = (bindir / "keelmuxd").resolve()
+        replies = (("protocol_mismatch", 200, b'{"version":"bp/unknown","sessions":[]}'),
+                   ("protocol_status", 426, b'{"error":"protocol fixture"}'),
+                   ("authorization_status", 403, b'{"error":"authority fixture"}'),
+                   ("malformed_json", 200, b'{broken'),
+                   ("unexpected_eof", None, b''),
+                   ("healthy_authority", 200, b'{"version":"bp/1","sessions":[]}'),
+                   ("absent_socket_control", None, b''))
+        negative = 0
+        for name, status, body in replies:
+            base, home, _, _, case_env = self.case("authority_" + name)
+            state = base / "s"
+            state.mkdir(mode=0o700)
+            wrapper = base / "w"
+            wrapper.mkdir(mode=0o700)
+            cli = wrapper / "keelmux"
+            shutil.copyfile(original_cli, cli)
+            cli.chmod(0o700)
+            need(digest(cli.read_bytes()) == digest(original_cli.read_bytes()),
+                 "authority_fixture_changed_packaged_cli")
+            marker = base / "spawn-count"
+            # Only a controlled sibling wrapper is substituted. The CLI bytes
+            # remain the actual archive bytes, and the positive control calls
+            # this wrapper then starts the actual packaged empty daemon.
+            helper = wrapper / "keelmuxd"
+            helper.write_text("#!/bin/sh\nprintf '%s\\n' invoked >> " + shlex.quote(str(marker)) +
+                              "\nexec " + shlex.quote(str(real_daemon)) + ' "$@"\n')
+            helper.chmod(0o700)
+            home_before = snapshot(home)
+            argv = [str(cli), "--state", str(state), "list"]
+            if name == "absent_socket_control":
+                receipt = None
+                try:
+                    result = self.run(argv, case_env, timeout=15)
+                    if (state / "control.sock").exists():
+                        receipt = self.own_daemon(state, bindir)
+                    need(result.returncode == 0 and marker.read_bytes() == b"invoked\n",
+                         "missing_socket_spawn_counter_control_failed")
+                    need(receipt is not None and json.loads(result.stdout) in (None, []),
+                         "missing_socket_real_daemon_control_failed")
+                finally:
+                    if receipt is not None:
+                        self.stop_daemon(receipt)
+            else:
+                with AuthorityFixture(state / "control.sock", status, body) as authority:
+                    state_before = snapshot(state)
+                    result = self.run(argv, case_env, timeout=15)
+                    need(authority.requests and all(r.startswith(b"GET /v1/sessions HTTP/1.1\r\n")
+                         and b"X-Backplane-Protocol: bp/1\r\n" in r for r in authority.requests),
+                         "authority_fixture_did_not_observe_real_protocol_request")
+                    need(not marker.exists(), "existing_authority_spawned_another_daemon")
+                    need(snapshot(state) == state_before, "existing_authority_changed_private_state")
+                    if name == "healthy_authority":
+                        need(result.returncode == 0 and json.loads(result.stdout) == []
+                             and len(authority.requests) == 2, "healthy_authority_control_failed")
+                    else:
+                        need(result.returncode != 0 and b"refusing to start a second daemon" in result.stderr,
+                             "unverified_authority_not_refused")
+                        negative += 1
+            need(snapshot(home) == home_before, "authority_fixture_mutated_native_home")
+        return {"actual_packaged_cli_digest_preserved": True, "refusals_with_zero_sibling_execs": negative,
+                "healthy_existing_authority_control": True, "missing_socket_positive_exec_count": 1,
+                "qualification": "Actual packaged CLI against private Unix HTTP fixtures and a counted sibling exec wrapper; the positive wrapper starts the actual packaged empty daemon."}
+
     def execute(self):
         self.record("artifact_identity", self.artifact)
         if self.results[-1]["result"] == "pass":
@@ -602,8 +780,10 @@ class Harness:
             self.record("unsupported_platform", self.unsupported)
             self.record("concurrent_install", self.concurrent)
             self.record("owned_uninstall_preserves_state", self.uninstall)
+            self.record("readonly_product_information", self.readonly_information)
             if self.args.runtime:
                 self.record("installed_runtime_state_and_sibling_discovery", self.runtime_states)
+                self.record("existing_authority_refuses_second_daemon", self.authority_refusals)
 
     def report(self):
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root, text=True).strip()
