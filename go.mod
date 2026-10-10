@@ -6,6 +6,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/x/ansi v0.10.1
 	github.com/charmbracelet/x/term v0.2.1
+	github.com/coder/websocket v1.8.15
 	github.com/creack/pty v1.1.24
 	golang.org/x/sys v0.48.0
 	modernc.org/sqlite v1.60.1
