@@ -110,6 +110,11 @@ func (c *Channel) RunNative(ctx context.Context, client *wire.Conn) error {
 		return errors.New("native UI channel is required")
 	}
 	c.mu.Lock()
+	if c.ctx.Err() != nil || c.err != nil {
+		c.mu.Unlock()
+		_ = client.Close()
+		return errors.New("owned upstream channel is closed or unavailable")
+	}
 	if c.attached {
 		c.mu.Unlock()
 		return errors.New("native endpoint incarnation has already been consumed")
