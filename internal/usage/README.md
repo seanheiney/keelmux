@@ -44,6 +44,8 @@ payload `provider_verified` or `adapter_observed`.
   provider-verified evidence. User entries cannot establish a shared quota.
 - Each token array is a cumulative snapshot for one attempt, not a delta to add.
   The latest nonempty claim per original source enriches prior partial snapshots.
+  Explicitly unavailable token, money, and quota measurements supersede old
+  measurements from that stream; they cannot restore old capacity or amounts.
   Trusted final snapshots supersede live snapshots. Conflicting current final
   sources produce unknown counts and retained conflicting measurements.
   `IncludedIn` records native subset relations: cache included in input, reasoning

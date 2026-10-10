@@ -231,6 +231,45 @@ func TestModelOutcomesKnownZeroAndFutureEvidence(t *testing.T) {
 	}
 }
 
+func TestCurrentUnknownMeasurementsInvalidateEarlierValues(t *testing.T) {
+	l, _ := openTest(t)
+	call := attempt("request")
+	ingest(t, l, call)
+	update := attempt("updated-request")
+	update.Attempt.Key = call.Attempt.Key
+	update.Source.Sequence = 2
+	update.Attempt.Tokens[0].Count = nil
+	ingest(t, l, update)
+	cost := money("cost", Estimate, "USD", "2")
+	ingest(t, l, cost)
+	cost.ID = "cost-unavailable"
+	cost.Source.Sequence = 2
+	copyMoney := *cost.Money
+	copyMoney.Decimal = nil
+	cost.Money = &copyMoney
+	ingest(t, l, cost)
+	capacity := quota("capacity", "host-a")
+	ingest(t, l, capacity)
+	capacity.ID = "capacity-unavailable"
+	capacity.Source.Sequence = 2
+	copyQuota := *capacity.Quota
+	copyQuota.Remaining = nil
+	capacity.Quota = &copyQuota
+	ingest(t, l, capacity)
+	p := project(t, l, query())
+	for _, v := range p.Attempts[0].Tokens {
+		if v.Dimension == "input" && v.Count != nil {
+			t.Fatal("unknown current token snapshot restored an old count")
+		}
+	}
+	if len(p.MoneyTotals) != 1 || p.MoneyTotals[0].ObservedDecimal != nil || p.MoneyTotals[0].UnknownRecords != 1 {
+		t.Fatal("unknown current money snapshot restored an old amount")
+	}
+	if value(p.Quotas[0].Fields, "remaining") != "" || p.Quotas[0].Fields["remaining"].Value != nil {
+		t.Fatal("unknown current quota snapshot restored old capacity")
+	}
+}
+
 func money(id string, kind MoneyKind, currency, amount string) Observation {
 	var amountPointer *string
 	if amount != "" {

@@ -200,6 +200,11 @@ func contextOf(o Observation) Context {
 }
 func inPeriod(t time.Time, q Query) bool { return !t.Before(q.Start) && t.Before(q.End) }
 func stringJSON(v any) string            { b, _ := json.Marshal(v); return string(b) }
+
+// Empty attribution is omitted/enrichable. An unavailable current measurement
+// supersedes the previous value from that original source.
+const explicitUnknown = "\x00"
+
 func fields(o Observation) map[string]string {
 	f := contextOf(o).values()
 	if a := o.Attempt; a != nil {
@@ -228,6 +233,8 @@ func fields(o Observation) map[string]string {
 		f["actual_model"] = m.ActualModel
 		if m.Decimal != nil {
 			f["decimal"] = *m.Decimal
+		} else {
+			f["decimal"] = explicitUnknown
 		}
 		if m.Attempt != nil {
 			f["attempt"] = stringJSON(m.Attempt)
@@ -245,12 +252,18 @@ func fields(o Observation) map[string]string {
 		}
 		if b.Limit != nil {
 			f["limit"] = *b.Limit
+		} else {
+			f["limit"] = explicitUnknown
 		}
 		if b.Used != nil {
 			f["used"] = *b.Used
+		} else {
+			f["used"] = explicitUnknown
 		}
 		if b.Remaining != nil {
 			f["remaining"] = *b.Remaining
+		} else {
+			f["remaining"] = explicitUnknown
 		}
 		delete(f, "host")
 		delete(f, "harness")
@@ -301,10 +314,16 @@ func resolve(group []Observation, extract func(Observation) map[string]string) m
 		}
 		sort.Strings(v.SourceIDs)
 		values := keys(distinct)
-		if len(values) == 1 {
+		if len(values) == 1 && values[0] != explicitUnknown {
 			s := values[0]
 			v.Value = &s
-		} else {
+		} else if len(values) > 1 {
+			for i, s := range values {
+				if s == explicitUnknown {
+					values[i] = "unknown"
+				}
+			}
+			sort.Strings(values)
 			v.Conflicts = values
 		}
 		out[name] = v
@@ -379,9 +398,7 @@ func tokenFields(o Observation) map[string]string {
 	f := map[string]string{}
 	if o.Attempt != nil {
 		for _, t := range o.Attempt.Tokens {
-			if t.Count != nil {
-				f[t.Dimension] = stringJSON(t)
-			}
+			f[t.Dimension] = stringJSON(t)
 		}
 	}
 	return f
