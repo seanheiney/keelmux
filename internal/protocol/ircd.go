@@ -39,6 +39,7 @@ type IRCDBindRequest struct {
 	SessionID   domain.ID `json:"session_id"`
 	OperationID domain.ID `json:"operation_id"`
 	Allowlist   []string  `json:"allow_users"`
+	ProjectID   domain.ID `json:"project_id"`
 }
 
 // IRCDConnection deliberately exposes only local connection configuration.

@@ -19,6 +19,8 @@ type ChannelBindRequest struct {
 	RootID        string            `json:"root_id"`
 	CredentialRef string            `json:"credential_file"`
 	Allowlist     []string          `json:"allow_users"`
+	ProjectID     domain.ID         `json:"project_id,omitempty"`
+	IRCAddressed  bool              `json:"irc_addressed,omitempty"`
 }
 
 // ChannelStatus projects routing and receipt evidence without credential bytes
@@ -43,6 +45,8 @@ type ChannelStatus struct {
 	LastSuccess      *time.Time        `json:"last_success,omitempty"`
 	MoreHistory      bool              `json:"more_history"`
 	HistoryGap       bool              `json:"history_gap"`
+	ProjectID        domain.ID         `json:"project_id,omitempty"`
+	IRCAddressed     bool              `json:"irc_addressed,omitempty"`
 }
 
 func ProjectChannel(b channels.Binding) ChannelStatus {
@@ -51,7 +55,7 @@ func ProjectChannel(b channels.Binding) ChannelStatus {
 	if !b.Active {
 		intake = "disabled"
 	}
-	return ChannelStatus{ID: b.ID, SessionID: b.SessionID, ThreadID: b.ThreadID, Provider: b.Provider, Endpoint: b.Endpoint, RealmID: b.RealmID, SelfID: b.SelfID, ChannelID: b.ChannelID, RootID: b.RootID, Allowlist: append([]string{}, b.Allowlist...), Active: b.Active, ActivationCutoff: b.ActivationCutoff, Coverage: coverage, Intake: intake}
+	return ChannelStatus{ID: b.ID, SessionID: b.SessionID, ThreadID: b.ThreadID, Provider: b.Provider, Endpoint: b.Endpoint, RealmID: b.RealmID, SelfID: b.SelfID, ChannelID: b.ChannelID, RootID: b.RootID, Allowlist: append([]string{}, b.Allowlist...), Active: b.Active, ActivationCutoff: b.ActivationCutoff, Coverage: coverage, Intake: intake, ProjectID: b.ProjectID, IRCAddressed: b.IRCAddressed}
 }
 
 type ChannelIDRequest struct {

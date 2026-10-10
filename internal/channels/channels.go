@@ -27,6 +27,8 @@ type Binding struct {
 	Allowlist                                                   []string
 	ActivationCutoff                                            time.Time
 	Active                                                      bool
+	ProjectID                                                   domain.ID `json:",omitempty"`
+	IRCAddressed                                                bool      `json:",omitempty"`
 }
 
 // Sequence orders authored messages only, independently of terminal events.
