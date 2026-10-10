@@ -43,17 +43,21 @@ func run() error {
 		return err
 	}
 	args := fs.Args()
-	if len(args) > 0 && args[0] == "channels" {
+	if len(args) > 0 && (args[0] == "channels" || args[0] == "ircd") {
+		scopedHelp := channelHelp
+		if args[0] == "ircd" {
+			scopedHelp = ircdHelp
+		}
 		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h" || args[1] == "help") {
-			fmt.Print(channelHelp)
+			fmt.Print(scopedHelp)
 			return nil
 		}
 		if len(args) > 2 && (args[len(args)-1] == "--help" || args[len(args)-1] == "-h") {
-			fmt.Print(channelHelp)
+			fmt.Print(scopedHelp)
 			return nil
 		}
 		if *entry != "" {
-			return errors.New("channel configuration and messages belong to the local execution home")
+			return errors.New(args[0] + " configuration and messages belong to the local execution home")
 		}
 	}
 	if *version {
@@ -135,6 +139,8 @@ func run() error {
 		return tui.Run(ctx, c, p.Place)
 	}
 	switch args[0] {
+	case "ircd":
+		return manageIRCD(ctx, c, args[1:])
 	case "channels":
 		return manageChannels(ctx, c, args[1:])
 	case "directory":
@@ -254,8 +260,12 @@ func run() error {
 			return nil
 		}
 		ready := true
-		for _, binary := range []string{"tmux"} {
-			path, e := exec.LookPath(binary)
+		for _, binary := range []string{"keelmux-supervisor"} {
+			self, _ := os.Executable()
+			path, e := exec.LookPath(filepath.Join(filepath.Dir(self), binary))
+			if e != nil {
+				path, e = exec.LookPath(binary)
+			}
 			if e != nil {
 				ready = false
 				fmt.Println(binary + ": unavailable")
@@ -274,7 +284,7 @@ func run() error {
 		}
 		fmt.Println("Private daemon reachable. Native credential status does not establish account identity, model access, quota, or subscription eligibility. Use keelmux providers for source-qualified details; keelmux setup previews connection skills.")
 		if !ready || !providerInstalled {
-			return errors.New("local prerequisites missing; install tmux and at least one supported native CLI, then run keelmux doctor")
+			return errors.New("local prerequisites missing; install the complete Keelmux release and at least one supported native CLI, then run keelmux doctor")
 		}
 		return nil
 	default:
@@ -339,6 +349,7 @@ keelmux doctor                        Check local binaries and daemon
 keelmux version [--json]              Print release and protocol provenance
 keelmux providers                     Inspect qualified native status without model work
 keelmux channels --help               Bind chat roots, read authored inbox and reply
+keelmux ircd --help                   Provision and manage a private IRC server
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

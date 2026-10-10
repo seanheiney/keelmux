@@ -8,6 +8,7 @@ build:
 	go build -trimpath -ldflags '$(LD_FLAGS)' -o bin/keelmux ./cmd/bp
 	go build -trimpath -ldflags '$(LD_FLAGS)' -o bin/keelmuxd ./cmd/bpd
 	go build -trimpath -ldflags '$(LD_FLAGS)' -o bin/keelmux-entry ./cmd/bpg
+	go build -trimpath -ldflags '$(LD_FLAGS)' -o bin/keelmux-supervisor ./cmd/keelmux-supervisor
 	ln -sfn keelmux bin/bp
 	ln -sfn keelmuxd bin/bpd
 	ln -sfn keelmux-entry bin/bpg

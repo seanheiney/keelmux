@@ -297,7 +297,7 @@ func (s *Service) attemptLaunch(ctx context.Context, in protocol.LaunchRequest, 
 	return s.launchResponse(dc, op.ID)
 }
 func validateRef(ref domain.RuntimeRef, execution, operation domain.ID) error {
-	if ref.ExecutionID != execution || ref.OperationID != operation || ref.Backend == "" || ref.Socket == "" || ref.Session == "" || ref.Pane == "" || ref.PID <= 0 || ref.BootID == "" || ref.ProcessStart == "" {
+	if ref.ExecutionID != execution || ref.OperationID != operation || ref.Backend == "" || ref.Socket == "" || ref.Session == "" || (ref.Backend != "native" && ref.Pane == "") || ref.PID <= 0 || ref.BootID == "" || ref.ProcessStart == "" {
 		return conflict("runtime lacks exact execution/operation and process lifetime evidence")
 	}
 	return nil

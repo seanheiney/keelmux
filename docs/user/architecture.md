@@ -10,9 +10,13 @@ flowchart LR
   Home --> State[Local SQLite registry and journal]
   Home --> Channels[Authored channel service]
   Channels --> Chat[Mattermost / Slack / IRC]
-  Home --> Terminal[Owned tmux terminal]
+  Home --> Terminal[Independent native PTY supervisor]
+  Home --> Process[Native process supervisor]
+  Process --> IRC[Optional managed Ergo]
   Terminal --> CLI[Real native CLI]
 ```
+
+New development executions use the bundled native supervisor. Existing tmux executions retain an optional compatibility adapter; there is no fallback launch through tmux. Published v0.1.0 is the historical tmux release. The [runtime decision](../architecture/0002-native-runtime-ownership.md) describes exact ownership, query handling and recovery boundaries.
 
 The entry routes permitted access to the home. It does not move the process, merge credentials or become that home's execution authority. Current entries use explicit private sockets and configuration; independent-server enrollment remains unfinished.
 

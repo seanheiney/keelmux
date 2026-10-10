@@ -17,10 +17,12 @@ import (
 
 	"github.com/charmbracelet/x/term"
 	"github.com/creack/pty"
+	"github.com/seanheiney/keelmux/internal/adapters/nativepty"
 	"github.com/seanheiney/keelmux/internal/adapters/tmux"
 	"github.com/seanheiney/keelmux/internal/daemon"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
+	bpruntime "github.com/seanheiney/keelmux/internal/runtime"
 	"github.com/seanheiney/keelmux/internal/store"
 	"golang.org/x/sys/unix"
 )
@@ -89,7 +91,12 @@ func awaitNative(t *testing.T, check func() bool) {
 }
 
 func TestDriveNativeDetachReturnsCallerAndReleasesHost(t *testing.T) {
-	if _, err := exec.LookPath("tmux"); err != nil {
+	for _, kind := range []string{"native", "tmux"} {
+		t.Run(kind, func(t *testing.T) { driveNativeDetach(t, kind) })
+	}
+}
+func driveNativeDetach(t *testing.T, kind string) {
+	if _, err := exec.LookPath("tmux"); kind == "tmux" && err != nil {
 		t.Skip("tmux unavailable; actual native detach proof not run")
 	}
 	dir, err := os.MkdirTemp("/tmp", "bp-drive-native-")
@@ -98,13 +105,26 @@ func TestDriveNativeDetachReturnsCallerAndReleasesHost(t *testing.T) {
 	}
 	socket := filepath.Join(dir, "tmux.sock")
 	defer os.RemoveAll(dir)
-	defer exec.Command("tmux", "-S", socket, "kill-server").Run()
+	if kind == "tmux" {
+		defer exec.Command("tmux", "-S", socket, "kill-server").Run()
+	}
 	state, err := store.Open(filepath.Join(dir, "registry.sqlite"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer state.Close()
-	backend, err := tmux.New(socket)
+	var backend bpruntime.Backend
+	if kind == "tmux" {
+		backend, err = tmux.New(socket)
+	} else {
+		helper := filepath.Join(dir, "keelmux-supervisor")
+		build := exec.Command("go", "build", "-o", helper, "./cmd/keelmux-supervisor")
+		build.Dir = "../.."
+		if out, e := build.CombinedOutput(); e != nil {
+			t.Fatalf("native helper build: %v %s", e, out)
+		}
+		backend, err = nativepty.NewWithOptions(filepath.Join(dir, "native"), nativepty.Options{HelperPath: helper})
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,6 +167,17 @@ func TestDriveNativeDetachReturnsCallerAndReleasesHost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		ref := launch.Session.Execution.Runtime
+		if ref.ExecutionID == "" {
+			if o, e := backend.Lookup(context.Background(), launch.Session.Execution.ID, launch.Operation.ID); e == nil {
+				ref = o.Ref
+			}
+		}
+		if err := backend.Stop(context.Background(), ref); err != nil {
+			t.Error("owned child cleanup", err)
+		}
+	}()
 	awaitNative(t, func() bool { _, err := os.Stat(capture + ".size"); return err == nil })
 	var expected []byte
 	for i := 0; i < 3; i++ {

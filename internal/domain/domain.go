@@ -48,14 +48,14 @@ type Capabilities struct {
 
 func ManagedCapabilities() Capabilities {
 	return Capabilities{NativeAttach: true, ReadOnlyAttach: true, Stop: true,
-		Explanation: "Owned tmux terminal: attach, detach, reconnect, or stop. Semantic prompts and remote approvals are unavailable; use the native CLI."}
+		Explanation: "Owned native terminal: attach, detach, reconnect, or stop. Semantic prompts and remote approvals are unavailable; use the native CLI."}
 }
 
 type RuntimeRef struct {
 	Backend      string `json:"backend"`
 	Socket       string `json:"socket"`
 	Session      string `json:"session"`
-	Pane         string `json:"pane"`
+	Pane         string `json:"pane"` // Legacy terminal locator; native supervision has no pane.
 	PID          int    `json:"pid"`
 	BootID       string `json:"boot_id"`
 	ProcessStart string `json:"process_start"`

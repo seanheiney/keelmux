@@ -20,7 +20,7 @@ Use a short absolute path for an isolated instance:
 keelmux --state /absolute/private/keelmux list
 ```
 
-The state directory must be a real owned directory with mode `0700`. Managed private state files and sockets use mode `0600`. Symlinked, foreign-owned or over-permissive state is refused. The control and tmux socket paths must be no longer than 100 bytes, so a deeply nested state path may be unsuitable.
+The state directory must be a real owned directory with mode `0700`. Managed private state files and sockets use mode `0600`. Symlinked, foreign-owned or over-permissive state is refused. The native execution socket adds a fixed basename beneath `native/`; its whole path must be shorter than 104 bytes. Control and compatibility socket paths must be no longer than 100 bytes, so a deeply nested state path may be unsuitable.
 
 ## Important files
 
@@ -31,7 +31,9 @@ The state directory must be a real owned directory with mode `0700`. Managed pri
 | `place.json` | Client identity, optional groups, remembered view, drafts and pending attachment |
 | `daemon.lock` | Single-daemon ownership lock |
 | `control.sock` | Local control API |
-| `tmux.sock` | Dedicated owned terminal backend, separate from default tmux |
+| `native/` | Native supervisor private per-execution receipts, sockets and locks |
+| `irc/` | Optional managed IRC configuration, private TLS/accounts, database and operation journals |
+| `tmux.sock` | Optional legacy terminal backend, separate from default tmux |
 | `tmux.sock.bp/` | Private backend ownership/configuration and per-execution receipts |
 | `daemon.log` | Local daemon diagnostics; inspect before sharing |
 

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/creack/pty"
+	"github.com/seanheiney/keelmux/internal/adapters/nativepty"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/store"
@@ -135,7 +136,7 @@ func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseR
 		cancel()
 		_ = stream.Close()
 		workers.Wait()
-		_ = terminal.Close() // HUP affects this owned tmux client, not its pane.
+		_ = terminal.Close() // HUP affects this owned attach client, not its supervised child.
 		_ = cmd.Process.Kill()
 		select {
 		case <-waited:
@@ -148,7 +149,7 @@ func (h *Host) run(ctx context.Context, request Request, release protocol.LeaseR
 		return
 	}
 	// A spawned process is not yet an attached client. In particular, bytes
-	// written before tmux configures its tty can become terminal signals. Confirm
+	// written before the client configures its tty can become terminal signals. Confirm
 	// this exact owned PID at the private server before accepting native input.
 	if err := h.waitNativeClient(ctx, release, cmd); err != nil {
 		return
@@ -266,8 +267,11 @@ func (h *Host) waitNativeClient(ctx context.Context, lease protocol.LeaseRequest
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	session, err := h.state.Session(ctx, lease.SessionID)
-	if err != nil || session.Execution.Runtime.Backend != "tmux" {
-		return errors.New("private native tmux evidence unavailable")
+	if err != nil {
+		return errors.New("private native runtime evidence unavailable")
+	}
+	if session.Execution.Runtime.Backend != "tmux" && session.Execution.Runtime.Backend != "native" {
+		return errors.New("native backend readiness is unsupported")
 	}
 	ref := session.Execution.Runtime
 	expected := strconv.Itoa(native.Process.Pid) + "|" + ref.Session + "|0"
@@ -279,12 +283,20 @@ func (h *Host) waitNativeClient(ctx context.Context, lease protocol.LeaseRequest
 			return err
 		}
 		probe, stop := context.WithTimeout(ctx, time.Second)
-		out, err := exec.CommandContext(probe, native.Path, "-N", "-S", ref.Socket, "list-clients", "-t", ref.Session, "-F", "#{client_pid}|#{session_id}|#{client_readonly}").Output()
-		stop()
-		if err == nil {
-			for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-				if line == expected {
-					return nil
+		if ref.Backend == "native" {
+			attached, e := nativepty.ClientAttached(probe, ref, native.Process.Pid, lease.ReadOnly)
+			stop()
+			if e == nil && attached {
+				return nil
+			}
+		} else {
+			out, err := exec.CommandContext(probe, native.Path, "-N", "-S", ref.Socket, "list-clients", "-t", ref.Session, "-F", "#{client_pid}|#{session_id}|#{client_readonly}").Output()
+			stop()
+			if err == nil {
+				for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+					if line == expected {
+						return nil
+					}
 				}
 			}
 		}

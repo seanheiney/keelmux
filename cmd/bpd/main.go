@@ -4,13 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/seanheiney/keelmux/internal/adapters/tmux"
+	"github.com/seanheiney/keelmux/internal/adapters/nativepty"
+	"github.com/seanheiney/keelmux/internal/adapters/owned"
 	"github.com/seanheiney/keelmux/internal/buildinfo"
 	"github.com/seanheiney/keelmux/internal/channelservice"
-	"github.com/seanheiney/keelmux/internal/chatadapter"
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/daemon"
 	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/ircd"
+	"github.com/seanheiney/keelmux/internal/ircdservice"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/store"
 	"github.com/seanheiney/keelmux/internal/transport"
@@ -70,7 +72,12 @@ func run() error {
 		return err
 	}
 	defer db.Close()
-	backend, err := tmux.New(p.Tmux)
+	nativeDir := filepath.Join(p.Dir, "native")
+	native, err := nativepty.New(nativeDir)
+	if err != nil {
+		return err
+	}
+	backend, err := owned.New(native, nativeDir, p.Tmux)
 	if err != nil {
 		return err
 	}
@@ -80,9 +87,19 @@ func run() error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	chat, err := channelservice.New(ctx, db, chatadapter.New)
+	ircManager, err := ircd.NewWithSupervisor(filepath.Join(p.Dir, "irc"), native)
+	if err != nil {
+		return err
+	}
+	registrar := &localRegistrar{manager: ircManager}
+	defer registrar.Close()
+	chat, err := channelservice.New(ctx, db, localChatFactory(ircManager))
 	if err != nil {
 		return fmt.Errorf("channel delivery recovery: %w", err)
+	}
+	ircService, err := ircdservice.New(ircManager, registrar, chat, db)
+	if err != nil {
+		return err
 	}
 	if err = svc.Reconcile(ctx); err != nil {
 		return fmt.Errorf("startup reconciliation: %w", err)
@@ -96,6 +113,7 @@ func run() error {
 	mux.Handle("/v1/daemon", lifecycle)
 	mux.Handle("/v1/daemon/stop", lifecycle)
 	mux.Handle("/v1/terminal", terminal.Handler())
+	mux.Handle("/v1/ircd/", ircService.Handler())
 	mux.Handle("/v1/channels", chat.Handler())
 	mux.Handle("/v1/channels/", chat.Handler())
 	mux.Handle("/", svc.Handler())
