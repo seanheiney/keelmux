@@ -171,7 +171,11 @@ func waitNoWriter(t *testing.T, b *Backend, ref domain.RuntimeRef) {
 
 func TestPTYLifecycleUnicodeResizeInterruptReconnect(t *testing.T) {
 	b := testBackend(t, 4096)
-	spec := testSpec(`stty -echo; trap 'printf "INTERRUPTED\n"' INT; printf 'READY\n'; while IFS= read -r line; do case "$line" in size) stty size ;; *) printf 'REPLY:%s\n' "$line" ;; esac; done`)
+	// dash returns a failed read after a trapped SIGINT, whereas other /bin/sh
+	// implementations can continue that read. Explicitly retry interruptions;
+	// an actual EOF must still terminate the fixture. Product signal handling
+	// remains unchanged, and the test still observes the real PTY SIGINT trap.
+	spec := testSpec(`stty -echo; interrupted=0; trap 'interrupted=1; printf "INTERRUPTED\n"' INT; printf 'READY\n'; while :; do interrupted=0; if IFS= read -r line; then case "$line" in size) stty size ;; *) printf 'REPLY:%s\n' "$line" ;; esac; elif [ "$interrupted" -ne 1 ]; then break; fi; done`)
 	ref := launchTest(t, b, spec, false)
 	s := openWriter(t, b, ref)
 	if err := s.WriteInput([]byte("héllo 世界 🛟\n")); err != nil {

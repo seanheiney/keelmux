@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/ansi/parser"
 )
 
 // outputFilter uses the same standards-aware parser as the terminal tracker.
@@ -134,8 +135,53 @@ func (s *terminalScreen) process(data []byte) (visible, replies []byte) {
 	}
 	s.filter.visible = nil
 	s.filter.replies = nil
-	s.filter.parser.Parse(data)
+	for len(data) > 0 {
+		// Only ground-state printable ASCII can bypass control framing. In
+		// particular, bytes inside a split OSC/CSI/UTF-8 sequence must still
+		// pass through the parser, even when those bytes happen to be ASCII.
+		if s.filter.parser.State() == parser.GroundState && data[0] >= 0x20 && data[0] < 0x7f {
+			n := 1
+			for n < len(data) && data[n] >= 0x20 && data[n] < 0x7f {
+				n++
+			}
+			s.writeASCII(data[:n])
+			s.filter.visible = append(s.filter.visible, data[:n]...)
+			data = data[n:]
+			continue
+		}
+		s.filter.parser.Advance(data[0])
+		data = data[1:]
+	}
 	return s.filter.visible, s.filter.replies
+}
+
+// writeASCII gives the emulator whole runs so it can use its ASCII grapheme
+// path instead of segmenting and allocating once per byte. The first byte still
+// uses the streaming Unicode tail (a preceding Prepend rune can join it). Two
+// consecutive printable ASCII bytes always have a grapheme boundary. Retain the
+// last byte's exact cell so a combining mark in the next PTY read can extend it.
+func (s *terminalScreen) writeASCII(data []byte) {
+	s.writeGlyph(rune(data[0]))
+	data = data[1:]
+	if len(data) == 0 {
+		return
+	}
+	x := s.emulator.CursorPosition().X
+	width := s.emulator.Width()
+	if s.pendingWrap && s.modes[7] {
+		x++ // the cursor is logically one column beyond the right edge
+	}
+	_, _ = s.emulator.Write(data)
+	pos := s.emulator.CursorPosition()
+	s.glyph = string(data[len(data)-1])
+	s.glyphY = pos.Y // includes scrolling at the active bottom margin
+	if s.modes[7] {
+		s.glyphX = (x + len(data) - 1) % width
+		s.pendingWrap = s.glyphX == width-1
+	} else {
+		s.glyphX = min(width-1, x+len(data)-1)
+		s.pendingWrap = false
+	}
 }
 
 // The pinned emulator finalizes its last grapheme at each Write. Keep a bounded
@@ -173,6 +219,7 @@ func (s *terminalScreen) writeGlyph(r rune) {
 	}
 	_, _ = s.emulator.Write([]byte(text))
 	s.glyph = text
+	s.glyphY = s.emulator.CursorPosition().Y
 	s.pendingWrap = s.modes[7] && s.glyphX >= s.emulator.Width()-1
 }
 
