@@ -165,6 +165,8 @@ func (s LaunchSpec) Validate() error {
 type Lease struct {
 	SessionID   ID     `json:"session_id"`
 	ExecutionID ID     `json:"execution_id"`
+	Generation  uint64 `json:"generation"`
+	OperationID ID     `json:"operation_id"`
 	ClientID    string `json:"client_id"`
 	Token       string `json:"token"`
 }

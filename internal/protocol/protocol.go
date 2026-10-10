@@ -23,11 +23,16 @@ type LaunchRequest struct {
 	Argv            []string  `json:"argv"`
 }
 type SessionRequest struct {
-	SessionID domain.ID `json:"session_id"`
+	SessionID   domain.ID `json:"session_id"`
+	ExecutionID domain.ID `json:"execution_id"`
+	Generation  uint64    `json:"generation"`
+	OperationID domain.ID `json:"operation_id"`
 }
 type LeaseRequest struct {
 	SessionID   domain.ID `json:"session_id"`
 	ExecutionID domain.ID `json:"execution_id"`
+	Generation  uint64    `json:"generation"`
+	OperationID domain.ID `json:"operation_id"`
 	ClientID    string    `json:"client_id"`
 	ReadOnly    bool      `json:"read_only"`
 	Token       string    `json:"token,omitempty"`

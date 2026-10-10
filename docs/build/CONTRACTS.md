@@ -11,3 +11,9 @@ Captain owns domain, protocol, cmd, go.mod/go.sum, Makefile and integration. Con
 - Provider worker will implement discovery and supported argv, and owned installation separately. Native logins/config stay untouched during proof. Link validates managed environment against backend identity; raw supplied IDs cannot establish arbitrary unmanaged native identity.
 
 Workers own only assigned paths and report tests, exact commit, limitations and evidence gaps. No worker edits shared manifests or entry points. No arbitrary terminal adoption, semantic send-keys, inferred account/model, public release or billed-mode change.
+
+## Lost acknowledgement and stale command amendments
+
+Stop requires SessionID, ExecutionID, Generation and durable OperationID. Persist intent before stop; reject a stale generation and a conflicting reused operation ID. Retrying a confirmed stop returns its prior outcome and never targets a replacement execution.
+
+Attach acquisition requires SessionID, ExecutionID, Generation, ClientID and OperationID. Persist the idempotent grant keyed by the full acquisition identity before replying. A lost response retries the same operation and returns the same token, or an explicit recovery outcome if the process/writer state changed. It cannot release/replace another client's writer. Release requires the exact stored token/client/execution/operation. Reconcile durable grants against actual tmux writable clients after daemon loss; absent database leases cannot fence a surviving native client.

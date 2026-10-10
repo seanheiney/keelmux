@@ -16,3 +16,6 @@ coverage.out
 .env
 .env.*
 !.env.example
+.backplane/
+*.sock
+.consensus/
