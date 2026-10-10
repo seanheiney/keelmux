@@ -5,15 +5,13 @@ package tui
 import (
 	"context"
 	"errors"
-	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
-	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/seanheiney/keelmux/internal/clientstate"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
@@ -95,10 +93,11 @@ type model struct {
 	draft                clientstate.Draft
 	status               string
 	deleting             domain.ID
+	color                bool
 }
 
 func newModel(ctx context.Context, client *protocol.Client, path string, s clientstate.State) *model {
-	return &model{ctx: ctx, client: client, statePath: path, state: s, width: 80, height: 24}
+	return &model{ctx: ctx, client: client, statePath: path, state: s, width: 80, height: 24, color: os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb" && os.Getenv("NO_COLOR") == ""}
 }
 
 func (m *model) Init() tea.Cmd {
@@ -165,7 +164,9 @@ func (m *model) selectSession(s domain.Session) {
 	m.keepVisible()
 	m.save()
 }
-func (m *model) slots() int { return max(1, m.height-13) }
+func (m *model) slots() int {
+	return max(1, m.height-len(m.heading())-len(m.inventoryNotice())-len(m.selectionDetails())-len(m.switcherFooter()))
+}
 func (m *model) keepVisible() {
 	p := m.place()
 	rows := m.visible()
@@ -585,149 +586,4 @@ func (m *model) groupName() string {
 		return g.Name
 	}
 	return "All work"
-}
-
-func (m *model) View() string {
-	if m.screen == "groups" {
-		return m.groupsView()
-	}
-	if m.screen == "newgroup" {
-		return m.fit([]string{"KEELMUX / new group", "Name: " + m.input + "_", "Groups are optional local navigation.", ""}, []string{m.status, "Enter create  Esc cancel"})
-	}
-	if m.screen == "draft" {
-		return m.draftView()
-	}
-	p := m.place()
-	rows := m.visible()
-	lines := []string{"KEELMUX / " + m.groupName(), fmt.Sprintf("%d in view / %d total   g groups", len(rows), len(m.sessions)), "Search / " + p.Filter}
-	unreachable := 0
-	for _, home := range m.places {
-		if home.State != "reachable" {
-			unreachable++
-		}
-	}
-	if unreachable > 0 {
-		lines = append(lines, fmt.Sprintf("%d execution homes unreachable; entry remains connected.", unreachable))
-	}
-	if m.searching {
-		lines[2] += "_"
-	}
-	if !m.loaded {
-		lines = append(lines, "Loading authorized inventory...")
-	} else if m.offline != nil {
-		lines = append(lines, "OFFLINE / last observed inventory", "Reconnect with r. Attach is unavailable.")
-	} else if len(rows) == 0 {
-		if len(m.sessions) == 0 {
-			if len(m.places) > 0 {
-				lines = append(lines, "No permitted reachable sessions.", "Use bp directory to inspect execution homes.")
-			} else {
-				lines = append(lines, "No sessions yet.", "Launch with bp run codex or bp run claude.")
-			}
-		} else {
-			lines = append(lines, "No matching work in this group.", "Esc clears search; g opens All work.")
-		}
-	}
-	end := min(len(rows), p.Scroll+m.slots())
-	for i := min(p.Scroll, len(rows)); i < end; i++ {
-		s := rows[i]
-		marker := "  "
-		if s.ID == p.SessionID {
-			marker = "> "
-		}
-		state := s.Execution.State
-		if state == "" {
-			state = "unknown"
-		}
-		lines = append(lines, marker+s.Name+"  ["+s.Execution.Provider+" / "+state+"]")
-	}
-	if s, ok := m.selected(); ok {
-		lines = append(lines, "", s.Workspace+" / "+string(s.Mode), "Model: "+evidence(s.Execution.ActualModel)+"  Account: "+evidence(s.Execution.Account), "Thread: "+string(s.ThreadID), capability(s))
-	} else if p.SessionID != "" {
-		lines = append(lines, "", "Saved selection is unavailable in this view.", "Its place is retained; choose available work with arrows.")
-	}
-	status := m.status
-	if m.offline != nil {
-		status = "Connection offline: " + m.offline.Error()
-	}
-	help := "Enter attach  v read-only  / search  g groups  p draft  q quit"
-	if m.busy {
-		help = "Waiting for native attachment / lease reconciliation..."
-	} else if m.state.Pending != nil {
-		help = "Enter retry same attach  x reconcile/release  q quit"
-	} else if m.searching {
-		help = "Type to search this group  Enter finish  Esc finish"
-	}
-	if m.width < 52 && !m.busy && !m.searching && m.state.Pending == nil {
-		help = "Enter attach  v view  / find  g groups  q quit"
-	}
-	footer := []string{status, help}
-	if m.offline != nil && m.state.Pending != nil && m.status != "" {
-		// Connection failure must not hide the saved acquisition's recovery
-		// state. Its exact intent still needs reconciliation after reconnect.
-		footer = []string{status, m.status, help}
-	}
-	return m.fit(lines, footer)
-}
-func (m *model) groupsView() string {
-	lines := []string{"KEELMUX / groups", "Optional collections; All work includes ungrouped sessions."}
-	labels := []string{"All work"}
-	for _, g := range m.state.Groups {
-		name := g.Name
-		if p, ok := m.state.Group(g.ParentID); ok {
-			name = p.Name + " / " + name
-		}
-		labels = append(labels, name)
-	}
-	slots := max(1, m.height-7)
-	start := max(0, m.groupIndex-slots+1)
-	for i := start; i < min(len(labels), start+slots); i++ {
-		marker := "  "
-		if i == m.groupIndex {
-			marker = "> "
-		}
-		lines = append(lines, marker+labels[i])
-	}
-	return m.fit(lines, []string{m.status, "Enter open  n new  c child  a add project  s pin session", "d remove group  Esc return"})
-}
-func (m *model) draftView() string {
-	lines := []string{"KEELMUX / local draft", "Thread: " + string(m.draft.ThreadID), "Recipient: " + string(m.draft.RecipientID), "Delivery unavailable; no prompt is submitted."}
-	for _, s := range m.sessions {
-		if s.ThreadID == m.draft.ThreadID && s.LaneID == m.draft.RecipientID {
-			lines = append(lines, "Current target: "+s.Execution.Provider+" / "+evidence(s.Execution.ActualModel))
-			if s.Execution.ID != m.draft.ExecutionID || s.Execution.Generation != m.draft.Generation {
-				lines = append(lines, "Target changed since this draft began. Review before any future delivery.")
-			}
-			break
-		}
-	}
-	lines = append(lines, "")
-	lines = append(lines, strings.Split(m.draft.Text+"_", "\n")...)
-	return m.fit(lines, []string{m.status, "Text saves to this thread/recipient. Esc returns; Enter newline."})
-}
-
-// Inventory names are untrusted text: strip controls before measuring cells.
-func plain(s string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
-			return '?'
-		}
-		return r
-	}, s)
-}
-func (m *model) fit(lines, footer []string) string {
-	limit := max(0, m.height-len(footer))
-	if len(lines) > limit {
-		lines = lines[:limit]
-	}
-	for len(lines) < limit {
-		lines = append(lines, "")
-	}
-	lines = append(lines, footer...)
-	if len(lines) > m.height {
-		lines = lines[len(lines)-m.height:]
-	}
-	for i, s := range lines {
-		lines[i] = ansi.Truncate(plain(s), m.width, "")
-	}
-	return strings.Join(lines, "\n")
 }

@@ -26,7 +26,9 @@ func fixtureSession(id, name string) domain.Session {
 }
 func testModel(t *testing.T, s clientstate.State) *model {
 	t.Helper()
-	return newModel(context.Background(), &protocol.Client{}, filepath.Join(t.TempDir(), "place.json"), s)
+	m := newModel(context.Background(), &protocol.Client{}, filepath.Join(t.TempDir(), "place.json"), s)
+	m.color = false // Tests choose their own palette; the test runner's TERM is irrelevant.
+	return m
 }
 func key(s string) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)} }
 
