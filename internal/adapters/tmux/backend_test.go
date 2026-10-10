@@ -507,14 +507,94 @@ func TestNativeTerminalDetachAndLiteralKeys(t *testing.T) {
 	// Wait for Escape's native ambiguity timeout before typing the prefix;
 	// adjacent Escape+Ctrl-G is an Alt chord rather than a prefix sequence.
 	awaitBytes(wire)
-	if _, err := input.Write([]byte{7, 7}); err != nil {
+	awaitNativeState := func(probeCtx context.Context, label, wantTable string, wantKeys []byte) {
+		var lastTable string
+		var lastKeys []byte
+		for probeCtx.Err() == nil {
+			table, err := b.runCommand(probeCtx, "list-clients", "-t", ref.Session, "-F", "#{client_key_table}")
+			if err == nil {
+				lastTable = strings.TrimSpace(string(table))
+			}
+			lastKeys, _ = os.ReadFile(output + ".keys")
+			if err == nil && lastTable == wantTable && bytes.Equal(lastKeys, wantKeys) {
+				t.Logf("native %s acknowledged: table=%s keys=%x", label, lastTable, lastKeys)
+				return
+			}
+			if err != nil && probeCtx.Err() == nil {
+				t.Fatal(err)
+			}
+			select {
+			case <-probeCtx.Done():
+			case <-time.After(10 * time.Millisecond):
+			}
+		}
+		t.Fatalf("native %s failed before client cancellation: table=%q want=%q pane_keys=%x want=%x; deadline_error=%v", label, lastTable, wantTable, lastKeys, wantKeys, probeCtx.Err())
+	}
+	// script may coalesce piped key bursts into paste. Acknowledge each native
+	// prefix byte at the actual server before sending the next typed key; this
+	// keeps tmux's production paste heuristic intact. No send-keys or retries.
+	// Both literal-prefix acknowledgements share the original 3s byte bound.
+	literalCtx, literalCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer literalCancel()
+	if _, err := input.Write([]byte{7}); err != nil {
 		t.Fatal(err)
 	}
+	awaitNativeState(literalCtx, "first literal prefix", "prefix", wire)
+	if _, err := input.Write([]byte{7}); err != nil {
+		t.Fatal(err)
+	}
+	awaitNativeState(literalCtx, "literal Ctrl-G complete", "root", append(wire, 7))
+	literalCancel()
 	awaitBytes(append(wire, 7))
-	if _, err := input.Write([]byte{7, 'd'}); err != nil {
+	detachDeadline := time.Now().Add(3 * time.Second)
+	detachCtx, detachCancel := context.WithDeadline(context.Background(), detachDeadline)
+	defer detachCancel()
+	targetPaste, targetErr := b.runCommand(detachCtx, "show-options", "-A", "-t", ref.Session, "-v", "assume-paste-time")
+	globalPaste, globalErr := b.runCommand(detachCtx, "show-options", "-g", "-v", "assume-paste-time")
+	if targetErr != nil || globalErr != nil || strings.TrimSpace(string(targetPaste)) != "1" || strings.TrimSpace(string(globalPaste)) != "1" {
+		t.Fatalf("default paste heuristic: target=%q error=%v global=%q error=%v", targetPaste, targetErr, globalPaste, globalErr)
+	}
+	beforeTable, err := b.runCommand(detachCtx, "list-clients", "-t", ref.Session, "-F", "#{client_key_table}")
+	beforeKeys, _ := os.ReadFile(output + ".keys")
+	t.Logf("native before final prefix: keys=%x table=%q error=%v target_paste=%q global_paste=%q", beforeKeys, beforeTable, err, targetPaste, globalPaste)
+	if err != nil || strings.TrimSpace(string(beforeTable)) != "root" || !bytes.Equal(beforeKeys, append(wire, 7)) {
+		t.Fatal("literal prefix did not complete at root before final native prefix")
+	}
+	if _, err := input.Write([]byte{7}); err != nil {
 		t.Fatal(err)
 	}
-	awaitWriters(t, b, ref, 0)
+	awaitNativeState(detachCtx, "final native prefix", "prefix", append(wire, 7))
+	if _, err := input.Write([]byte{'d'}); err != nil {
+		t.Fatal(err)
+	}
+	detached := false
+	lastWriters := -1
+	for time.Now().Before(detachDeadline) {
+		o, err := b.Inspect(detachCtx, ref)
+		if err == nil {
+			lastWriters = o.WritableClients
+		}
+		if err == nil && lastWriters == 0 {
+			detached = true
+			break
+		}
+		if err != nil && detachCtx.Err() == nil {
+			t.Fatal(err)
+		}
+		select {
+		case <-detachCtx.Done():
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+	if !detached {
+		got, _ := os.ReadFile(output + ".keys")
+		t.Fatalf("writable clients=%d, want 0 within shared 3s; live pane keys=%x", lastWriters, got)
+	}
+	gotFinalKeys, err := os.ReadFile(output + ".keys")
+	if err != nil || !bytes.Equal(gotFinalKeys, append(wire, 7)) {
+		t.Fatalf("final native bytes: %x, want %x; error=%v", gotFinalKeys, append(wire, 7), err)
+	}
+	t.Logf("native prefix acknowledged and detached; final_keys=%x; elapsed=%s", gotFinalKeys, time.Since(detachDeadline.Add(-3*time.Second)))
 	// BSD script continues waiting for its piped input even after its terminal
 	// child exits. Stop that test-only wrapper after tmux confirms native detach;
 	// full TUI return is a separate integrated acceptance gate.

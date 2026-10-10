@@ -1,0 +1,156 @@
+{
+  "schema": "keelmux-tmux-native-key-fixture/v1",
+  "date": "2026-10-10",
+  "baseline_source": "85879183bcf9da5b52972166e93b29e38aa336dc",
+  "result": "fixture-repair-pass-hosted-candidate-pending",
+  "original_main_failure": {
+    "run_id": 38091289639,
+    "url": "https://github.com/seanheiney/keelmux/actions/runs/38091289639",
+    "test": "TestNativeTerminalDetachAndLiteralKeys",
+    "signature": "writable clients = 1, want 0",
+    "nativepty_and_transport": "pass on both hosted platforms"
+  },
+  "original_private_receipt_sha256": "480025999dfc0f9c3d62bd2bbcb11af79886e1d7478eca19af5aff84938b1f86",
+  "worker_overlay_test_sha256": "654e0b97ea5afe8e24d183b3e8af4786137a870f7a5fd290d94c96f32323aea0",
+  "integrated_test_file_sha256": "0d55e303d975c73822275a9fb38fbeaf01c90b85731a29ecdd4666b1b436dbbd",
+  "production_tmux_backend_sha256": "7cf4e4a3d6b71695a75a6996518a0a8b10b3799997aa784adea68600623b8a64",
+  "production_go_changes": false,
+  "linux_fixture": {
+    "image": "keelmux-schema1-linux-fixture:503b024",
+    "image_id": "sha256:81a3dbb6753d62fe38fec8c5866ddae23b4b908b85f160a7dbc402fe0be5d07c",
+    "execution_os_arch": "Linux aarch64",
+    "tmux": "3.5a",
+    "script": "util-linux 2.41.5",
+    "host_compiler": "go1.26.6 darwin/arm64",
+    "target": "linux/arm64",
+    "race": false,
+    "network": "none",
+    "mounts": [],
+    "cpu_limit_per_container": 1,
+    "memory_mib": 256,
+    "uid_gid": "65534:65534",
+    "root_read_only": true,
+    "capabilities": "ALL dropped",
+    "security": "no-new-privileges",
+    "runtime_state": "owned /tmp tmpfs only"
+  },
+  "results": {
+    "unchanged_test_prior": {
+      "count": 5,
+      "failures": 4,
+      "signature": "backend_test.go517 writable clients1 want0",
+      "log": "tmux-exact-triage-linux.log"
+    },
+    "first_attempt_instrumentation_error": {
+      "count": 5,
+      "excluded_from_candidate_proof": true,
+      "reason": "show-options without -A returned empty for inherited session option; check stopped before candidate native keys",
+      "log": "tmux-prefix-ack-triage-linux.log"
+    },
+    "final_prefix_only": {
+      "count": 5,
+      "passes": 3,
+      "failures": 2,
+      "failure": "before final Ctrl-G, table remained prefix despite exact pane wire+oneCtrl-G; root precondition rejected stale acknowledgement",
+      "default_target_and_global_assume_paste_time_ms": 1,
+      "passes_final_detach_ms": [
+        34.600831,
+        36.648721,
+        51.472111
+      ],
+      "log": "tmux-prefix-ack-triage-linux-corrected.log"
+    },
+    "full_prefix_ack": {
+      "count": 5,
+      "passes": 5,
+      "failures": 0,
+      "state_sequence": [
+        "first literal Ctrl-G: prefix table with wire bytes only",
+        "second literal Ctrl-G: root table with wire plus exactly one Ctrl-G",
+        "final native Ctrl-G: prefix table with exact literal bytes",
+        "native d: authoritative writable clients zero and exact final bytes"
+      ],
+      "default_target_and_global_assume_paste_time_ms": 1,
+      "final_phase_ms": [
+        31.780794,
+        29.843689,
+        30.481372,
+        32.521913,
+        30.965796
+      ],
+      "log": "tmux-full-prefix-ack-triage-linux.log"
+    },
+    "missing_detach_negative": {
+      "count": 1,
+      "expected_failures": 1,
+      "test_seconds": 3.18,
+      "mutation": "unbind-key -T prefix d only on owned fixture server",
+      "failure": "writable clients1 want0 within shared3s; exact pane bytes retained",
+      "log": "tmux-missing-detach-negative-linux.log"
+    },
+    "broken_literal_negative": {
+      "count": 1,
+      "expected_failures": 1,
+      "test_seconds": 3.16,
+      "mutation": "bind-key -T prefix C-g send-keys -l X only on owned fixture server",
+      "failure": "table root but pane bytes end58 instead of07; combined exact-byte condition failed at original shared3s literal deadline",
+      "log": "tmux-broken-literal-negative-linux.log"
+    },
+    "rejected_10ms_typed_cadence": {
+      "count": 5,
+      "passes": 4,
+      "failures": 1,
+      "spacing": "10ms before final Ctrl-G and 10ms before d",
+      "failure_pane_bytes_hex": "556e69636f646520f09f9ba0031b070764",
+      "verdict": "Rejected: sleep-only fixture repair is insufficient.",
+      "prior_receipt": "tmux-detach-triage-20261010.json",
+      "prior_receipt_result": "results.typed_cadence_overlay",
+      "log": "tmux-typed-cadence-triage-linux.log"
+    }
+  },
+  "bounds": {
+    "literal_phase": "first prefix acknowledgement and second root/exact-byte acknowledgement share one context.WithTimeout3s matching original literal byte bound",
+    "final_phase": "option verification, root precondition, native final prefix acknowledgement, and authoritative writer release share one context.WithDeadline3s; runCommand and Inspect receive that context",
+    "original_assertions": "Unicode/Ctrl-C/Escape bytes, literal Ctrl-G byte assertion, native process alive, reconnect availability remain; final exact pane-byte assertion added",
+    "polling": "10ms only after unmet server/byte state probe, interruptible by phase context; no unconditional sleeps",
+    "no_retries_or_resends": true,
+    "before_final_prefix_queries": "Explicit fixture observation/barrier for target/global defaults and root state; not hidden logging-only diagnostics",
+    "production_heuristic": "unchanged1ms; no assume-paste-time mutation in passing fixture",
+    "fallback": "not run after full acknowledgement candidate passed"
+  },
+  "macos_overlay": {
+    "os_arch": "darwin/arm64",
+    "go": "1.26.6",
+    "tmux": "3.7b",
+    "race": true,
+    "repetitions": 10,
+    "passes": 10,
+    "failures": 0,
+    "log_sha256": "3b5e7e553695e81cfd1aba77fd4b89498873f5a839fc05f8cd6c03f6fe39d521"
+  },
+  "root_source_checks": {
+    "command": "go test -race -p 1 ./... && go vet ./...",
+    "result": "pass",
+    "cache_allowed": true,
+    "exact_source_basis": "integrated test-file digest above; full source validation before final commit",
+    "race_log_sha256": "7b478e6c71874659a11c0b9c4030760627c49380c9b7f46d30aa2047c7917518",
+    "vet_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "independent_review": {
+    "result": "no substantive blockers",
+    "scope": "root test diff, stale-prefix rejection, original bounds/assertions/defaults and hold documentation",
+    "tests_run_by_reviewer": false
+  },
+  "cleanup": {
+    "five_fresh_owned_containers_absent_verified": true,
+    "providers_started": false,
+    "other_agents_resources_touched": false
+  },
+  "limits": [
+    "Finite component fixture acceptance, not new release qualification.",
+    "Linux arm64 is an isolated actual container with a crosscompiled no-race test; hosted Ubuntu race gate remains pending.",
+    "MacOS race proof uses the exact work-only overlay; integrated source full race/vet passed with cache allowed.",
+    "Production interpretation of intentionally pasted prefix sequences is unchanged.",
+    "Existing858 native/provider/package receipts retain their exact original source; new candidate bytes require new qualification."
+  ]
+}

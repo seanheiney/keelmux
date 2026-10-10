@@ -104,7 +104,7 @@
     "id": "2e2f680e-bd3f-41ef-8ee7-b3047221e8fa",
     "http_status": 201
   },
-  "updated_at": "2026-10-10T21:43:51.087871+00:00",
+  "updated_at": "2026-10-10T22:37:56.903030+00:00",
   "scope": "Dedicated project coordination and acceptance evidence; no credentials included.",
   "native_milestone_comments": [
     {
@@ -174,5 +174,35 @@
     "write_status": 201,
     "read_status": 200,
     "exact_body_read_verified": true
+  },
+  "native_repaired_candidate_qualification": {
+    "issue_id": "c9291318-8eb9-415f-95cb-a3e81608f3bc",
+    "comment_id": "880a32ed-1dec-4318-b043-3daae1c7e0f3",
+    "write_status": 201,
+    "read_status": 200,
+    "exact_body_read_verified": true
+  },
+  "main_tmux_qualification_hold": {
+    "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+    "comment_id": "2c803d44-ba86-4b4f-b961-a35718c8a72f",
+    "write_status": 201,
+    "read_status": 200,
+    "exact_body_read_verified": true
+  },
+  "mattermost_v020_candidate_qualification": {
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "post_id": "i4p6irbb8b8e88ixhnok3cxgpc",
+    "url": "https://chat.sean.net/seannet/pl/i4p6irbb8b8e88ixhnok3cxgpc",
+    "message_sha256": "25d6466fb3d2eb353d6e3e4b8497e11e7c6fd21fa225cf15d2785bdfe3f46b13",
+    "read_status": 200,
+    "unique_exact_message": true
+  },
+  "mattermost_main_tmux_qualification_hold": {
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "post_id": "qqyr98r1b7b3uxbum3uwyugbiy",
+    "url": "https://chat.sean.net/seannet/pl/qqyr98r1b7b3uxbum3uwyugbiy",
+    "message_sha256": "409e33925faa01f444b9237bc217041e5955d6668c3b64b4a5f4d2d587659b97",
+    "read_status": 200,
+    "unique_exact_message": true
   }
 }

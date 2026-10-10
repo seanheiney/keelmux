@@ -10,7 +10,7 @@ keelmux                 →  find it, open it, continue
 Ctrl-G d                →  return to your switcher
 ```
 
-[Online documentation](https://github.com/seanheiney/keelmux/tree/main/docs) · [Get started](docs/user/quickstart.md) · [Documentation](docs/README.md) · [CLI reference](docs/user/cli.md) · [Recovery](docs/user/operations.md#recover-a-session) · [Security](SECURITY.md)
+[Online documentation](https://seanheiney.github.io/keelmux/) · [Get started](docs/user/quickstart.md) · [Documentation](docs/README.md) · [CLI reference](docs/user/cli.md) · [Recovery](docs/user/operations.md#recover-a-session) · [Security](SECURITY.md)
 
 ## Install
 
