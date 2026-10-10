@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "tested_sha": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+  "harness_sha256": "6589dd429a48f2517f37c6163718a6853a013af36b6d37d221be3059f2bb4d6b",
+  "native_core_harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "binary_sha256": {
+    "bp": "e91b4e6b73f8d0daf7e41d206f8b7c61409bd93a638a477cacdf6ed609d2a71d",
+    "bpd": "090679acb535354cfee1af42cc79b0b7071abec5b625d619feed6ed89e7e3d91",
+    "bpg": "d8319da643b121faed40a7e37273ce64316407fbaa34fc6b31bdc3a68c5440b9"
+  },
+  "utc": "2026-10-10T17:54:07Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "kind": "same_computer_executable_process_fixture",
+  "model_prompt_submitted": false,
+  "configuration": "owned600 principal+explicit home/session grants; startup reload on restart",
+  "checks": [
+    {
+      "name": "frozen executable build identity",
+      "result": "pass",
+      "detail": {
+        "all_binary_revisions": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+        "all_binary_worktrees_clean_at_build": true
+      }
+    },
+    {
+      "name": "two owned executable homes and scoped entry setup",
+      "result": "pass",
+      "detail": {
+        "homes": 2,
+        "separate_bpd_processes": true,
+        "one_entry_cli_directory": true,
+        "runtime_locators_scrubbed": true,
+        "entry_management_refused": true,
+        "automatic_local_home_started": false
+      }
+    },
+    {
+      "name": "single bounded directory fetch with SIGSTOP home",
+      "result": "pass",
+      "detail": {
+        "actual_bp_directory_invocations_during_this_check": 1,
+        "elapsed_seconds": 3.009835,
+        "maximum_seconds": 4.5,
+        "healthy_sessions": 1,
+        "distinct_unreachable_homes": 1,
+        "entry_returned_success": true,
+        "silent_home_still_stopped": true,
+        "home_runtime_locators_scrubbed": true
+      }
+    },
+    {
+      "name": "actual surviving-home TUI attach input and detach while second home stays stopped",
+      "result": "pass",
+      "detail": {
+        "actual_tui_partial_home_label": true,
+        "entry_offline_label": false,
+        "healthy_work_selected": true,
+        "actual_healthy_home_native_attach": true,
+        "raw_fixture_input_received_at_only_the_healthy_home": true,
+        "detach_returns_same_selection_and_clears_lease": true,
+        "silent_home_stopped_for_entire_tui_exercise": true,
+        "both_native_pane_pids_preserved": true
+      }
+    },
+    {
+      "name": "SIGCONT restores exact original home executions",
+      "result": "pass",
+      "detail": {
+        "sigcont_restores_both_original_sessions": true,
+        "both_homes_reachable": true,
+        "original_execution_runtime_and_pids_preserved": true
+      }
+    },
+    {
+      "name": "executable digests unchanged throughout acceptance",
+      "result": "pass",
+      "detail": {
+        "all_binary_digests_unchanged": true
+      }
+    }
+  ],
+  "missing_evidence": [
+    "independent remote hosts",
+    "SSH or other remote enrollment/authentication",
+    "native provider authenticated model turns",
+    "live configuration revocation without entry restart",
+    "host reboot and network transport faults",
+    "independent-user TUI usability",
+    "real remote packet-loss or blackhole latency",
+    "repeated latency distribution under host load"
+  ],
+  "gateway_harness_sha256": "09ebded8b6046468b65c94ad330a63d0a90abf2dc4b83b65f172f7bad8958780",
+  "harness_commit": "1eb46eb70f0967f8531ef38cccc73107b7632111",
+  "repository_sha_at_start": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+  "claim": "one bounded executable directory fetch preserves healthy work while a distinct owned home is silently stopped; actual TUI remains usable",
+  "directory_deadline_seconds": 4.5,
+  "fault": "SIGSTOP on the second owned bpd; SIGCONT before cleanup",
+  "boundary": "same-computer raw terminal fixtures with distinct private state directories, host identities, and tmux sockets; no remote enrollment or native model-turn claim",
+  "cleanup": {
+    "paused_home_sigcont_sent": true,
+    "paused_home_resumed": true,
+    "owned_terminal_home_and_entry_processes_stopped": true,
+    "owned_temporary_directories_removed": true
+  },
+  "binary_build": {
+    "bp": {
+      "vcs.revision": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+      "vcs.modified": "false",
+      "GOOS": "darwin",
+      "GOARCH": "arm64"
+    },
+    "bpd": {
+      "vcs.revision": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+      "vcs.modified": "false",
+      "GOOS": "darwin",
+      "GOARCH": "arm64"
+    },
+    "bpg": {
+      "vcs.revision": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+      "vcs.modified": "false",
+      "GOOS": "darwin",
+      "GOARCH": "arm64"
+    }
+  },
+  "binary_sha256_at_end": {
+    "bp": "e91b4e6b73f8d0daf7e41d206f8b7c61409bd93a638a477cacdf6ed609d2a71d",
+    "bpd": "090679acb535354cfee1af42cc79b0b7071abec5b625d619feed6ed89e7e3d91",
+    "bpg": "d8319da643b121faed40a7e37273ce64316407fbaa34fc6b31bdc3a68c5440b9"
+  },
+  "repository_sha_at_end": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19"
+}
