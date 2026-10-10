@@ -318,8 +318,24 @@ func startProductFixtureProcess(t *testing.T, dir, executable string, args ...st
 	return p
 }
 
-func productSSHConfig(t *testing.T, dir, username, product, socket string, host, session domain.ID) Config {
+func productSSHConfig(t *testing.T, processDir, username, product, socket string, host, session domain.ID) Config {
 	t.Helper()
+	// OpenSSH StrictModes checks authorized_keys ancestors as well as the file.
+	// Socket state needs short /tmp paths, but key material uses the user's owned
+	// ambient temp directory instead of a world-writable /tmp ancestor.
+	dir, err := os.MkdirTemp("", "km-prod-ssh-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir, err = filepath.EvalSymlinks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Error("fixture key directory cleanup failed")
+		}
+	})
 	keygen := func(name string) string {
 		path := filepath.Join(dir, name)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -349,7 +365,7 @@ func productSSHConfig(t *testing.T, dir, username, product, socket string, host,
 	if err := os.WriteFile(serverConfig, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
-	server := startProductFixtureProcess(t, dir, "/usr/sbin/sshd", "-D", "-e", "-f", serverConfig)
+	server := startProductFixtureProcess(t, processDir, "/usr/sbin/sshd", "-D", "-e", "-f", serverConfig)
 	for deadline := time.Now().Add(2 * time.Second); ; {
 		select {
 		case err := <-server.ended:
