@@ -91,7 +91,7 @@ func TestCodexV1MigrationPreservesLegacyBytesWithoutPromotion(t *testing.T) {
 	defer s.Close()
 	assertLegacyBytes(t, s.db, original)
 	var version, n int
-	if err = s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 2 {
+	if err = s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 3 {
 		t.Fatal("wrong schema", version, err)
 	}
 	if err = s.db.QueryRow("SELECT COUNT(*) FROM codex_grants").Scan(&n); err != nil || n != 0 {
@@ -134,7 +134,7 @@ func TestCodexFutureSchemaRefused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec("PRAGMA user_version=3"); err != nil {
+	if _, err = db.Exec("PRAGMA user_version=4"); err != nil {
 		t.Fatal(err)
 	}
 	db.Close()
@@ -266,7 +266,7 @@ func TestCodexV2CorruptionRequiresRepairWithoutReclassification(t *testing.T) {
 			}
 			defer db.Close()
 			var version, active int
-			if err = db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 2 {
+			if err = db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 3 {
 				t.Fatal("repair changed version", err)
 			}
 			if err = db.QueryRow("SELECT active FROM grants WHERE operation_id='grant'").Scan(&active); err != nil || active != 1 {

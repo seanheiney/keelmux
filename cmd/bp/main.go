@@ -43,6 +43,19 @@ func run() error {
 		return err
 	}
 	args := fs.Args()
+	if len(args) > 0 && args[0] == "channels" {
+		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h" || args[1] == "help") {
+			fmt.Print(channelHelp)
+			return nil
+		}
+		if len(args) > 2 && (args[len(args)-1] == "--help" || args[len(args)-1] == "-h") {
+			fmt.Print(channelHelp)
+			return nil
+		}
+		if *entry != "" {
+			return errors.New("channel configuration and messages belong to the local execution home")
+		}
+	}
 	if *version {
 		if len(args) != 0 {
 			return errors.New("--version accepts no arguments; use version --json for metadata")
@@ -122,6 +135,8 @@ func run() error {
 		return tui.Run(ctx, c, p.Place)
 	}
 	switch args[0] {
+	case "channels":
+		return manageChannels(ctx, c, args[1:])
 	case "directory":
 		directory, err := c.Directory(ctx)
 		if err != nil {
@@ -323,6 +338,7 @@ keelmux daemon status|stop|restart    Inspect or restart only the owned daemon
 keelmux doctor                        Check local binaries and daemon
 keelmux version [--json]              Print release and protocol provenance
 keelmux providers                     Inspect qualified native status without model work
+keelmux channels --help               Bind chat roots, read authored inbox and reply
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]
