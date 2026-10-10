@@ -71,7 +71,7 @@ func (t *tree) dir(path string, create bool) (*os.File, error) {
 	for _, p := range parts {
 		next, err := unix.Openat(int(current.Fd()), p, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 		if errors.Is(err, unix.ENOENT) && create {
-			if err = unix.Mkdirat(int(current.Fd()), p, 0700); err == nil || errors.Is(err, unix.EEXIST) {
+			if err = mkdirDurable(current, p); err == nil || errors.Is(err, unix.EEXIST) {
 				next, err = unix.Openat(int(current.Fd()), p, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 			}
 		}
@@ -82,6 +82,52 @@ func (t *tree) dir(path string, create bool) (*os.File, error) {
 		current = os.NewFile(uintptr(next), p)
 	}
 	return current, nil
+}
+
+func mkdirDurable(parent *os.File, name string) error {
+	if err := unix.Mkdirat(int(parent.Fd()), name, 0700); err != nil {
+		return err
+	}
+	// Sync the directory containing the new name, not only the new directory.
+	return parent.Sync()
+}
+
+func (t *tree) privateDir(path string, create bool) (*os.File, error) {
+	d, err := t.dir(path, create)
+	if err != nil {
+		return nil, err
+	}
+	info, err := d.Stat()
+	if err != nil || info.Mode().Perm()&0077 != 0 {
+		d.Close()
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New("skill metadata and removal archive directories must be private (0700)")
+	}
+	return d, nil
+}
+
+// exists examines the exact name without following a final symlink. A symlink
+// is an occupied namespace, never permission to overwrite its target.
+func (t *tree) exists(path string) (bool, error) {
+	if _, err := components(path); err != nil {
+		return false, err
+	}
+	d, err := t.dir(filepath.Dir(path), false)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer d.Close()
+	var st unix.Stat_t
+	err = unix.Fstatat(int(d.Fd()), filepath.Base(path), &st, unix.AT_SYMLINK_NOFOLLOW)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return err == nil, err
 }
 func (t *tree) read(path string) ([]byte, error) {
 	if _, err := components(path); err != nil {
@@ -175,24 +221,6 @@ func (t *tree) publish(from, to string) error {
 	}
 	return a.Sync()
 }
-func (t *tree) remove(path string, isDir bool) error {
-	if _, err := components(path); err != nil {
-		return err
-	}
-	d, err := t.dir(filepath.Dir(path), false)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	flags := 0
-	if isDir {
-		flags = unix.AT_REMOVEDIR
-	}
-	if err := unix.Unlinkat(int(d.Fd()), filepath.Base(path), flags); err != nil {
-		return err
-	}
-	return d.Sync()
-}
 func (t *tree) createDir(path string) error {
 	if _, err := components(path); err != nil {
 		return err
@@ -202,8 +230,5 @@ func (t *tree) createDir(path string) error {
 		return err
 	}
 	defer d.Close()
-	if err := unix.Mkdirat(int(d.Fd()), filepath.Base(path), 0700); err != nil {
-		return err
-	}
-	return d.Sync()
+	return mkdirDurable(d, filepath.Base(path))
 }

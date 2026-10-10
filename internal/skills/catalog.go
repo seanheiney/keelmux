@@ -33,6 +33,8 @@ type Mapping struct {
 	Installed    string `json:"installed"`
 	Discoverable string `json:"discoverable"`
 	Loaded       string `json:"loaded"`
+	RetainedPath string `json:"retained_path,omitempty"`
+	RecoveryHint string `json:"recovery_hint,omitempty"`
 }
 type Preview struct {
 	Root     string    `json:"root"`

@@ -292,7 +292,7 @@ func TestPartialStageAndPartialRemovalResumeRecordedOwnedContent(t *testing.T) {
 	e.State = "removing"
 	l.Entries[key(UserScope, "codex")] = e
 	writeLedger(tr, l)
-	tr.remove(filepath.Join(e.Directory, "scripts", "link.sh"), false)
+	os.Remove(filepath.Join(root, e.Directory, "scripts", "link.sh"))
 	if got := preview(t, root, "codex").Mappings[0].Action; got != "pending_removal" {
 		t.Fatal("new install could replace interrupted removal")
 	}

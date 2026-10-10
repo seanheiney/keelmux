@@ -27,12 +27,14 @@ type entry struct {
 	Stage          string `json:"stage"`
 	State          string `json:"state"`
 	RemovingStage  bool   `json:"removing_stage,omitempty"`
+	RemovalID      string `json:"removal_id,omitempty"`
 	Files          []File `json:"files"`
 }
 type ledger struct {
-	Version int              `json:"version"`
-	Owner   string           `json:"owner"`
-	Entries map[string]entry `json:"entries"`
+	Version  int                `json:"version"`
+	Owner    string             `json:"owner"`
+	Entries  map[string]entry   `json:"entries"`
+	Removals map[string]removal `json:"removals,omitempty"`
 }
 
 // Plan never creates directories or touches native configuration.
@@ -86,6 +88,12 @@ func mapping(provider, scope string) Mapping {
 func key(scope, provider string) string { return scope + "/" + provider }
 func inspect(t *tree, l ledger, m Mapping) Mapping {
 	if m.Action == "unsupported" {
+		return m
+	}
+	if owner, ok := otherScopeOwner(l, m.Scope, m.Provider); ok {
+		m.Action = "scope_conflict"
+		m.Installed = "owned_other_scope"
+		m.Detail = "This exact directory is already owned by the " + owner.Scope + " scope; use its original scope to inspect or remove it."
 		return m
 	}
 	if e, ok := l.Entries[key(m.Scope, m.Provider)]; ok && e.State == "removing" {
@@ -162,6 +170,7 @@ func Apply(preview Preview) ([]Result, error) {
 	}
 	defer t.close()
 	var selected []string
+	approvedInstall := map[string]bool{}
 	for _, m := range preview.Mappings {
 		expected := mapping(m.Provider, preview.Scope)
 		if m.Provider != "codex" && m.Provider != "claude" && m.Provider != "grok" {
@@ -171,6 +180,7 @@ func Apply(preview Preview) ([]Result, error) {
 			return nil, errors.New("preview differs from the pinned skill catalogue; create a new preview")
 		}
 		selected = append(selected, m.Provider)
+		approvedInstall[m.Provider] = m.Action == "install" || m.Action == "recover_install"
 	}
 	selected, err = names(selected)
 	if err != nil {
@@ -203,7 +213,12 @@ func Apply(preview Preview) ([]Result, error) {
 				}
 			}
 		case "install", "recover_install":
-			m = install(t, &l, m)
+			if !approvedInstall[name] {
+				m.Action = "preview_changed"
+				m.Detail = "Current state would add a skill that the reviewed preview did not offer; create a new preview."
+			} else {
+				m = install(t, &l, m)
+			}
 		}
 		results = append(results, m)
 	}
@@ -317,126 +332,13 @@ func RemoveScope(root, scope string, selectedProviders []string) ([]Result, erro
 	var results []Result
 	for _, name := range selected {
 		m := mapping(name, scope)
-		k := key(scope, name)
-		e, ok := l.Entries[k]
 		if m.Action == "unsupported" {
 			results = append(results, m)
 			continue
 		}
-		if !ok {
-			m.Action = "not_owned"
-			m.Detail = "No owned installation to remove; existing skills/configuration preserved."
-			results = append(results, m)
-			continue
-		}
-		path := e.Directory
-		if e.State == "installing" || (e.State == "removing" && e.RemovingStage) {
-			path = e.Stage
-			if e.State == "installing" {
-				if b, err := t.read(filepath.Join(e.Directory, marker)); err == nil && digest(b) == digest([]byte(e.InstallationID+"\n")) {
-					path = e.Directory
-				} else {
-					stage, stageErr := t.dir(e.Stage, false)
-					if stageErr == nil {
-						stage.Close()
-					} else if !errors.Is(stageErr, os.ErrNotExist) {
-						m.Action = "preserve_edited"
-						m.Detail = "Recorded stage has an unsafe path; preserved."
-						results = append(results, m)
-						continue
-					} else {
-						target, targetErr := t.dir(e.Directory, false)
-						if targetErr == nil {
-							target.Close()
-							m.Action = "preserve_edited"
-							m.Detail = "Publication outcome is unverified and target content may have changed; preserved."
-							results = append(results, m)
-							continue
-						} else if !errors.Is(targetErr, os.ErrNotExist) {
-							m.Action = "preserve_edited"
-							m.Detail = "Publication target has an unsafe path; preserved."
-							results = append(results, m)
-							continue
-						}
-					}
-				}
-			}
-		}
-		d, err := t.dir(path, false)
-		if errors.Is(err, os.ErrNotExist) {
-			delete(l.Entries, k)
-			if err = writeLedger(t, l); err != nil {
-				return results, err
-			}
-			m.Action = "removed"
-			m.Detail = "Owned files already absent; ledger reconciled."
-			results = append(results, m)
-			continue
-		}
-		if err == nil {
-			d.Close()
-			err = checkBundle(t, path, e.Files, e.State == "removing" || e.State == "installing")
-		}
+		m, err = removeOne(t, &l, m)
 		if err != nil {
-			m.Action = "preserve_edited"
-			m.Installed = "partial_or_edited"
-			m.Detail = "Owned bundle changed, includes unowned content, or has unsafe paths; removal preserved it."
-			results = append(results, m)
-			continue
-		}
-		e.State = "removing"
-		e.RemovingStage = path == e.Stage
-		l.Entries[k] = e
-		if err := writeLedger(t, l); err != nil {
 			return results, err
-		}
-		m.Action = "removed"
-		m.Detail = "Only the matching owned bundle was removed; native configuration and other skills preserved."
-		// Remove marker last, keeping interrupted removals attributable.
-		for _, f := range e.Files {
-			if f.Path == marker {
-				continue
-			}
-			b, err := t.read(filepath.Join(path, f.Path))
-			if errors.Is(err, os.ErrNotExist) {
-				continue
-			}
-			if err != nil || digest(b) != f.Digest {
-				m.Action = "pending_removal"
-				break
-			}
-			if err := t.remove(filepath.Join(path, f.Path), false); err != nil {
-				m.Action = "pending_removal"
-				break
-			}
-		}
-		if m.Action == "removed" {
-			for _, dir := range []string{"agents", "scripts"} {
-				err := t.remove(filepath.Join(path, dir), true)
-				if err != nil && !errors.Is(err, os.ErrNotExist) {
-					m.Action = "pending_removal"
-					break
-				}
-			}
-		}
-		if m.Action == "removed" {
-			if err := t.remove(filepath.Join(path, marker), false); err != nil {
-				m.Action = "pending_removal"
-			}
-		}
-		if m.Action == "removed" {
-			if err := t.remove(path, true); err != nil {
-				m.Action = "pending_removal"
-			}
-		}
-		if m.Action == "removed" {
-			delete(l.Entries, k)
-			if err := writeLedger(t, l); err != nil {
-				m.Action = "outcome_uncertain"
-			}
-		}
-		if m.Action != "removed" {
-			m.Detail = "Removal was interrupted; ownership intent retained for reconciliation. User-changed content is not deleted."
 		}
 		results = append(results, m)
 	}
@@ -444,7 +346,7 @@ func RemoveScope(root, scope string, selectedProviders []string) ([]Result, erro
 }
 
 func lockLedger(t *tree) (*os.File, error) {
-	d, err := t.dir(".backplane", true)
+	d, err := t.privateDir(".backplane", true)
 	if err != nil {
 		return nil, err
 	}
@@ -483,32 +385,64 @@ func readLedger(t *tree) (ledger, error) {
 	if l.Version != 1 || l.Owner != "agent-backplane" || l.Entries == nil {
 		return ledger{}, errors.New("ownership ledger version/owner is unverified")
 	}
+	if l.Removals == nil {
+		l.Removals = map[string]removal{}
+	}
+	owners := map[string]string{}
 	for k, e := range l.Entries {
-		if e.Provider != "codex" && e.Provider != "claude" {
-			return ledger{}, errors.New("ownership ledger has an unknown provider")
+		if err := validateEntry(e); err != nil {
+			return ledger{}, err
 		}
-		if (e.Scope != UserScope && e.Scope != ProjectScope) || k != key(e.Scope, e.Provider) || e.Directory != directory(e.Provider) || e.Source != Source || e.InstallationID == "" || strings.ContainsAny(e.InstallationID, "/\\") || e.Stage != filepath.Join(".backplane", e.InstallationID) || (e.State != "installing" && e.State != "installed" && e.State != "removing") {
+		if k != key(e.Scope, e.Provider) {
 			return ledger{}, errors.New("ownership ledger target is unverified")
 		}
-		seen := map[string]bool{}
-		markerSeen := false
-		for _, f := range e.Files {
-			if _, err := components(f.Path); err != nil {
-				return ledger{}, err
-			}
-			if seen[f.Path] || len(f.Digest) != 64 {
-				return ledger{}, errors.New("ownership ledger file is invalid")
-			}
-			seen[f.Path] = true
-			if f.Path == marker {
-				markerSeen = f.Digest == digest([]byte(e.InstallationID+"\n"))
+		if prior, ok := owners[e.Directory]; ok && prior != k {
+			return ledger{}, errors.New("multiple scopes claim the same skill directory; preserve the ledger for inspection")
+		}
+		owners[e.Directory] = k
+		if e.RemovalID != "" {
+			r, ok := l.Removals[e.RemovalID]
+			if !ok || e.State != "removing" || r.Installation.InstallationID != e.InstallationID || key(r.Installation.Scope, r.Installation.Provider) != k || e.RemovingStage != (r.Source == e.Stage) {
+				return ledger{}, errors.New("active removal is not bound to its exact installation receipt")
 			}
 		}
-		if !markerSeen {
-			return ledger{}, errors.New("ownership ledger correlation marker is missing")
+	}
+	for id, r := range l.Removals {
+		if err := validateEntry(r.Installation); err != nil {
+			return ledger{}, err
+		}
+		if err := validateRemoval(r, id); err != nil {
+			return ledger{}, err
 		}
 	}
 	return l, nil
+}
+
+func validateEntry(e entry) error {
+	if e.Provider != "codex" && e.Provider != "claude" {
+		return errors.New("ownership ledger has an unknown provider")
+	}
+	if (e.Scope != UserScope && e.Scope != ProjectScope) || e.Directory != directory(e.Provider) || e.Source != Source || e.InstallationID == "" || e.InstallationID == "." || e.InstallationID == ".." || strings.ContainsAny(e.InstallationID, "/\\") || e.Stage != filepath.Join(".backplane", e.InstallationID) || (e.State != "installing" && e.State != "installed" && e.State != "removing") {
+		return errors.New("ownership ledger target is unverified")
+	}
+	seen := map[string]bool{}
+	markerSeen := false
+	for _, f := range e.Files {
+		if _, err := components(f.Path); err != nil {
+			return err
+		}
+		if seen[f.Path] || len(f.Digest) != 64 {
+			return errors.New("ownership ledger file is invalid")
+		}
+		seen[f.Path] = true
+		if f.Path == marker {
+			markerSeen = f.Digest == digest([]byte(e.InstallationID+"\n"))
+		}
+	}
+	if !markerSeen {
+		return errors.New("ownership ledger correlation marker is missing")
+	}
+	return nil
 }
 func writeLedger(t *tree, l ledger) error {
 	b, err := json.MarshalIndent(l, "", "  ")
