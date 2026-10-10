@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -53,6 +54,7 @@ type Gateway struct {
 	attachCommand func(transport.Request) []string
 	attachments   map[domain.ID]attachment
 	acquisitions  map[domain.ID]acquisition
+	claimsDurable map[domain.ID]bool
 	receipts      *receiptStore
 	closed        bool
 	// Failures reports retained home grants when revoke cleanup is unconfirmed.
@@ -79,7 +81,7 @@ type attachment struct {
 }
 
 func New(peers []Peer, grants []Grant) (*Gateway, error) {
-	g := &Gateway{peers: map[domain.ID]InventorySource{}, grants: map[string]map[domain.ID]map[domain.ID]bool{}, streams: map[uint64]activeStream{}, attachments: map[domain.ID]attachment{}, acquisitions: map[domain.ID]acquisition{}, Failures: make(chan error, 16)}
+	g := &Gateway{peers: map[domain.ID]InventorySource{}, grants: map[string]map[domain.ID]map[domain.ID]bool{}, streams: map[uint64]activeStream{}, attachments: map[domain.ID]attachment{}, acquisitions: map[domain.ID]acquisition{}, claimsDurable: map[domain.ID]bool{}, Failures: make(chan error, 16)}
 	for _, p := range peers {
 		if p.HostID == "" || p.Source == nil {
 			return nil, errors.New("peer needs exact host and authenticated private source")
@@ -165,15 +167,34 @@ func (g *Gateway) claim(principal string, host domain.ID, request protocol.Lease
 	if existing, ok := g.acquisitions[request.OperationID]; ok && existing != expected {
 		return &protocol.HTTPError{StatusCode: 409, Message: "acquisition already belongs to a different original principal or route"}
 	}
+	if g.claimsDurable[request.OperationID] {
+		return nil
+	}
+	// Keep the in-memory reservation even if persistence is unconfirmed. No
+	// external effect is attempted until the original principal is durable.
 	g.acquisitions[request.OperationID] = expected
+	if g.receipts != nil {
+		if err := g.receipts.saveIntent(expected); err != nil {
+			return errors.New("entry acquisition intent persistence unconfirmed; inspect private receipt before retry")
+		}
+	}
+	g.claimsDurable[request.OperationID] = true
 	return nil
 }
 
-// Directory revalidates grants after upstream requests; revocation never returns a cached permitted view.
+// Each inventory request has one bounded home-fetch budget. A silent home
+// cannot consume the downstream control client's entire response deadline.
+const directoryTimeout = 3 * time.Second
+
+// Directory projects fetched home metadata against one current grant snapshot.
 func (g *Gateway) Directory(ctx context.Context, principal string) (Directory, error) {
 	out := Directory{Version: protocol.Version, Sessions: []domain.Session{}, Places: []Availability{}}
 	g.mu.RLock()
-	perm := g.grants[principal]
+	if g.closed {
+		g.mu.RUnlock()
+		return out, errors.New("entry authority is closed")
+	}
+	perm, exists := g.grants[principal]
 	sources := map[domain.ID]InventorySource{}
 	for host, set := range perm {
 		if len(set) > 0 {
@@ -181,37 +202,81 @@ func (g *Gateway) Directory(ctx context.Context, principal string) (Directory, e
 		}
 	}
 	g.mu.RUnlock()
-	if perm == nil {
+	if !exists {
 		return out, errors.New("principal has no granted directory")
 	}
+	fetchCtx, cancel := context.WithTimeout(ctx, directoryTimeout)
+	defer cancel()
+	type result struct {
+		host     domain.ID
+		sessions []domain.Session
+		err      error
+	}
+	results := make(chan result, len(sources))
 	for host, source := range sources {
-		sessions, err := source.List(ctx)
-		g.mu.RLock()
-		current := g.grants[principal][host]
-		if len(current) == 0 {
-			g.mu.RUnlock()
-			continue
-		}
-		state := "reachable"
-		if err != nil {
-			state = "unreachable"
-		}
-		out.Places = append(out.Places, Availability{host, state})
-		if err == nil {
-			for _, s := range sessions {
-				if current[s.ID] && s.HostID == host {
-					// Terminal locators belong to the home and never become a
-					// downstream route. Clients address stable work/execution IDs.
-					s.Execution.Runtime = domain.RuntimeRef{}
-					s.Capabilities.Stop = false
-					s.Capabilities.SemanticPrompt = false
-					s.Capabilities.NativeResume = false
-					s.Capabilities.Explanation = "This entry permits native terminal attachment; management and native credentials remain at the execution home."
-					out.Sessions = append(out.Sessions, s)
+		go func(host domain.ID, source InventorySource) {
+			sessions, err := source.List(fetchCtx)
+			results <- result{host, sessions, err}
+		}(host, source)
+	}
+	fetched := make(map[domain.ID]result, len(sources))
+	for len(fetched) < len(sources) {
+		select {
+		case r := <-results:
+			fetched[r.host] = r
+		case <-fetchCtx.Done():
+			if ctx.Err() != nil {
+				return out, ctx.Err()
+			}
+			// Drain already completed homes, then mark the remaining homes
+			// unreachable. Late results cannot alter this projection.
+			for {
+				select {
+				case r := <-results:
+					fetched[r.host] = r
+				default:
+					goto projected
 				}
 			}
 		}
-		g.mu.RUnlock()
+	}
+projected:
+	hosts := make([]domain.ID, 0, len(sources))
+	for host := range sources {
+		hosts = append(hosts, host)
+	}
+	sort.Slice(hosts, func(i, j int) bool { return hosts[i] < hosts[j] })
+	// All collected results are projected against one current grant snapshot.
+	// Revocation during a later home fetch also removes earlier home metadata.
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	if g.closed {
+		return out, errors.New("entry authority is closed")
+	}
+	for _, host := range hosts {
+		current := g.grants[principal][host]
+		if len(current) == 0 {
+			continue
+		}
+		r, complete := fetched[host]
+		state := "unreachable"
+		if complete && r.err == nil {
+			state = "reachable"
+		}
+		out.Places = append(out.Places, Availability{host, state})
+		if !complete || r.err != nil {
+			continue
+		}
+		for _, s := range r.sessions {
+			if current[s.ID] && s.HostID == host {
+				s.Execution.Runtime = domain.RuntimeRef{}
+				s.Capabilities.Stop = false
+				s.Capabilities.SemanticPrompt = false
+				s.Capabilities.NativeResume = false
+				s.Capabilities.Explanation = "This entry permits native terminal attachment; management and native credentials remain at the execution home."
+				out.Sessions = append(out.Sessions, s)
+			}
+		}
 	}
 	return out, nil
 }
@@ -307,6 +372,10 @@ func (g *Gateway) Open(ctx context.Context, principal string, request transport.
 	g.streams[id] = activeStream{principal, request.HostID, request.Lease.SessionID, cancel}
 	g.mu.Unlock()
 	remove := func() { cancel(); g.mu.Lock(); delete(g.streams, id); g.mu.Unlock() }
+	if _, err := g.acquire(ctx, principal, request.HostID, source, request.Lease); err != nil {
+		remove()
+		return nil, err
+	}
 	stream, err := source.Open(ctx, request)
 	if err != nil {
 		remove()
@@ -345,13 +414,10 @@ func (g *Gateway) sourceForSession(principal string, session domain.ID) (domain.
 }
 
 func (g *Gateway) Attach(ctx context.Context, principal string, request protocol.LeaseRequest) (domain.AttachSpec, error) {
-	g.mu.Lock()
+	g.mu.RLock()
 	host, source, err := g.sourceForSession(principal, request.SessionID)
 	factory := g.attachCommand
-	if err == nil {
-		err = g.claim(principal, host, request)
-	}
-	g.mu.Unlock()
+	g.mu.RUnlock()
 	if err != nil {
 		return domain.AttachSpec{}, err
 	}
@@ -361,6 +427,29 @@ func (g *Gateway) Attach(ctx context.Context, principal string, request protocol
 	argv := factory(transport.Request{HostID: host, Lease: request, Rows: 24, Cols: 80, Term: "xterm-256color"})
 	if len(argv) == 0 {
 		return domain.AttachSpec{}, errors.New("entry native companion did not supply argv")
+	}
+	result, err := g.acquire(ctx, principal, host, source, request)
+	if err != nil {
+		return domain.AttachSpec{}, err
+	}
+	result.Argv = argv
+	return result, nil
+}
+
+// acquire persists the original principal and exact route before the home can
+// create a grant. An uncertain home acknowledgement leaves that pending intent
+// reserved across restart; only its original principal can explicitly reconcile
+// the same request through the home's idempotent generation/lease checks.
+func (g *Gateway) acquire(ctx context.Context, principal string, host domain.ID, source StreamSource, request protocol.LeaseRequest) (domain.AttachSpec, error) {
+	g.mu.Lock()
+	if !g.allowed(principal, host, request.SessionID) {
+		g.mu.Unlock()
+		return domain.AttachSpec{}, &protocol.HTTPError{StatusCode: 403, Message: "attachment session is outside this principal's current grant"}
+	}
+	err := g.claim(principal, host, request)
+	g.mu.Unlock()
+	if err != nil {
+		return domain.AttachSpec{}, err
 	}
 	result, err := source.Attach(ctx, request)
 	if err != nil {
@@ -373,19 +462,14 @@ func (g *Gateway) Attach(ctx context.Context, principal string, request protocol
 	g.mu.Lock()
 	if !g.allowed(principal, host, request.SessionID) || g.closed {
 		g.mu.Unlock()
-		release := request
-		release.Token = result.Lease.Token
-		cleanup, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		if err := source.Release(cleanup, release); err != nil {
-			select {
-			case g.Failures <- errors.New("acquisition revoked during acknowledgement; home release unconfirmed"):
-			default:
-			}
-		}
+		g.releaseRevoked(attachment{principal, host, source, result.Lease, result.ReadOnly})
 		return domain.AttachSpec{}, &protocol.HTTPError{StatusCode: 403, Message: "attachment grant changed while acquiring"}
 	}
 	a := attachment{principal, host, source, result.Lease, result.ReadOnly}
+	if prior, ok := g.attachments[request.OperationID]; ok && (prior.lease != a.lease || prior.readOnly != a.readOnly) {
+		g.mu.Unlock()
+		return domain.AttachSpec{}, domain.ConflictError{Reason: "home changed the saved acquisition outcome; retain original receipt for repair"}
+	}
 	if g.receipts != nil {
 		if err := g.receipts.save(a); err != nil {
 			g.mu.Unlock()
@@ -395,7 +479,6 @@ func (g *Gateway) Attach(ctx context.Context, principal string, request protocol
 	}
 	g.attachments[request.OperationID] = a
 	g.mu.Unlock()
-	result.Argv = argv
 	return result, nil
 }
 

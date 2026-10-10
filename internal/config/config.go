@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/seanheiney/agent-backplane/internal/domain"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -35,33 +36,43 @@ func Resolve(dir string) (Paths, error) {
 	return p, nil
 }
 func (p Paths) Ensure() error {
-	if err := os.MkdirAll(p.Dir, 0700); err != nil {
-		return err
-	}
-	i, err := os.Lstat(p.Dir)
+	return EnsurePrivateDirectory(p.Dir)
+}
+func privateFile(path string, flags int) (*os.File, error) {
+	fd, err := syscall.Open(path, flags|syscall.O_NOFOLLOW|syscall.O_CLOEXEC|syscall.O_NONBLOCK, 0600)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if !i.IsDir() || i.Mode()&os.ModeSymlink != 0 {
-		return errors.New("state must be a real private directory")
+	f := os.NewFile(uintptr(fd), path)
+	info, err := f.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || info.Sys().(*syscall.Stat_t).Uid != uint32(os.Geteuid()) {
+		_ = f.Close()
+		return nil, errors.New("state file must be owned, regular and private (0600)")
 	}
-	if st, ok := i.Sys().(*syscall.Stat_t); !ok || st.Uid != uint32(os.Getuid()) {
-		return errors.New("state directory owner differs from current user")
-	}
-	return os.Chmod(p.Dir, 0700)
+	return f, nil
 }
 func (p Paths) HostID() (domain.ID, error) {
 	path := filepath.Join(p.Dir, "host-id")
-	if b, err := os.ReadFile(path); err == nil {
-		if len(b) == 0 {
-			return "", errors.New("empty host identity")
+	f, err := privateFile(path, syscall.O_RDONLY)
+	if err == nil {
+		defer f.Close()
+		b, err := io.ReadAll(io.LimitReader(f, 257))
+		if err != nil {
+			return "", err
+		}
+		if len(b) == 0 || len(b) > 256 {
+			return "", errors.New("invalid or oversized host identity; repair required")
+		}
+		if err := syncDirectory(p.Dir); err != nil {
+			return "", err
 		}
 		return domain.ID(b), nil
-	} else if !os.IsNotExist(err) {
+	}
+	if !os.IsNotExist(err) {
 		return "", err
 	}
 	id := domain.NewID("host")
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	f, err = privateFile(path, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_EXCL)
 	if errors.Is(err, os.ErrExist) {
 		return p.HostID()
 	}
@@ -72,19 +83,21 @@ func (p Paths) HostID() (domain.ID, error) {
 	if err == nil {
 		err = f.Sync()
 	}
-	cerr := f.Close()
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
 	if err == nil {
-		err = cerr
+		err = syncDirectory(p.Dir)
 	}
 	return id, err
 }
 func (p Paths) Lock() (*os.File, error) {
-	f, err := os.OpenFile(filepath.Join(p.Dir, "daemon.lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := privateFile(filepath.Join(p.Dir, "daemon.lock"), syscall.O_CREAT|syscall.O_RDWR)
 	if err != nil {
 		return nil, err
 	}
 	if err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, fmt.Errorf("daemon already owns state: %w", err)
 	}
 	return f, nil

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/seanheiney/agent-backplane/internal/config"
 	"github.com/seanheiney/agent-backplane/internal/domain"
 	"github.com/seanheiney/agent-backplane/internal/protocol"
 )
@@ -25,12 +26,14 @@ type attachmentReceipt struct {
 	HostID    domain.ID    `json:"host_id"`
 	Lease     domain.Lease `json:"lease"`
 	ReadOnly  bool         `json:"read_only"`
+	State     string       `json:"state,omitempty"`
 }
 
 // SetStateDirectory loads private principal/home acquisition receipts. Configure
 // it before serving a gateway intended to recover saved TUI leases after restart.
-// A loaded receipt authorizes only exact release, including after navigation
-// access is revoked. It never grants directory access or a fresh acquisition.
+// Confirmed receipts authorize exact release, including after navigation access
+// is revoked. Pending receipts reserve the original principal and exact request
+// for explicit home reconciliation. Neither form grants navigation permission.
 func (g *Gateway) SetStateDirectory(dir string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -40,7 +43,7 @@ func (g *Gateway) SetStateDirectory(dir string) error {
 	if !filepath.IsAbs(dir) || filepath.Clean(dir) != dir {
 		return errors.New("entry receipt directory must be an explicit clean absolute path")
 	}
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := config.EnsurePrivateDirectory(dir); err != nil {
 		return errors.New("private entry receipt directory unavailable")
 	}
 	info, err := os.Lstat(dir)
@@ -70,10 +73,15 @@ func (g *Gateway) SetStateDirectory(dir string) error {
 			return errors.New("saved entry receipt home requires its configured private stream source")
 		}
 		a := attachment{record.Principal, record.HostID, source, record.Lease, record.ReadOnly}
-		attachments[a.lease.OperationID] = a
+		if record.State != "pending" {
+			attachments[a.lease.OperationID] = a
+		}
 		acquisitions[a.lease.OperationID] = acquisition{a.principal, a.host, requestFrom(a)}
 	}
 	g.attachments, g.acquisitions = attachments, acquisitions
+	for id := range acquisitions {
+		g.claimsDurable[id] = true
+	}
 	g.receipts = r
 	return nil
 }
@@ -148,7 +156,7 @@ func (r *receiptStore) load() ([]attachmentReceipt, error) {
 		}
 		_ = f.Close()
 		l := record.Lease
-		if err != nil || record.Version != protocol.Version || record.Principal == "" || record.HostID == "" || l.SessionID == "" || l.ExecutionID == "" || l.Generation == 0 || l.OperationID == "" || l.ClientID == "" || l.Token == "" || receiptName(l.OperationID) != entry.Name() {
+		if err != nil || record.Version != protocol.Version || record.Principal == "" || record.HostID == "" || l.SessionID == "" || l.ExecutionID == "" || l.Generation == 0 || l.OperationID == "" || l.ClientID == "" || !validReceiptOutcome(record) || receiptName(l.OperationID) != entry.Name() {
 			return nil, errors.New("invalid private entry acquisition receipt; repair required")
 		}
 		records = append(records, record)
@@ -156,8 +164,28 @@ func (r *receiptStore) load() ([]attachmentReceipt, error) {
 	return records, nil
 }
 
+func validReceiptOutcome(record attachmentReceipt) bool {
+	switch record.State {
+	case "pending":
+		return record.Lease.Token == ""
+	case "", "confirmed":
+		return record.Lease.Token != "" // legacy confirmed receipt
+	default:
+		return false
+	}
+}
+
+func (r *receiptStore) saveIntent(a acquisition) error {
+	l := a.request
+	return r.saveRecord(attachmentReceipt{Version: protocol.Version, Principal: a.principal, HostID: a.host,
+		Lease: domain.Lease{SessionID: l.SessionID, ExecutionID: l.ExecutionID, Generation: l.Generation, OperationID: l.OperationID, ClientID: l.ClientID}, ReadOnly: l.ReadOnly, State: "pending"})
+}
+
 func (r *receiptStore) save(a attachment) error {
-	record := attachmentReceipt{protocol.Version, a.principal, a.host, a.lease, a.readOnly}
+	return r.saveRecord(attachmentReceipt{Version: protocol.Version, Principal: a.principal, HostID: a.host, Lease: a.lease, ReadOnly: a.readOnly, State: "confirmed"})
+}
+
+func (r *receiptStore) saveRecord(record attachmentReceipt) error {
 	data, err := json.Marshal(record)
 	if err != nil || len(data) > 16384 {
 		return errors.New("entry receipt exceeds bounded private storage")
@@ -174,7 +202,7 @@ func (r *receiptStore) save(a attachment) error {
 	if closeErr := f.Close(); writeErr == nil {
 		writeErr = closeErr
 	}
-	if writeErr != nil || os.Rename(f.Name(), filepath.Join(r.dir, receiptName(a.lease.OperationID))) != nil {
+	if writeErr != nil || os.Rename(f.Name(), filepath.Join(r.dir, receiptName(record.Lease.OperationID))) != nil {
 		return errors.New("private entry receipt commit failed")
 	}
 	dir, err := os.Open(r.dir)
