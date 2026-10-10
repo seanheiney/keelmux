@@ -13,6 +13,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/ircd"
 	"github.com/seanheiney/keelmux/internal/ircdservice"
+	"github.com/seanheiney/keelmux/internal/peers"
 	"github.com/seanheiney/keelmux/internal/projectservice"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/store"
@@ -118,6 +119,7 @@ func run() error {
 	mux.Handle("/v1/daemon", lifecycle)
 	mux.Handle("/v1/daemon/stop", lifecycle)
 	mux.Handle("/v1/terminal", terminal.Handler())
+	mux.Handle(peers.InventoryPath, peers.HomeHandler(host, homePeerInventory(db.Sessions)))
 	mux.Handle("/v1/ircd/", ircService.Handler())
 	mux.Handle("/v1/channels", chat.Handler())
 	mux.Handle("/v1/channels/", chat.Handler())

@@ -10,6 +10,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/buildinfo"
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/peers"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/tui"
 	"os"
@@ -43,6 +44,12 @@ func run() error {
 		return err
 	}
 	args := fs.Args()
+	if len(args) > 0 && args[0] == "peer-export" {
+		if len(args) != 1 || fs.NFlag() != 0 {
+			return errors.New("peer-export accepts only its bounded stdin request, without flags or arguments")
+		}
+		return peers.Export(context.Background(), os.Stdin, os.Stdout)
+	}
 	if len(args) > 0 && (args[0] == "channels" || args[0] == "ircd" || args[0] == "projects") {
 		scopedHelp := channelHelp
 		if args[0] == "ircd" {
@@ -108,6 +115,9 @@ func run() error {
 	}
 	if len(args) > 0 && args[0] == "groups" {
 		return groupsCommand(*state, *entry, args[1:])
+	}
+	if len(args) > 0 && args[0] == "peers" {
+		return peersCommand(*state, *entry, args[1:])
 	}
 	p, err := config.Resolve(*state)
 	if err != nil {
@@ -359,6 +369,7 @@ keelmux channels --help               Bind chat roots, read authored inbox and r
 keelmux ircd --help                   Provision and manage a private IRC server
 keelmux projects --help               Create and inspect durable project identities
 keelmux groups --help                 Manage company/product navigation collections
+keelmux peers --help                  Explicit pinned SSH inventory
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

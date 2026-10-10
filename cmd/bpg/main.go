@@ -22,6 +22,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/federation"
+	peerregistry "github.com/seanheiney/keelmux/internal/peers"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/transport"
 )
@@ -29,8 +30,9 @@ import (
 type configuration struct {
 	Principal string `json:"principal"`
 	Peers     []struct {
-		HostID domain.ID `json:"host_id"`
-		Socket string    `json:"socket"`
+		HostID         domain.ID `json:"host_id"`
+		Socket         string    `json:"socket"`
+		InventoryStore string    `json:"inventory_store,omitempty"`
 	} `json:"peers"`
 	Grants []struct {
 		HostID   domain.ID   `json:"host_id"`
@@ -70,8 +72,14 @@ func readConfiguration(path string) (configuration, error) {
 		return conf, errors.New("entry configuration needs one principal and explicit peers")
 	}
 	for _, peer := range conf.Peers {
-		if !filepath.IsAbs(peer.Socket) || filepath.Clean(peer.Socket) != peer.Socket || len(peer.Socket) > 100 {
+		if (peer.Socket == "") == (peer.InventoryStore == "") {
+			return conf, errors.New("select exactly one peer socket or enrolled inventory_store")
+		}
+		if peer.Socket != "" && (!filepath.IsAbs(peer.Socket) || filepath.Clean(peer.Socket) != peer.Socket || len(peer.Socket) > 100) {
 			return conf, errors.New("peer sockets must be explicit clean absolute Unix paths")
+		}
+		if peer.InventoryStore != "" && (!filepath.IsAbs(peer.InventoryStore) || filepath.Clean(peer.InventoryStore) != peer.InventoryStore || len(peer.InventoryStore) > 4096 || !domain.ValidObjectID(peer.HostID, "host")) {
+			return conf, errors.New("SSH inventory needs an existing absolute inventory_store and exact host ID")
 		}
 	}
 	return conf, nil
@@ -121,8 +129,34 @@ func run() error {
 		return errors.New("entry companion executable unavailable")
 	}
 	var peers []federation.Peer
+	registries := map[string]*peerregistry.Registry{}
+	defer func() {
+		for _, r := range registries {
+			_ = r.Close()
+		}
+	}()
 	for _, peer := range conf.Peers {
-		peers = append(peers, federation.Peer{HostID: peer.HostID, Source: transport.NewClient(peer.Socket)})
+		if peer.Socket != "" {
+			peers = append(peers, federation.Peer{HostID: peer.HostID, Source: transport.NewClient(peer.Socket)})
+			continue
+		}
+		r := registries[peer.InventoryStore]
+		if r == nil {
+			info, e := os.Lstat(peer.InventoryStore)
+			if e != nil || !info.IsDir() {
+				return errors.New("enrolled inventory_store must already exist as a private directory")
+			}
+			var eOpen error
+			r, eOpen = peerregistry.Open(peer.InventoryStore, nil)
+			if eOpen != nil {
+				return eOpen
+			}
+			registries[peer.InventoryStore] = r
+		}
+		if _, err := r.View(peer.HostID, conf.Principal); err != nil {
+			return errors.New("entry host has no enrollment for the selected principal")
+		}
+		peers = append(peers, federation.Peer{HostID: peer.HostID, Source: peerregistry.Source{Registry: r, HostID: peer.HostID, Principal: conf.Principal}})
 	}
 	var grants []federation.Grant
 	for _, grant := range conf.Grants {
