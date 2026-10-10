@@ -106,6 +106,9 @@ func run() error {
 	if len(args) > 0 && args[0] == "drive" {
 		return driveNative(*entry, args[1:])
 	}
+	if len(args) > 0 && args[0] == "groups" {
+		return groupsCommand(*state, *entry, args[1:])
+	}
 	p, err := config.Resolve(*state)
 	if err != nil {
 		return err
@@ -355,6 +358,7 @@ keelmux providers                     Inspect qualified native status without mo
 keelmux channels --help               Bind chat roots, read authored inbox and reply
 keelmux ircd --help                   Provision and manage a private IRC server
 keelmux projects --help               Create and inspect durable project identities
+keelmux groups --help                 Manage company/product navigation collections
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]
