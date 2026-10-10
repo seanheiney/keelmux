@@ -1,6 +1,6 @@
 # Managed IRC
 
-The development build can provision and supervise its own pinned Ergo 2.19.1 server. Each project has one registered IRC channel, and each stable Keelmux thread appears as its own authenticated bot in that channel. Address a bot to put a note in that thread's authored inbox. This feature is under release qualification; v0.1.0 does not include it. Use [external channels](channels.md) for Mattermost, Slack or an existing IRC server.
+Keelmux 0.2 can provision and supervise its own pinned Ergo 2.19.1 server. Each project has one registered IRC channel, and each stable Keelmux thread appears as its own authenticated bot in that channel. Address a bot to put a note in that thread's authored inbox. This feature is under release qualification; v0.1.0 does not include it. Use [external channels](channels.md) for Mattermost, Slack or an existing IRC server.
 
 The server is optional. It uses verified TLS on loopback, a private CA and private account files. Initialization downloads a checksum-pinned official archive for your supported platform. Ordinary session launch and daemon startup do not download or start an IRC server. Native PTY/process supervision owns the server lifetime; tmux is unnecessary.
 

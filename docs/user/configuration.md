@@ -27,7 +27,7 @@ The state directory must be a real owned directory with mode `0700`. Managed pri
 | Path beneath the selected state | Purpose |
 | --- | --- |
 | `host-id` | Stable execution-home identity; do not regenerate to bypass repair |
-| `registry.sqlite` | Sessions, operations, journal, grants, experimental broker records; development schema v3 also contains channel bindings, authored messages and receipts |
+| `registry.sqlite` | Sessions, operations, journal, grants, experimental broker records; schema 4 also contains channel bindings, authored messages, receipts, explicit projects and immutable thread membership |
 | `place.json` | Client identity, optional groups, remembered view, drafts and pending attachment |
 | `daemon.lock` | Single-daemon ownership lock |
 | `control.sock` | Local control API |
@@ -47,8 +47,8 @@ Ordinary managed launches retain the selected CLI's native configuration and cre
 
 The current connection helper uses `BP_*` inherited variables for compatibility. These are private launch correlation, not settings to manufacture by hand. The separate Codex broker experiment uses isolated native homes in its tests; those homes and no-auth loopback providers are fixture state, not product defaults.
 
-## Development schema upgrade
+## Registry schema upgrade
 
-The channel branch upgrades the registry from v0.1.0 schema v2 to v3 transactionally, preserving existing sessions, journal, grants and broker records. A declared v3 registry with missing or malformed channel authority is refused; startup does not silently recreate it.
+The 0.2 runtime upgrades older registries to schema 4. Schema 2 first gains authored-channel authority; the additive schema 3 to 4 transaction creates explicit projects and immutable thread membership, and adds exact addressed-recipient routing. Existing sessions, journal, grants and broker records are preserved. Historical binding JSON and delivery hashes remain byte-identical. A declared schema 4 registry with missing or malformed project/channel authority is refused; startup does not silently recreate it.
 
-v0.1.0 cannot open a v3 registry. Switching the installer to an older binary selects application files only; it does not downgrade the database. Before opening existing state with a channel build, take a private, consistent backup as described in [Operations](operations.md). To roll back, keep the new state intact and use a compatible pre-upgrade snapshot or a separate fresh state directory. Account for external posts after the snapshot before continuing work.
+v0.1.0 and earlier schema 3 binaries cannot open a schema 4 registry. Switching the installer to an older binary selects application files only; it does not downgrade the database. Before opening existing state with 0.2, take a private, consistent backup as described in [Operations](operations.md). To roll back, keep the new state intact and use a compatible pre-upgrade snapshot or a separate fresh state directory. Account for external posts after the snapshot before continuing work.

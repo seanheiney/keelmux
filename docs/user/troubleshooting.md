@@ -31,7 +31,7 @@ Start with the selected state and exact session. Preserve operation IDs and draf
 | Channel reply acknowledgement lost | Saved message ID, immutable destination/text and delivery receipt | Query the original receipt; never create a replacement ID for an uncertain external effect |
 | Channel receipt stays uncertain | Matching existing remote post and bounded read-only reconciliation | Keep it uncertain if evidence is unavailable; a missing result does not authorize resend |
 | IRC history gap | Persistent connection generation and required server capabilities | Treat disconnected history as unavailable; reconnect does not restore complete history |
-| Old binary refuses upgraded state | Registry schema 3 or client place version 2 | Keep the newer state; use a compatible release or restore a coordinated pre-upgrade backup |
+| Old binary refuses upgraded state | Registry schema 4 or client place version 2 | Keep the newer state; use a compatible release or restore a coordinated pre-upgrade backup |
 
 ## Collect a useful report
 

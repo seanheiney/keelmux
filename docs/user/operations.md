@@ -16,7 +16,7 @@ After client loss, reopen the same state. Pending attachment identity remains sa
 
 After a lost launch or stop response, retry only the same operation and request. **Completed**, **failed** and **outcome uncertain** are distinct. Unknown effects do not trigger automatic replay. Preserve the original execution and inspect it before taking another action.
 
-The tested daemon-restart journey preserves surviving owned executions. The native development runtime survives actual control-daemon loss without tmux; historical v0.1.0 uses its qualified tmux adapter. It does not prove native conversation resume after provider exit or host reboot. If the native CLI exits, keep the registry and its native history and use that provider's supported recovery workflow separately. Keelmux's product native-resume command is unfinished.
+The tested daemon-restart journey preserves surviving owned executions. The 0.2 native runtime survives actual control-daemon loss without tmux; historical v0.1.0 uses its qualified tmux adapter. It does not prove native conversation resume after provider exit or host reboot. If the native CLI exits, keep the registry and its native history and use that provider's supported recovery workflow separately. Keelmux's product native-resume command is unfinished.
 
 ## Operate the daemon
 
@@ -82,7 +82,7 @@ There is no automatic schema downgrade or merge of two authority databases. If t
 
 Keep the previous release and a private backup, read the release's schema/runtime notes, then install the chosen exact version. Preserve state selection. Updating application files does not prove a surviving daemon now runs the new version; verify the process/build and its reconciled behavior separately.
 
-The channel release upgrades the registry from schema 2 to 3 transactionally and the switcher's `place.json` from version 1 to 2. Existing sessions, navigation and native drafts are preserved. The v0.1.0 daemon and client refuse these newer schemas rather than erasing channel state. Take a compatible backup before loading the new daemon/client. Selecting old application files does not downgrade a database or saved reply intent; restore a compatible offline backup for rollback and reconcile any chat posts created since that snapshot.
+The 0.2 release upgrades older registries to schema 4 and the switcher's `place.json` from version 1 to 2. Schema 4 adds explicit projects, immutable thread membership and addressed-recipient routing while preserving historical binding JSON and delivery hashes. Existing sessions, navigation and native drafts are preserved. The v0.1.0 daemon and client, and earlier schema 3 binaries, refuse unsupported newer state rather than erasing it. Take a compatible backup before loading the new daemon/client. Selecting old application files does not downgrade a database or saved reply intent; restore a compatible offline backup for rollback and reconcile any chat posts created since that snapshot.
 
 The installer contract uses an atomic `current` link and unchanged owned command links. A checksum failure leaves the existing installation available. Do not replace a custom `bp` command or edit shell profiles to hide a collision.
 

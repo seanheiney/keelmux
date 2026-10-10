@@ -16,11 +16,11 @@ flowchart LR
   Terminal --> CLI[Real native CLI]
 ```
 
-New development executions use the bundled native supervisor. Existing tmux executions retain an optional compatibility adapter; there is no fallback launch through tmux. Published v0.1.0 is the historical tmux release. The [runtime decision](../architecture/0002-native-runtime-ownership.md) describes exact ownership, query handling and recovery boundaries.
+New 0.2 executions use the bundled native supervisor. Existing tmux executions retain an optional compatibility adapter; there is no fallback launch through tmux. Published v0.1.0 is the historical tmux release. The [runtime decision](../architecture/0002-native-runtime-ownership.md) describes exact ownership, query handling and recovery boundaries.
 
 | Runtime path | Ownership and recovery |
 | --- | --- |
-| Development native | A per-execution supervisor owns the process and terminal lifetime independently of the switcher and control daemon. Reconnect uses a bounded parsed screen snapshot; restoration is qualified per terminal/provider, not a complete native conversation history. |
+| Native 0.2 | A per-execution supervisor owns the process and terminal lifetime independently of the switcher and control daemon. Reconnect uses a bounded parsed screen snapshot; restoration is qualified per terminal/provider, not a complete native conversation history. |
 | Existing legacy tmux | The recorded tmux adapter remains responsible for that execution. Compatibility is optional, and native-launch failure cannot create a tmux replacement. |
 | Unknown or unavailable | Retain the durable identity and inspect its original authority. Missing supervisor evidence does not establish child exit; uncertainty prevents an automatic replacement. |
 

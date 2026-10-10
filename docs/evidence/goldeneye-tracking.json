@@ -153,5 +153,12 @@
     "message_sha256": "2c8918743a3eb18b9910161347ebfa3e283a38d21cba91a220788c78fabe7469",
     "read_status": 200,
     "unique_exact_message": true
+  },
+  "irc_project_threads_qualification": {
+    "issue_id": "71ad8eac-a9e0-4535-99d5-4966b6ca8a9a",
+    "comment_id": "44b8b689-d092-49ec-bee9-aac80fee83f2",
+    "write_status": 201,
+    "read_status": 200,
+    "exact_body_read_verified": true
   }
 }

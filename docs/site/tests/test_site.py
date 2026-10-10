@@ -69,7 +69,9 @@ class StaticReferenceAcceptance(unittest.TestCase):
     def test_canonical_install_command_and_qualification_are_visible(self):
         text=(self.out/'index.html').read_text()
         self.assertIn('curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | sh',text)
-        self.assertIn('Published v0.1.0: terminal core',text)
+        self.assertIn('The installer selects the latest published release',text)
+        self.assertIn('Historical v0.1.0 uses tmux',text)
+        self.assertIn('0.2 qualification and historical 0.1 evidence',text)
         self.assertIn('Development UI',text);self.assertIn('Interpreted cell raster',text)
         self.assertIn('Planned',text)
         self.assertIn('Terminal core · tmux adapter',text)

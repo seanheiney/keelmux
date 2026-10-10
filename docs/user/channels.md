@@ -1,6 +1,6 @@
 # Bind a thread to chat
 
-**Development branch:** this guide describes the next release. The published v0.1.0 installer provides the qualified terminal core; it does not include channel bindings. Check the installed `keelmux version` and the release's qualification before using this guide.
+**Requires Keelmux 0.2:** historical v0.1.0 provides the qualified terminal core and does not include channel bindings. Check the installed `keelmux version` and the release's qualification before using this guide.
 
 A binding connects a session's stable Keelmux thread to one Mattermost or Slack root, or to one authenticated IRC channel. Read authored notes in the switcher and send an explicit reply to the selected binding. The daemon preserves messages and delivery receipts independently of the terminal process.
 

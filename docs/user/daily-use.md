@@ -36,7 +36,7 @@ Follow **Enter retry same attach** or **x reconcile/release** for the saved acqu
 
 **Ctrl-G d** detaches to the switcher. **Ctrl-G Ctrl-G** sends literal Ctrl-G. Other keys, including Ctrl-C, reach the native CLI. Only the managed input owner changes terminal dimensions.
 
-Published v0.1.0 uses the qualified tmux adapter. Development builds own persistent native PTYs and processes, with optional compatibility for existing tmux work. Detach returns to the same terminal while its host/runtime survives. Native application exit ends that terminal. Host reboot and native conversation resume are separate capabilities; consult the [exact support scope](support-matrix.md) before relying on them.
+Keelmux 0.2 owns persistent native PTYs and processes, with optional compatibility for existing tmux work. Historical v0.1.0 uses its qualified tmux adapter. Detach returns to the same terminal while its host/runtime survives. Native application exit ends that terminal. Host reboot and native conversation resume are separate capabilities; consult the [exact support scope](support-matrix.md) before relying on them.
 
 ## Company and product groups
 
