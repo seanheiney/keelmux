@@ -58,7 +58,7 @@ func (m *Manager) channelRecord(c Config, channel string, thread domain.ID) (cha
 // server/channel/thread route. Existing intents only authorize read-only proof.
 func (m *Manager) BeginChannel(ctx context.Context, channel string, threadID, operationID domain.ID) (ChannelOperation, bool, error) {
 	canonical, e := channels.CanonicalChannel(channels.IRC, channel)
-	if e != nil || canonical != channel || !strings.HasPrefix(channel, "#") || !validLocalID(threadID, "thread") || !validOperationID(operationID) {
+	if e != nil || canonical != channel || !strings.HasPrefix(channel, "#") || len(channel) > 64 || !validLocalID(threadID, "thread") || !validOperationID(operationID) {
 		return ChannelOperation{}, false, ErrConflict
 	}
 	unlock, e := m.lock(ctx, false)

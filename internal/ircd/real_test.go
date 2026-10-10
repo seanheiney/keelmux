@@ -68,6 +68,17 @@ func TestRealPinnedServer(t *testing.T) {
 	if e = m.Stop(context.Background(), domain.NewID("execution")); e != ErrConflict || supervisor.stops != 0 {
 		t.Fatal("foreign instance stop", e)
 	}
+	supervisor.unavailable = true
+	if _, e = m.Start(context.Background(), operation); e != ErrUncertain || supervisor.launches != 1 {
+		t.Fatal("unknown helper replay", e)
+	}
+	if _, e = m.Start(context.Background(), domain.NewID("operation")); e != ErrUncertain || supervisor.launches != 1 {
+		t.Fatal("new operation bypassed unknown helper", e)
+	}
+	if e = m.Stop(context.Background(), status.Instance); e != ErrUncertain || supervisor.stops != 0 {
+		t.Fatal("unknown helper stale stop", e)
+	}
+	supervisor.unavailable = false
 	cred, e := m.EnsureAccount(context.Background(), c.Account)
 	if e != nil || cred.Account != c.Account || cred.CredentialRef != c.CredentialRef {
 		t.Fatal("real registration", e)
@@ -120,6 +131,13 @@ func TestRealPinnedServer(t *testing.T) {
 	}
 	if e = m.Stop(context.Background(), status.Instance); e != ErrConflict {
 		t.Fatal("stale instance accepted")
+	}
+	if _, e = m.EnsureAccount(context.Background(), c.Account); e != nil {
+		t.Fatal("durable account survived real server replacement", e)
+	}
+	var afterRestart accountRecord
+	if e = readJSON(filepath.Join(dir, "account.json"), &afterRestart); e != nil || afterRestart.RegisteredAt != originalTime {
+		t.Fatal("restart replaced account identity", e)
 	}
 	token, _ := readFile(filepath.Join(dir, "admin.token"), 8192, 0600)
 	token[0] = 'x'

@@ -158,7 +158,7 @@ func TestRealPinnedInit(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	for _, s := range []string{"exempted: []", "allow-environment-overrides: false", "authentication-enabled: true"} {
+	for _, s := range []string{"exempted: []", "allow-environment-overrides: false", "authentication-enabled: true", "force-nick-equals-account: false"} {
 		if !bytes.Contains(raw, []byte(s)) {
 			t.Fatal("config missing", s)
 		}

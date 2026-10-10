@@ -21,6 +21,7 @@ type ownedTestSupervisor struct {
 	records              map[domain.ID]*testProcess
 	launches, stops      int
 	loseLaunch, loseStop bool
+	unavailable          bool
 }
 type testProcess struct {
 	ref   domain.RuntimeRef
@@ -63,6 +64,9 @@ func (s *ownedTestSupervisor) LaunchProcess(ctx context.Context, spec domain.Lau
 func (s *ownedTestSupervisor) Lookup(ctx context.Context, execution, operation domain.ID) (runtime.Observation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.unavailable {
+		return runtime.Observation{}, ErrUnavailable
+	}
 	p, ok := s.records[execution]
 	if !ok || p.ref.OperationID != operation {
 		return runtime.Observation{}, ErrUnavailable
@@ -72,6 +76,9 @@ func (s *ownedTestSupervisor) Lookup(ctx context.Context, execution, operation d
 func (s *ownedTestSupervisor) Inspect(ctx context.Context, ref domain.RuntimeRef) (runtime.Observation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.unavailable {
+		return runtime.Observation{}, ErrUnavailable
+	}
 	p, ok := s.records[ref.ExecutionID]
 	if !ok || p.ref != ref {
 		return runtime.Observation{}, ErrUnavailable
