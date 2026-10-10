@@ -146,7 +146,17 @@ func run() error {
 			return printJSON(s)
 		}
 		if args[0] == "stop" {
-			return c.Stop(ctx, protocol.SessionRequest{SessionID: s.ID, ExecutionID: s.Execution.ID, Generation: s.Execution.Generation, OperationID: domain.NewID("op")})
+			op := domain.NewID("op")
+			if len(args) == 4 && args[2] == "--operation" {
+				op = domain.ID(args[3])
+			} else if len(args) != 2 {
+				return errors.New("stop accepts SESSION [--operation ID]")
+			}
+			fmt.Fprintln(os.Stderr, "Stop intent:", op)
+			if err := c.Stop(ctx, protocol.SessionRequest{SessionID: s.ID, ExecutionID: s.Execution.ID, Generation: s.Execution.Generation, OperationID: op}); err != nil {
+				return fmt.Errorf("stop operation %s: %w; retry only with this same --operation", op, err)
+			}
+			return nil
 		}
 		ro := len(args) > 2 && args[2] == "--read-only"
 		return directAttach(ctx, c, p, s, ro)
@@ -213,7 +223,7 @@ bp list                          Inspect registered work as JSON
 bp attach SESSION [--read-only]   Enter native terminal; Ctrl-G d returns
 bp link [status|off]              Link exact inherited managed context
 bp inspect SESSION               Inspect capabilities and unknown evidence
-bp stop SESSION                  Stop selected current execution
+bp stop SESSION [--operation ID]  Stop current execution; preserve ID on retry
 bp reconcile                     Recheck surviving executions
 bp doctor                        Check local binaries and daemon
 `
