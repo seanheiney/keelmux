@@ -1,0 +1,609 @@
+{
+  "schema": 1,
+  "scope": "Local TUI/client-state tests and actual PTY against owned Unix protocol fixture; no external provider or model acceptance",
+  "tested_source": "d73c3fbb3b45793c5d0b0cc304b19bedf5aaab1f",
+  "source_clean_at_build": true,
+  "implementation_commits": [
+    "533fcd0da1b2ddc39404400a72cf974e486cca5f",
+    "904e1f0d2c18ba4ee84335dd389df7c58f6f3707",
+    "f7b34e4afe6475cab444353dc427fa5932d9c611",
+    "d73c3fbb3b45793c5d0b0cc304b19bedf5aaab1f"
+  ],
+  "protocol_support_commit_already_present_at_captain": "c415876",
+  "compiled_source_fingerprint_sha256": "bda8ba42c5dca4cb377d1e5f1da6df92c8ef89392898ad683e14f6d4cdb8171b",
+  "compiled_source_files_sha256": {
+    "Makefile": "2462c20d613fe9d9d14ce398f42b1dc7806e3fa6041f162c8e783378915bc64c",
+    "cmd/bp/attach.go": "2604f416f2dfef280cf60b3b993af573dd5aae8cac58e8fbe07f5e4e4319b96f",
+    "cmd/bp/channels.go": "034607cbb6c100418b6177a2932b80515f4c08fafa53d9c286b78882a4f9c220",
+    "cmd/bp/drive.go": "14c08295974361d199f6ef2a7d0eea962ce13ee76c40d7038e87bdf09a029943",
+    "cmd/bp/lifecycle.go": "17c1e2982f46aa86dbd07660dde33ee78276d3ca71ae781c3eae0aae677a281d",
+    "cmd/bp/lifecycle_test.go": "63bf043d34c65956cf98634b9db72d29f372767881d30083b17e0fa47b0ccc4d",
+    "cmd/bp/main.go": "2bc431663b5e0e99ed59d62a5654dcf55b23d60e3f66313b578057796acfd9eb",
+    "cmd/bp/main_test.go": "09a3c99f472080b4e0d2209479824667b5182b09a074803a759a1ea0ff5f5485",
+    "cmd/bp/skills.go": "09b33278b0ae32b87b82259884b5b9a183b875fc21af7f471b6195090f979ae8",
+    "cmd/bp/version_test.go": "da440b230da69378aa2d8d325c0ca6ac5b8296e7b6640b92c53428aed905e6b2",
+    "cmd/bpd/main.go": "32f4695ead70bef006a61cf75ca9e8414bacbaa71bfb48102d72d8a661c73313",
+    "cmd/bpg/main.go": "2b312810ca3f62d36f268f20a21b91cbc1c5fcca53c0d53f367d7c867134c6b1",
+    "cmd/bpg/main_test.go": "cb31c95307f6ffde4c491e2ff7f06756cfdbc85d49a3e35ae5d87a793479d431",
+    "go.mod": "67c5a6362d8cbde49eb4756c488bb550198a0c488bd1653854be65efd9b13b25",
+    "go.sum": "d97bf6b5ccb82447670402c6da950ed06ec7f9b1ed4931b099737613ab9bd349",
+    "internal/adapters/providers/providers.go": "21eb873de7244184abfb1fbc6ed29b931c56a3f1cb641cc18da1bba0caa32641",
+    "internal/adapters/providers/providers_test.go": "9a2e3396df64baf873dd8c1446b2fb6c27196efa055fbbde314911233d7e7f41",
+    "internal/adapters/tmux/backend.go": "7cf4e4a3d6b71695a75a6996518a0a8b10b3799997aa784adea68600623b8a64",
+    "internal/adapters/tmux/backend_test.go": "a514e060712b0e5d90c11d9828bc0fafb2f7007a75ddf2b5a621727c41f71513",
+    "internal/adapters/tmux/process.go": "239a0fbce1912c525767462ba4a2dbf055d7f9da8917a573fca1a5fdc24d8f05",
+    "internal/buildinfo/info.go": "837cddaf532e59554fdff720cace7002b21a152d81f7a340febb84f2dbc9b2f9",
+    "internal/channels/channels.go": "2b747b9046c99103ada2588a90c00f678d29325614f9d461dfcabe2352bdfce5",
+    "internal/channels/payload.go": "201af323a503436db36914de91f6a35683793aaaaeb5e432221dac9f2c14719c",
+    "internal/channels/payload_test.go": "2224fd19b6acb7b6cd78d19b369b6a72a8a78e81527ea699b82559ca39a17e69",
+    "internal/channels/validate.go": "1633171b7265b54b03c191e8683f55156df2f6fa4bc34c4394b16f5db3db9db7",
+    "internal/channelservice/http.go": "3f04a042b3bf5ae57bc6b82c4bac3d27be275f451f4b9904149bab0ae9332cc4",
+    "internal/channelservice/service.go": "fd2147f85a7d5fd80aa1d4c84d3f5e337897712aa5e25679f22bb5b5cb29a72e",
+    "internal/channelservice/service_test.go": "a08bf4ae97f7a89fd03b858dc07bcf8d0a0f9e8de0bb7e8d70cb4d399f87fcc2",
+    "internal/clientstate/channels_test.go": "ef9d6db92ca71e2b0bd0069129b33bd741bba3cd77c5a6584ae1b42e8e19c7a3",
+    "internal/clientstate/json.go": "3e38623d877f51a62004325285caf7cfa9cd5ab71f1ad2e7d1ec8589ecd811bd",
+    "internal/clientstate/lock.go": "821f6dfe0bd2a6a181f33a852dae4d4c7c717075152e1d429d7e9384ff0996e4",
+    "internal/clientstate/state.go": "4b315098883b582aeb743b627a7bef41bcb241399bfc31c7846f7edc863d4922",
+    "internal/clientstate/state_test.go": "38cfe4626419e960eaed1562d05e650d899ddf0e563003103aebe0b8e9a6a387",
+    "internal/codexbroker/contracts.go": "e50f540fe1c481aa3df2722b1356090168e1dadb8d9af4f852b15e798b592c5f",
+    "internal/codexbroker/policy.go": "b39130ba65edccd56e0866b8a8eb6bcd97da9c91157c485779eaa829cbcb3d73",
+    "internal/codexbroker/policy_acceptance_test.go": "819f2dcc50f2fb032d84157ea8817355e3cd0b8c93c85657a087dac75d40371b",
+    "internal/codexbroker/policy_bootstrap.go": "81fbae69fee964aa245e36006116a2dd1a787865514a31ea19b532c2a3766ddf",
+    "internal/codexbroker/policy_decode.go": "e9fffd03f59b6ad2303977160439732fd5b409ce4f90bf0f9527d603b943fde9",
+    "internal/codexbroker/policy_output.go": "e55480973ae6de9cdcbaae9e2b72ae16246f303d93920ff2a3c0826a7a7dce77",
+    "internal/codexbroker/policy_test.go": "ced5f8a5355ca349276a3e2eca8fd172e64362fd04e1ca7cae793ba93a9a91cc",
+    "internal/codexbroker/relay.go": "532941ea7bdc07848f4fa23b6b4cdca673de1215f000b849f1eae0a611cf44ca",
+    "internal/codexbroker/wire/native_test.go": "5d0247da8baa40f8f9f8737d16005b862002e596fadcab3f60af7ee3b7d5a266",
+    "internal/codexbroker/wire/unix.go": "1dd28d58ad753a94f527a0d24b8b37e39822e1ea66483639a6a8583cb540adda",
+    "internal/codexbroker/wire/unix_test.go": "c00194295099d242c8cbb94d5d3ade274f53bf0b7063e795a165163f954dcb11",
+    "internal/config/config.go": "e3891b54647f9a9a28257ab590136b5748a1a6a7b8c04b3008d7e5698c7dd572",
+    "internal/config/config_test.go": "ed420d08d1cce958c22c7c8c6bdc2383f1f728802d781a6297e2a744c9adedbe",
+    "internal/config/credential.go": "1d084f00be444b541f01ebb26c002d001cd20c4c69f0218fcdb37e5d7aeb9372",
+    "internal/config/credential_test.go": "279ac2dfd5f3b413c8a01cd66609a44b399881198114970cc569f89792ffcf62",
+    "internal/config/directories.go": "9c8e5bda0a168511563a9fd623c761b337adba891ee4a9977257f6188209dbcc",
+    "internal/config/hardening_test.go": "2df5dd3efd7f0692ec836ec0da7f54d4848981837f74ce8c23b32a98401ff444",
+    "internal/config/log_test.go": "af313557631124a6fc3442f5311be1faf53030c259ae8c5635ce4147f8322aca",
+    "internal/config/migration_test.go": "32249cc3e8b46898e5598b1d8c1ebd2d890adfa3130d7b403468407a16b7571d",
+    "internal/daemon/codex.go": "e51a22aec44571c51fbd4a8cfba6ffa6cd36b9b0b65c8a9684e21adda1c010fe",
+    "internal/daemon/codex_barrier_test.go": "948dbc9ad3408ad9bd0b4b352e3433b3d626ee7c4aacc80181af822e09f33fae",
+    "internal/daemon/codex_relay_acceptance_test.go": "e46fcbdf684708b3b50045ea9ae5e617c2528759549c6887eb3ac5858002e7cb",
+    "internal/daemon/codex_test.go": "b0bdb4bb53739a538fa204f5282c7e0dd7f3f529a3d0afc3231f431abbcd6f7c",
+    "internal/daemon/lifecycle.go": "9227404ffd1df6e526bfb117258d0acd6875efd879e5ee0c0e49ee9bff3aa837",
+    "internal/daemon/lifecycle_test.go": "87dbcf32da573c4953ccf093037dd966fb77060ebe3cdd60dce0bebc5bd783f4",
+    "internal/daemon/service.go": "7082a18f0e6a198d5dac99750196d0a86a29630ffe7a6e65241994b9a8beb909",
+    "internal/daemon/service_test.go": "cdcc1d8c375b244040962c0037f1a4dbade7311e1f411de45a27c87179f17012",
+    "internal/domain/domain.go": "21eaebca57ad8c1b122bddfc3333073e5790ec8632b8a289e6d7fee5cc24a243",
+    "internal/domain/domain_test.go": "8cfb4e44f4ab0eb41b3ce63bf3936622c003e4a4923affff73b9e6c7fce59077",
+    "internal/federation/gateway.go": "6fa650ab219e002ee846085692d8a31685adc2139b981ef924f2eee427aef991",
+    "internal/federation/gateway_test.go": "e7e0539ebf4e5b1730c44b6d6e33fedd54c1d99eac7f48e0d9ab86437ec2ae74",
+    "internal/federation/hardening_test.go": "24eefcc2d1f1320e2bab48b85758e653af00a7e8d72dffc08b7d70ddabc7725c",
+    "internal/federation/native_test.go": "248de898dfdd8fc681d301c33fbb13d0e34f6b0af423461f88ec2221f828f799",
+    "internal/federation/receipts.go": "77136cf56b18154eac8eaa50489732189766aea27adc880c5b6c433cc285acf4",
+    "internal/protocol/channels.go": "b216ebdd35a0d2a1fc2e583580a2dc69fee9b50b1e0d34d5466addfd9cbe0c55",
+    "internal/protocol/lifecycle.go": "5a7fcc8836e617c8ab529346639429d13d9d1bb8d44d62e64ea9fa0193222d3b",
+    "internal/protocol/protocol.go": "b27696853989f7f347471a733e7cb4754961a9af12843cbca31a2106d6ce07c2",
+    "internal/runtime/runtime.go": "4d0d042fedb63195b0e4bb4267e69b1359b16d5d42d19631de703ca10166a56b",
+    "internal/skills/catalog.go": "3f39feaa5dd6de6ce4078d6da78479f1753d4087f29137fe6f0aa2d4ec6b0b16",
+    "internal/skills/files.go": "e005f13152ae5fe1d1f536b8940ba5318d76b50973fdb112fcef2406b09359c4",
+    "internal/skills/install.go": "680bf2ac0a034b207101402da1f2aaa3199cb31b89ad70b540da6281a5ce82b5",
+    "internal/skills/install_test.go": "98a7b4c9f794598e5f780ab2e071aee0668181bbadf158aa214a6c1b8b0df1c9",
+    "internal/skills/removal.go": "cbb73ee905e7e4f5ab1a2f5e9a4e606a1cc93a24d246570ff922413cb08d7041",
+    "internal/skills/removal_test.go": "d9e2b77395ac8af464ce0940d7e91b002c73ef73b9f9a50184ec6beaa0fd0dd3",
+    "internal/skills/rename_darwin.go": "2a73dc6b3cf859ff55925b5dae84bed10ade06380c2d21d782e1a80732fb082e",
+    "internal/skills/rename_linux.go": "8eb9ea0b294d63589d1cff5e6f2a57db5eff3ef9a8aaaef26608a7447855e0a7",
+    "internal/store/channel_schema.go": "2245fa2b64c0233b52c212f3486cfcaa9a79d821c49104676fb9f4ee7cf8ed51",
+    "internal/store/channels.go": "8d9f0a2af3d52e43cfa832bc927a70dc45b4a53beb8746acd28135aef37a74c8",
+    "internal/store/channels_test.go": "3984f518eb31066e08b92d99d16d7a7ff3d258da9393ca684842f4a8970cb096",
+    "internal/store/codex.go": "3eb7d71581d14618018bc93ae63ced40ae0dba95b30e20f3e71884a5231bd552",
+    "internal/store/codex_reservation_test.go": "0eef02d7ff5b1e2e454ef37f686e89cac2226c1aa37b07a6ab0710a325c67147",
+    "internal/store/codex_schema.go": "f866f04073dd9a8fab807dd41a4487edfc0eba01f52fa070437681fd9b69d3de",
+    "internal/store/codex_test.go": "e16d0c4fa7094c801416d5b0bf50f5cf4fba9c2359839942a5aedb5e4b1f23e5",
+    "internal/store/store.go": "0d3250d2351b7211d44c11a1074d223d86fbce654f028b9219ff8bd16769fe11",
+    "internal/store/store_test.go": "409f83ee07cedbbc705f35c1848fb585d2ce3b74dc53018edf606d2d36de257d",
+    "internal/transport/drive.go": "9c38a67b3f5181a338463a1c5b826d2c49ce90d37c08e6e32e4da9bfd4149629",
+    "internal/transport/drive_test.go": "66b52f965cf93393ba6dd53ece52aa8dd81f6ca2ac442acb9380a4e8590d9759",
+    "internal/transport/host.go": "9dbc37805c8f859062270acb21693db5fa9e8c7b20a96fa8038f472330b03ffd",
+    "internal/transport/native_test.go": "fcda21f0c1d582f0628473aa5e83636906fcd4391f2b1e2f2c4db2a3e0ad1c2b",
+    "internal/transport/stream.go": "fcbadbc44383a3a81c821529c8ec5f082c63de87f2fbcd9476184c1fe9b282d5",
+    "internal/transport/stream_test.go": "22ea23c25240a2ed04591c5b6bbfdc7551719bc9e2166b894cfcd48b6e6a7c9d",
+    "internal/transport/terminal.go": "1d8438b63c24da6019dd82b5ecb390804acaa3210e7bf95974342d893d7bcf58",
+    "internal/tui/channels.go": "b3b2bedd6dfb48d30c4e7b37824bb0c2afb562111763fef6cfdfb26d7e3c952a",
+    "internal/tui/channels_test.go": "2ca5539beba0d48cd544041d184abea5af4dcd914bb3aee0a7b39b6a589eea4d",
+    "internal/tui/channels_view.go": "b5655d85abd4063b4fe0d64a29a3d94636d1a0d9d678f84fb8e026ae498c9d57",
+    "internal/tui/tui.go": "39f1780902be8093364aba77d949b805feba7b3b5b00718ffbc9415e44b9a5fd",
+    "internal/tui/tui_test.go": "9f9b4d0478016ab36353f3c4daea23a5cb146453e56ead6c14070b531d89710b",
+    "internal/tui/view.go": "b9987fe7536ee8cc1a6a9d62505400bb18e6cb74b4dc2579ab3f1c43ca2f6a93",
+    "internal/tui/view_test.go": "645f85764ec26859b5740e62f617070ccf17dc820d259b888277b4e8689cecdf",
+    "tests/codexbrokerprobe/main.go": "9fa74bdb33e49cf7ad181c8787415a3798c2f77f299a98145277a23a08bcc149",
+    "tests/codexbrokerprobe/main_test.go": "ce3d6c566fe1bff05073348db091c640cf90db49df822e909761cdbdc4c4095e"
+  },
+  "environment": {
+    "os": "macOS26.7.1",
+    "build": "25G309",
+    "arch": "arm64",
+    "go": "go1.26.6",
+    "terminal": "xterm-256color",
+    "png": "Pillow cell rasterization with Menlo; limited Screen parser, not native Terminal screenshot"
+  },
+  "commands": [
+    "go test -race -json ./internal/tui ./internal/clientstate ./cmd/bp",
+    "go vet ./internal/tui ./internal/clientstate ./cmd/bp",
+    "git diff --check",
+    "go build -o OWNED_OUTPUT/keelmux-final-paged ./cmd/bp",
+    "PYTHON internal/tui/testdata/capture_channels.py --binary OWNED_BUILD --output OWNED_OUTPUT"
+  ],
+  "checks": {
+    "race": "pass",
+    "vet": "pass",
+    "diff_check": "pass",
+    "test_groups": 42,
+    "test_nodes": 46,
+    "packages": [
+      {
+        "package": "github.com/seanheiney/keelmux/cmd/bp",
+        "groups": 3,
+        "passed_nodes": 3,
+        "group_names": [
+          "TestDaemonReadOnlyAndStaleIntentPreserveState",
+          "TestEntryDirectoryFetchesOnceAndManagementStaysLocal",
+          "TestReleaseInformationDoesNotCreateStateOrStartDaemon"
+        ]
+      },
+      {
+        "package": "github.com/seanheiney/keelmux/internal/clientstate",
+        "groups": 13,
+        "passed_nodes": 17,
+        "group_names": [
+          "TestChannelDraftsAreAddressedAndPendingCannotBeEdited",
+          "TestChannelPlaceAndLockRejectUnsafeFilesWithoutBlocking",
+          "TestChannelPlaceFiniteUTF8AndOversizeReaderPreservesBytes",
+          "TestCorruptOrUnsupportedStateIsNotSilentlyReset",
+          "TestDraftIsolationAcrossThreadRecipientAndReplacement",
+          "TestInvalidChannelAuthorityPreservesPriorFile",
+          "TestLifetimeClientPlaceLockRejectsSimultaneousOwner",
+          "TestNewUnknownAndAmbiguousV1FieldsRefuseWithoutReset",
+          "TestOverlappingGroupsFollowStableWorkAndDeletionRetainsDrafts",
+          "TestPlaceMapIdentityRemainsCaseSensitive",
+          "TestPrivatePlaceRoundTripAndInvalidWritePreservesOldFile",
+          "TestV1MigrationPreservesNativePlaceGroupsDraftAndLease",
+          "TestWorkspaceGroupNamespaceDoesNotMatchUnrelatedHost"
+        ]
+      },
+      {
+        "package": "github.com/seanheiney/keelmux/internal/tui",
+        "groups": 26,
+        "passed_nodes": 26,
+        "group_names": [
+          "TestAllViewsClipCellsAndEmitOnlyOwnedPalette",
+          "TestAttachLostResponseRetriesSameDurableIntentAndReleasesExactLease",
+          "TestAttachRejectsChangedGenerationAndKeepsReadOnlyExplicit",
+          "TestBackgroundArrivalCannotChooseAnEmptySelection",
+          "TestChannelAbsentReceiptRetriesSameIDOnlyAfterExplicitControl",
+          "TestChannelBindingChangesAndDisabledPreflightDoNotPost",
+          "TestChannelEnterIncomingTextAndNativeDraftRemainInert",
+          "TestChannelExplicitChoiceWrongThreadAndStaleRefresh",
+          "TestChannelHistoryPagesReachLaterNotesAndFenceCursorResponses",
+          "TestChannelIntakeIsDiagnosticAndLongNotesRemainReadable",
+          "TestChannelLayoutsResizeClipAndKeepExplicitAction",
+          "TestChannelLostAcknowledgementHasDurableExactIntentAndNoSecondPost",
+          "TestChannelReceiptHashIDsAndStatesAreContentAuthority",
+          "TestChannelRestartQueriesOnlyExactReceiptAndPreservesCurrentSelection",
+          "TestChannelSaveFailureCannotSendOrEraseKnownQueueReceipt",
+          "TestChannelStaleReceiptAndReadOnlyReconciliation",
+          "TestConnectedEntryExplainsUnreachableExecutionHome",
+          "TestExecProcessReturnsToSameSwitcherAndReleases",
+          "TestFailedReleaseSurvivesReconnectAndNewTargetCannotReplaceIntent",
+          "TestGroupPlaceDraftAndTargetChangeStayAddressed",
+          "TestInventoryCannotStealFocusAndMissingAnchorIsExplained",
+          "TestPaletteUsesTerminalPreferences",
+          "TestPendingRecoveryActionsSurviveOfflineNarrowLayout",
+          "TestPlainNarrowViewDoesNotEmitInventoryEscapeSequences",
+          "TestResponsiveNavigationPersistsGroupFilterAndAddressedDraft",
+          "TestResponsiveRowsKeepSelectedAnchorVisible"
+        ]
+      }
+    ],
+    "test_log_sha256": "109889bb081060b58179b6baeea128cec7ec0e697439c2c6f31d4981f453c413"
+  },
+  "helpers_sha256": {
+    "internal/tui/testdata/capture_channels.py": "0a08b18c4130de7eb46695071e08e1d163bc4a0c9cf4357ea8576c26f5a7cdff",
+    "internal/tui/testdata/capture.py": "c13b1af0358af5ebb05be09457437eb73a5ce15655abf4ad199165a206d65956"
+  },
+  "actual_pty": [
+    {
+      "size": [
+        80,
+        24
+      ],
+      "binary_sha256": "85d94580c9c2ca641e7cd2fea8527218854f3fe07b4d9af478baf5e5d1a441ee",
+      "captures": [
+        {
+          "label": "inbox",
+          "raw_sha256": "7627adcc966556e4909f69b78057ab858bf7bac8a9139a2555208632ba3b6e28"
+        },
+        {
+          "label": "next-page",
+          "raw_sha256": "b424ae0cfb9bdc694bcc4fddf996b0edab2b0df404b6bc19973f37edd5d8cf48"
+        },
+        {
+          "label": "previous-page",
+          "raw_sha256": "1ccfdadfc598fd8b26aa8c9e307e669df6ed4190f8aaf4b20d5666a0e77665c1"
+        },
+        {
+          "label": "destination",
+          "raw_sha256": "2fc024ff2bbbbc951baf7d432e52c09019fefc153419670316c288d7b16423b7"
+        },
+        {
+          "label": "chosen-inbox",
+          "raw_sha256": "d3aee0a3bf4c10e6a5baefec367819235496416f13dc9979ea54714ebb7299e4"
+        },
+        {
+          "label": "multiline-reply",
+          "raw_sha256": "a7621eedeae32a0fdd9cb6a7cc559d196aa14b0b561fd944fda90b440dd22a13"
+        },
+        {
+          "label": "pending",
+          "raw_sha256": "a79e97ce8770e31ee6eb36b2dab8a9fce82f1a05512109428541a8d91195582f"
+        },
+        {
+          "label": "restarted-queued",
+          "raw_sha256": "231bcb2cd01a7d34dd53309edcfa57cddc643764c44b75a9ba62fb803d156826"
+        }
+      ],
+      "actual_local_queue_posts": 1,
+      "actual_external_posts": 0,
+      "durable_intent_before_local_request": true,
+      "enter_only_newline": true,
+      "restart_recovery_queried_exact_receipt_without_repost": true,
+      "later_note_101_and_previous_page_visible": true,
+      "native_draft_and_selection_preserved": true,
+      "owned_state_removed": true,
+      "tui_exit_zero_without_signals": true,
+      "capture_kind": "Actual PTY; cell rasterization, not native Terminal screenshot",
+      "calls": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=100&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "POST",
+          "/v1/channels/send"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels/delivery?id=message_7a6d9f855090bd614aa110c6214e0437"
+        ]
+      ]
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "binary_sha256": "85d94580c9c2ca641e7cd2fea8527218854f3fe07b4d9af478baf5e5d1a441ee",
+      "captures": [
+        {
+          "label": "inbox",
+          "raw_sha256": "ca3188825d95c47408396e5fcc887659b23e499cd0e3b8a1200a1c17a3cb42c2"
+        },
+        {
+          "label": "next-page",
+          "raw_sha256": "e489003f1a4afa9d0b649b146f5a3eaf90322f526e1d76be81371dc9ba8dde0e"
+        },
+        {
+          "label": "previous-page",
+          "raw_sha256": "ea5a738cc90eb149d31564900313f4c4a956706914e3b99a614a6920ba6196ac"
+        },
+        {
+          "label": "destination",
+          "raw_sha256": "63f599eee44e4679ab0096cabf24589d1ecda898bbfe226d95811308d6005de6"
+        },
+        {
+          "label": "chosen-inbox",
+          "raw_sha256": "72d3229d8eaa901fb24f5ae01225e599b7c8128503300afae28abe01de423f46"
+        },
+        {
+          "label": "multiline-reply",
+          "raw_sha256": "e701e9af71df3f93c4f656cfc6dd066e61e648a194354e44af389fbc01ed67b4"
+        },
+        {
+          "label": "pending",
+          "raw_sha256": "ff9a483fbe1576655eaea696b48d50a235823deea0736b371e3b09a3eea6888e"
+        },
+        {
+          "label": "restarted-queued",
+          "raw_sha256": "ac3d00c8759a3f705b4b4d30e0a3e42e55d8354478ffbf4826d69d28c8224c6e"
+        }
+      ],
+      "actual_local_queue_posts": 1,
+      "actual_external_posts": 0,
+      "durable_intent_before_local_request": true,
+      "enter_only_newline": true,
+      "restart_recovery_queried_exact_receipt_without_repost": true,
+      "later_note_101_and_previous_page_visible": true,
+      "native_draft_and_selection_preserved": true,
+      "owned_state_removed": true,
+      "tui_exit_zero_without_signals": true,
+      "capture_kind": "Actual PTY; cell rasterization, not native Terminal screenshot",
+      "calls": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=100&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "POST",
+          "/v1/channels/send"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels/delivery?id=message_79448cea0fcae4d66f4f4c6121a5d562"
+        ]
+      ]
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "binary_sha256": "85d94580c9c2ca641e7cd2fea8527218854f3fe07b4d9af478baf5e5d1a441ee",
+      "captures": [
+        {
+          "label": "inbox",
+          "raw_sha256": "51f46084fb2d352551ee721eb025b327c68f8d1760b080872a8fa29c1a3c51b4"
+        },
+        {
+          "label": "next-page",
+          "raw_sha256": "4c927cd0ba50742f9b4046282636b9ec51693ab0e676c431d1a6767c64d9ce98"
+        },
+        {
+          "label": "previous-page",
+          "raw_sha256": "ae52d852e60106579beaee4f298190f9d04808d5f5e7a53d5cf4d569be54aaba"
+        },
+        {
+          "label": "destination",
+          "raw_sha256": "45ef2cc5051d4af5f2863686289a628fa51e9c8eb5c2711967a99d4f8a571802"
+        },
+        {
+          "label": "chosen-inbox",
+          "raw_sha256": "2abff26d89311e447366f6925b8cface6f5885ed641784aa00cb144661d3d900"
+        },
+        {
+          "label": "multiline-reply",
+          "raw_sha256": "803216634ace729ae90e893e0965414c62c8a490b433249ed4085e4bd7829357"
+        },
+        {
+          "label": "pending",
+          "raw_sha256": "48409c41e5955191f4074f6a3b40dab69a51322dcbf1a21ef55cac901c2e3d34"
+        },
+        {
+          "label": "restarted-queued",
+          "raw_sha256": "609d4b0b386034da612a6793f764e7ffcb679573e616b39d27f60290b807e0d9"
+        }
+      ],
+      "actual_local_queue_posts": 1,
+      "actual_external_posts": 0,
+      "durable_intent_before_local_request": true,
+      "enter_only_newline": true,
+      "restart_recovery_queried_exact_receipt_without_repost": true,
+      "later_note_101_and_previous_page_visible": true,
+      "native_draft_and_selection_preserved": true,
+      "owned_state_removed": true,
+      "tui_exit_zero_without_signals": true,
+      "capture_kind": "Actual PTY; cell rasterization, not native Terminal screenshot",
+      "calls": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=100&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/channels/history?after=0&limit=100&thread=thread_session_00"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "POST",
+          "/v1/channels/send"
+        ],
+        [
+          "GET",
+          "/v1/channels"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/channels/delivery?id=message_c63733378487154bdd6aa14e53239d19"
+        ]
+      ]
+    }
+  ],
+  "actual_published_v1_client_refusal": {
+    "old_source_commit": "60b8bc705b2636b087bf2fd872e976aa466ad3e9",
+    "old_binary_sha256": "3cea0b364487a3eda6a8301d367fc09048c6ce4ae536add4259471e1dc1cc65e",
+    "archive_sha256": "63bbee14e22d7468feb6f6971b48626b409e07e131b78d7941440d8bd5995243",
+    "script_sha256": "fd709b6a430291fc1e0d6d7551724661eb674d0ff790260f95267cdfa793a318",
+    "exit_code": 1,
+    "refused_version_2": true,
+    "pending_file_byte_identical": true,
+    "pending_file_sha256": "36ac4b7822aa5f4eb2fae973b4e96d601013dfcbb0c69da75747d47c9a0ba477",
+    "mutating_http_calls": 0,
+    "model_calls": 0,
+    "owned_state_removed": true
+  },
+  "pre_repair_counterexample": {
+    "source": "533fcd0da1b2ddc39404400a72cf974e486cca5f",
+    "overlay": "Only clientstate state.go/json.go/lock.go from pre-repair source; new refusal tests kept",
+    "result": "Expected failure: ambiguous authority accepted",
+    "test": "TestNewUnknownAndAmbiguousV1FieldsRefuseWithoutReset",
+    "log_sha256": "83c18ff46791d68cf6a68e6a64e42ca547370d6fb6ed21b5a23687e9973c75f2"
+  },
+  "diagnostics_retained_privately": [
+    {
+      "kind": "fixture-only unsynchronized read after lost acknowledgement, corrected under mutex",
+      "log_sha256": "b1b102fff44c2fe392009fe5b3a16bb8ab6beceb57ed6ca0b0112de5d542608b"
+    },
+    {
+      "kind": "fixture-only long note test did not settle previous loading state, corrected",
+      "log_sha256": "98ab0b923e8a829cda581a327a4a58d5be9aa4c1d5790edc6d4f8c39d5c838e2"
+    },
+    {
+      "kind": "initial narrow destination label clipped; subsequent final layout places root/bot/binding on separate rows",
+      "png_sha256": "384129795cdf8e8daf7ceed46f1575e7aeb32ae5e8c81cbc31ca70a610f063f7",
+      "source": "Diagnostic dirty implementation; no complete source fingerprint retained, excluded from final source claims"
+    }
+  ],
+  "artifacts_sha256": {
+    "internal/tui/testdata/channel_visual/chosen-inbox-120x32.png": "43d3048aaa0f88f8dfd8c7f3344a940e481ba3ca47be5eb6a13c38e5194a5d7f",
+    "internal/tui/testdata/channel_visual/chosen-inbox-120x32.txt": "fbcce5c627c2b584e19cdf1110a3b58f42b4a54c2c9a22ab077b10e604a78c2c",
+    "internal/tui/testdata/channel_visual/chosen-inbox-40x14.png": "6d81d39124abb6ed08b85ebcaaeed1f66dfc4a2ceadf665a2658e2cfb2c3472b",
+    "internal/tui/testdata/channel_visual/chosen-inbox-40x14.txt": "11de660b178db81a15dfa7dd2f2ac7d7d2f111992ba859543c0d3b07153466f1",
+    "internal/tui/testdata/channel_visual/chosen-inbox-80x24.png": "c12d1f79b9db1f1be6e78de36c400eb186ae483661c208412cf41f282b744942",
+    "internal/tui/testdata/channel_visual/chosen-inbox-80x24.txt": "4e1cc0314b2b15177a14e9ddff4c69a10ac8c817b468005f4f5269e9a0eba4df",
+    "internal/tui/testdata/channel_visual/destination-120x32.png": "2745dbe3ef9b4c00769d75fece259513511d2d5e2a867707b6dedb050c9abfec",
+    "internal/tui/testdata/channel_visual/destination-120x32.txt": "2911585eeeb158fe472ad1872c34d79cd9a996fbff293cb1a7bcd3fac5b60236",
+    "internal/tui/testdata/channel_visual/destination-40x14.png": "8fa7014fe9eb2919ed02b5b0082a8934ae5023e167a0a1f9aa71bfb7bacba1a2",
+    "internal/tui/testdata/channel_visual/destination-40x14.txt": "644d8eb3b9e45918af2084308b27a4a8705dc75fad83802e2eec6c812824f8dc",
+    "internal/tui/testdata/channel_visual/destination-80x24.png": "d845e945cf82f1ccaaa4725bd1ed7aec927ca5dbd0caf3ca1753b400d789b60b",
+    "internal/tui/testdata/channel_visual/destination-80x24.txt": "51004fa02e225e9743294f2a34719c18378e8227a0725f1d659a2a803711c696",
+    "internal/tui/testdata/channel_visual/inbox-120x32.png": "704f2dc0131fd79fc467ac00f3ea1f71d139db2f1afff7b91335d168ebdd85c7",
+    "internal/tui/testdata/channel_visual/inbox-120x32.txt": "10c0164252690ca0472d14b9c9052a56d0e1aea456f41e10eceb54d1424ce376",
+    "internal/tui/testdata/channel_visual/inbox-40x14.png": "deaf7812b5d89975d8da9c3e64564d617b58fc6a28720e4b84f6a3add03c54bb",
+    "internal/tui/testdata/channel_visual/inbox-40x14.txt": "ad11a2f966ed974e56325b7a336f34a5a4857af00b48e080454a808a9936c22c",
+    "internal/tui/testdata/channel_visual/inbox-80x24.png": "5cd3b65d2dc499ed9f63c407a074ed75ff97d16fee85b619f3bb3635a2547a1a",
+    "internal/tui/testdata/channel_visual/inbox-80x24.txt": "57831f5cb56eff86e414478bc2617bfa5b93ac448977200727285d0e72379dcc",
+    "internal/tui/testdata/channel_visual/multiline-reply-120x32.png": "30ded7cd04f2341f28cecd9cd8c5c52b2516f4621c763e0fd30faf274bcdd292",
+    "internal/tui/testdata/channel_visual/multiline-reply-120x32.txt": "fd90b2da00ce382c9e8eb26c8a57a1751248c9fcf7ad0ad6fad6fb540d795496",
+    "internal/tui/testdata/channel_visual/multiline-reply-40x14.png": "d5d9f2e7402ad492ea410e5fcd69784c3a2c0c19fda244d2b9a8dfaebad3a52a",
+    "internal/tui/testdata/channel_visual/multiline-reply-40x14.txt": "0769d03e36ce7d91b93af08cf84118674d7d765ebf01d42f6eac53b4c01eb25b",
+    "internal/tui/testdata/channel_visual/multiline-reply-80x24.png": "3d871dd30855b6eb18542a613272d48feade9746672fbf4d0d110e1f1af1e23c",
+    "internal/tui/testdata/channel_visual/multiline-reply-80x24.txt": "813ee5700f57f6f2755f293e1fc709192c3b548fa7e6ce4e0dcd911228d5531c",
+    "internal/tui/testdata/channel_visual/next-page-120x32.png": "f044eec11975e7b6772941028ba51fa22eea2ec10aacdd66690a84e9672fedd0",
+    "internal/tui/testdata/channel_visual/next-page-120x32.txt": "8acead7bf6803e72c45797e1c2f6fdc9d656b6198a07cd37896473b9bf3878a5",
+    "internal/tui/testdata/channel_visual/next-page-40x14.png": "79f3ca8c157e04e3c2717afe74a5f008a3c3a08ccc4b9504d5f098ad6b6d8147",
+    "internal/tui/testdata/channel_visual/next-page-40x14.txt": "6bcc057e0bba77e4f53e9c45de4aed8c7fcc15fe5c49a44c851c2600317b5093",
+    "internal/tui/testdata/channel_visual/next-page-80x24.png": "faf528626c81451947877a6a64c703a984259fb0c2cdadcb7bb01b2c008e4582",
+    "internal/tui/testdata/channel_visual/next-page-80x24.txt": "7355d048afcccb161f8f0ed09c26bc34bcd11df7394adc492c4ddfbfd1a9f51a",
+    "internal/tui/testdata/channel_visual/pending-120x32.png": "a8cbf2e6fbcbe60a0d9a3bc93965835377afdcb9e633c4d27dac1c31cb1e7022",
+    "internal/tui/testdata/channel_visual/pending-120x32.txt": "29d8536cd74ec23c1d982e42b62c98b501d62a11145667d8acdd5d4ec0ea78d1",
+    "internal/tui/testdata/channel_visual/pending-40x14.png": "fff23c80f17f7a24c2ec7ae845cfdd17bb406872b110d0bc5b73e83888b79451",
+    "internal/tui/testdata/channel_visual/pending-40x14.txt": "e313d906080b00a10d770d52504753fa3c247adbcc9b4d0115d5ae0c239fc8aa",
+    "internal/tui/testdata/channel_visual/pending-80x24.png": "5f11b63291cde4c771e3ce0aad0ebd2399666512b8a47991d8ca7dbe399f4822",
+    "internal/tui/testdata/channel_visual/pending-80x24.txt": "211c8915d9f7cd591bcb673eedfe660da10a28cf34714cb2d4f42bb286568442",
+    "internal/tui/testdata/channel_visual/previous-page-120x32.png": "704f2dc0131fd79fc467ac00f3ea1f71d139db2f1afff7b91335d168ebdd85c7",
+    "internal/tui/testdata/channel_visual/previous-page-120x32.txt": "10c0164252690ca0472d14b9c9052a56d0e1aea456f41e10eceb54d1424ce376",
+    "internal/tui/testdata/channel_visual/previous-page-40x14.png": "deaf7812b5d89975d8da9c3e64564d617b58fc6a28720e4b84f6a3add03c54bb",
+    "internal/tui/testdata/channel_visual/previous-page-40x14.txt": "ad11a2f966ed974e56325b7a336f34a5a4857af00b48e080454a808a9936c22c",
+    "internal/tui/testdata/channel_visual/previous-page-80x24.png": "5cd3b65d2dc499ed9f63c407a074ed75ff97d16fee85b619f3bb3635a2547a1a",
+    "internal/tui/testdata/channel_visual/previous-page-80x24.txt": "57831f5cb56eff86e414478bc2617bfa5b93ac448977200727285d0e72379dcc",
+    "internal/tui/testdata/channel_visual/restarted-queued-120x32.png": "ed9e7215b43e05f296ef47a0cec283d2a1ef06af98c87a5f9ad25381d5f5e393",
+    "internal/tui/testdata/channel_visual/restarted-queued-120x32.txt": "c69717476ab348fc7a574809b83e6d74f89806df9aac61508e81031c40f2f809",
+    "internal/tui/testdata/channel_visual/restarted-queued-40x14.png": "aae19484d64493def165f84b4e3a44b4176687019dcedfc047c92201fd574ff3",
+    "internal/tui/testdata/channel_visual/restarted-queued-40x14.txt": "28f8b44c1756154b5cc1ea551fef6d8dc5ac4e96516a1f2dc96c49dc19e6cc29",
+    "internal/tui/testdata/channel_visual/restarted-queued-80x24.png": "1dc9dc00beb36e3728f0bac64596709947fe9920b531b91b7257202bd80d6492",
+    "internal/tui/testdata/channel_visual/restarted-queued-80x24.txt": "ce958dc9c6cd18c6085a408d34541ed91e47f9573788282f5d071c7add1172d7"
+  },
+  "not_established": [
+    "Actual chat service database/adapter integration in this worker proof; fixture queue resides in memory while TUI restarts",
+    "Authenticated external provider delivery, live external edits/deletions or model acceptance",
+    "Native provider launch/attach matrix on this new source",
+    "Entry/federated channel inbox (the published API is local-home only)",
+    "Foreign-UID negative file fixture, Linux/native Terminal rendering, general emulator conformance"
+  ]
+}

@@ -1,0 +1,32 @@
+  Keelmux / authored inbox
+  Thread: thread_session_00
+  mattermost / channel_owned / root: root_owned
+  Endpoint: https://chat.example.test / realm: realm_owned
+  Bot: bot_owned / binding: binding_owned
+  First-note snapshots · remote edits/deletions are not projected
+  Intake: unavailable / history gap · delivery receipts are separate
+  Last intake check: 2026-10-10 20:00:00Z
+  Page 1 · note 1 / 100 · up to 100
+  author_owned / binding_owned
+  Received authored note · inert text
+  Received note: /run $(touch never)
+  Inert authored text; no model work.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Destination chosen explicitly. p composes a local channel reply.
+  b destination  p reply  r refresh  Esc work
+  ↑/↓ notes  [ prev  ] next  PgUp/PgDn text

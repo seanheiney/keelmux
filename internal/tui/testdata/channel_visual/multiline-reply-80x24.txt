@@ -1,0 +1,24 @@
+  Keelmux / channel reply
+  Thread: thread_session_00
+  mattermost / channel_owned / root: root_owned
+  Endpoint: https://chat.example.test / realm: realm_owned
+  Bot: bot_owned / binding: binding_owned
+  Chat only · no model submission
+  first line
+  second line_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Local reply · Enter adds a newline; Ctrl-S queues chat only.
+  Ctrl-S queue reply  Enter newline  Esc inbox

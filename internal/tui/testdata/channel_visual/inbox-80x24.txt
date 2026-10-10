@@ -1,0 +1,24 @@
+  Keelmux / authored inbox
+  Thread: thread_session_00
+  Destination: unchosen · b selects one
+  First-note snapshots · remote edits/deletions are not projected
+  Page 1 · note 1 / 100 · up to 100
+  author_owned / binding_owned
+  Received authored note · inert text
+  Received note: /run $(touch never)
+  Inert authored text; no model work.
+
+
+
+
+
+
+
+
+
+
+
+
+
+  b destination  p reply  r refresh  Esc work
+  ↑/↓ notes  [ prev  ] next  PgUp/PgDn text
