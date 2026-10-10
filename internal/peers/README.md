@@ -15,6 +15,9 @@ wiring belong to the captain. The implementation base is
   calls `Export(ctx, stdin, stdout)`. Reject extra flags/args. The exporter reads
   one strict `ExportRequest`, contacts only its already running Unix socket, and
   applies the supplied directional session grant before any SSH output.
+  The socket and its mode-0700 parent must have canonical paths and belong to
+  the current UID; the socket must already be mode 0600. Both inodes are checked
+  before and after the read. No permission repair or creation occurs.
 - `ReadConfig` accepts an owned, regular mode-0600 file. `Open` uses only an
   explicitly selected private peer store; `Enroll` verifies the configured SSH
   key and existing product Host identity before persisting enrollment.
@@ -36,6 +39,29 @@ configuration. Omit it to reuse the user's ordinary SSH alias configuration.
 
 The existing untagged `federation.Grant` currently serializes its JSON fields as
 `Principal`, `HostID`, `Sessions`; no shared schema was changed in this lane.
+
+A reviewed configuration has this shape. Replace every illustrative ID, path,
+alias and fingerprint with the exact existing home and selected known-host
+record; the example does not enroll a host or grant a wildcard:
+
+```json
+{
+  "host_id": "host_00000000000000000000000000000000",
+  "alias": "studio",
+  "known_hosts_file": "/Users/operator/.ssh/known_hosts",
+  "known_host": "studio.example",
+  "fingerprint": "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "remote_executable": "/home/operator/.local/bin/keelmux",
+  "remote_socket": "/home/operator/.local/state/keelmux/control.sock",
+  "grant": {
+    "Principal": "local",
+    "HostID": "host_00000000000000000000000000000000",
+    "Sessions": ["session_11111111111111111111111111111111"]
+  },
+  "fresh_for_seconds": 30,
+  "retain_for_seconds": 300
+}
+```
 
 ## Scope and truthfulness
 

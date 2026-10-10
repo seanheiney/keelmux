@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -39,10 +40,17 @@ func ownedSocket(t *testing.T, handler http.Handler) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	dir, err = filepath.EvalSymlinks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { _ = os.RemoveAll(dir) })
 	socket := filepath.Join(dir, "home.sock")
 	l, err := net.Listen("unix", socket)
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(socket, 0600); err != nil {
 		t.Fatal(err)
 	}
 	srv := &http.Server{Handler: handler}
@@ -201,5 +209,135 @@ func TestExportCancelsSilentHome(t *testing.T) {
 	case <-ended:
 	case <-time.After(time.Second):
 		t.Fatal("home read not cancelled")
+	}
+}
+
+func TestExportRequiresExistingPrivateCanonicalEndpointWithoutRepair(t *testing.T) {
+	for _, mode := range []string{"public-socket", "public-parent", "socket-alias", "parent-alias"} {
+		t.Run(mode, func(t *testing.T) {
+			c, s := fixture(t)
+			c.RemoteSocket = ownedSocket(t, HomeHandler(c.HostID, inventoryFunc(func(context.Context) ([]domain.Session, error) {
+				t.Error("unsafe endpoint was contacted")
+				return s.Sessions, nil
+			})))
+			original := c.RemoteSocket
+			switch mode {
+			case "public-socket":
+				if err := os.Chmod(original, 0666); err != nil {
+					t.Fatal(err)
+				}
+			case "public-parent":
+				if err := os.Chmod(filepath.Dir(original), 0755); err != nil {
+					t.Fatal(err)
+				}
+			case "socket-alias":
+				c.RemoteSocket = filepath.Join(filepath.Dir(original), "alias.sock")
+				if err := os.Symlink(original, c.RemoteSocket); err != nil {
+					t.Fatal(err)
+				}
+			case "parent-alias":
+				alias := filepath.Dir(original) + "-alias"
+				if err := os.Symlink(filepath.Dir(original), alias); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = os.Remove(alias) })
+				c.RemoteSocket = filepath.Join(alias, "home.sock")
+			}
+			var out bytes.Buffer
+			if err := Export(context.Background(), bytes.NewReader(exportInput(t, c)), &out); !errors.Is(err, ErrUnavailable) || out.Len() != 0 {
+				t.Fatal("unsafe endpoint accepted", err)
+			}
+			if mode == "public-socket" {
+				info, _ := os.Lstat(original)
+				if info.Mode().Perm() != 0666 {
+					t.Fatal("export repaired socket permissions")
+				}
+			}
+			if mode == "public-parent" {
+				info, _ := os.Lstat(filepath.Dir(original))
+				if info.Mode().Perm() != 0755 {
+					t.Fatal("export repaired parent permissions")
+				}
+			}
+		})
+	}
+}
+
+func TestExportPinsSocketAndParentIdentityAcrossRead(t *testing.T) {
+	for _, mode := range []string{"socket", "parent"} {
+		t.Run(mode, func(t *testing.T) {
+			c, s := fixture(t)
+			var socket string
+			socket = ownedSocket(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if mode == "socket" {
+					if err := os.Rename(socket, socket+"-held"); err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+				} else {
+					parent := filepath.Dir(socket)
+					if err := os.Rename(parent, parent+"-held"); err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+					t.Cleanup(func() { _ = os.RemoveAll(parent + "-held") })
+					if err := os.Mkdir(parent, 0700); err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+				}
+				l, err := net.Listen("unix", socket)
+				if err != nil {
+					t.Error(err)
+					w.WriteHeader(500)
+					return
+				}
+				t.Cleanup(func() { _ = l.Close() })
+				if err := os.Chmod(socket, 0600); err != nil {
+					t.Error(err)
+					w.WriteHeader(500)
+					return
+				}
+				w.Header().Set("X-Backplane-Protocol", protocol.Version)
+				_ = json.NewEncoder(w).Encode(s)
+			}))
+			c.RemoteSocket = socket
+			var out bytes.Buffer
+			if err := Export(context.Background(), bytes.NewReader(exportInput(t, c)), &out); !errors.Is(err, ErrUnavailable) || out.Len() != 0 {
+				t.Fatal("replaced endpoint supplied authorized inventory", mode, err)
+			}
+		})
+	}
+}
+
+type foreignFileInfo struct {
+	os.FileInfo
+	stat syscall.Stat_t
+}
+
+func (f foreignFileInfo) Sys() any { return &f.stat }
+
+func TestHomeEndpointRejectsForeignOwnership(t *testing.T) {
+	socket := ownedSocket(t, http.NotFoundHandler())
+	for _, parent := range []bool{false, true} {
+		path := socket
+		if parent {
+			path = filepath.Dir(socket)
+		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !privateHomeInfo(info, parent) {
+			t.Fatal("owned private fixture rejected")
+		}
+		foreign := foreignFileInfo{FileInfo: info, stat: *info.Sys().(*syscall.Stat_t)}
+		foreign.stat.Uid = uint32(os.Geteuid()) + 1
+		if privateHomeInfo(foreign, parent) {
+			t.Fatal("foreign endpoint ownership accepted")
+		}
 	}
 }

@@ -11,9 +11,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -280,6 +282,10 @@ func Export(ctx context.Context, input io.Reader, output io.Writer) error {
 	if r.Version != Version || !cleanPath(r.Socket, 100) || validateGrant(r.Grant) != nil {
 		return ErrMalformed
 	}
+	pin, err := inspectHomeSocket(r.Socket)
+	if err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(ctx, FetchTimeout)
 	defer cancel()
 	t := &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
@@ -307,5 +313,42 @@ func Export(ctx context.Context, input io.Reader, output io.Writer) error {
 	if err := s.validate(r.Grant.HostID); err != nil {
 		return err
 	}
+	current, err := inspectHomeSocket(r.Socket)
+	if err != nil || !os.SameFile(pin.socket, current.socket) || !os.SameFile(pin.parent, current.parent) {
+		return ErrUnavailable
+	}
 	return json.NewEncoder(output).Encode(project(s, r.Grant))
+}
+
+type homeSocketPin struct{ socket, parent os.FileInfo }
+
+// The exporter uses only the existing private home endpoint. Canonical paths
+// reject symlink aliases, and both the parent and socket identities are pinned
+// around the read. Inspection never repairs modes or creates missing state.
+func inspectHomeSocket(path string) (homeSocketPin, error) {
+	var pin homeSocketPin
+	canonical, err := filepath.EvalSymlinks(path)
+	if err != nil || canonical != path {
+		return pin, ErrUnavailable
+	}
+	pin.parent, err = os.Lstat(filepath.Dir(path))
+	if err != nil || !privateHomeInfo(pin.parent, true) {
+		return homeSocketPin{}, ErrUnavailable
+	}
+	pin.socket, err = os.Lstat(path)
+	if err != nil || !privateHomeInfo(pin.socket, false) {
+		return homeSocketPin{}, ErrUnavailable
+	}
+	return pin, nil
+}
+
+func privateHomeInfo(info os.FileInfo, parent bool) bool {
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok || stat.Uid != uint32(os.Geteuid()) {
+		return false
+	}
+	if parent {
+		return info.IsDir() && info.Mode().Perm() == 0700
+	}
+	return info.Mode()&os.ModeSocket != 0 && info.Mode().Perm() == 0600
 }
