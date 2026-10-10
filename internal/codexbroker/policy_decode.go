@@ -170,11 +170,19 @@ func (*nativePolicy) Decode(raw []byte) (Frame, error) {
 		return Frame{}, err
 	}
 	m, ok := v.(map[string]any)
-	if !ok || !onlyKeys(m, "jsonrpc", "id", "method", "params", "result", "error") {
+	if !ok || !onlyKeys(m, "jsonrpc", "id", "method", "params", "result", "error", "emittedAtMs") {
 		return Frame{}, errPolicy
 	}
 	if version, present := m["jsonrpc"]; present && version != "2.0" {
 		return Frame{}, errPolicy
+	}
+	if stamp, present := m["emittedAtMs"]; present {
+		// Installed 0.159.0 adds this marker to source notifications. It is
+		// discarded, never freshness or identity evidence. Other envelope
+		// kinds cannot carry it or bypass their typed correlation checks.
+		if !mHas(m, "method") || mHas(m, "id") || mHas(m, "result") || mHas(m, "error") || !integer(stamp, 0, 1<<63-1) {
+			return Frame{}, errPolicy
+		}
 	}
 	var f Frame
 	if id, present := m["id"]; present {

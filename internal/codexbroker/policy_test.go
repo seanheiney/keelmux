@@ -85,6 +85,44 @@ func TestPolicyDecodeMalformedEnvelopes(t *testing.T) {
 	}
 }
 
+func TestPolicyObservedNotificationTimestampDoesNotGrantScope(t *testing.T) {
+	p := NewPolicy()
+	b := policyFixture()
+	for _, stamp := range []string{"0", "1791658123000", "9223372036854775807"} {
+		raw := `{"method":"remoteControl/status/changed","params":{"serverId":"PRIVATE_GLOBAL_FIXTURE","installId":"PRIVATE_INSTALL_FIXTURE"},"emittedAtMs":` + stamp + `}`
+		f := policyFrame(t, p, raw)
+		if f.Kind != Notification || f.Method != "remoteControl/status/changed" || len(f.ID) != 0 {
+			t.Fatal("observed timestamp changed notification identity")
+		}
+		if _, visible, err := p.NativeOutput(OutputContext{Recipient: b, UpstreamChannelID: "channel_A"}, f); err != nil || visible {
+			t.Fatal("timestamp admitted global status disclosure", err)
+		}
+		encoded, err := Encode(f)
+		if err != nil || strings.Contains(string(encoded), "emittedAtMs") {
+			t.Fatal("untrusted timestamp survived canonical frame encoding", err)
+		}
+	}
+	for _, raw := range []string{
+		`{"id":1,"method":"thread/read","params":{"threadId":"native_A"},"emittedAtMs":1}`,
+		`{"id":null,"method":"initialized","emittedAtMs":1}`,
+		`{"id":1,"result":{},"emittedAtMs":1}`,
+		`{"id":1,"error":{"code":-32000,"message":"fixture"},"emittedAtMs":1}`,
+		`{"method":"initialized","emittedAtMs":null}`,
+		`{"method":"initialized","emittedAtMs":true}`,
+		`{"method":"initialized","emittedAtMs":"1"}`,
+		`{"method":"initialized","emittedAtMs":-1}`,
+		`{"method":"initialized","emittedAtMs":1.5}`,
+		`{"method":"initialized","emittedAtMs":1e3}`,
+		`{"method":"initialized","emittedAtMs":9223372036854775808}`,
+		`{"method":"initialized","emittedAtMs":1,"emittedAtMs":2}`,
+		`{"method":"initialized","emittedAtMs":1,"unexpected":true}`,
+	} {
+		if _, err := p.Decode([]byte(raw)); err == nil {
+			t.Fatal("invalid timestamp envelope passed pinned decoder")
+		}
+	}
+}
+
 func TestPolicyObservedBootstrapPositiveControls(t *testing.T) {
 	p := NewPolicy()
 	b := policyFixture()
