@@ -85,6 +85,33 @@ func TestPrivateStoreAndSingleAuthority(t *testing.T) {
 	}
 }
 
+func TestAuthorityCanRestartWhileLaunchedChildSurvives(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state", "registry.db")
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	// Native runtimes may outlive the daemon. A descriptor inherited by this
+	// unrelated child must not keep the old daemon's authority lock alive.
+	child := exec.Command("/bin/sleep", "30")
+	if err := child.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		child.Process.Kill()
+		child.Wait()
+	})
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	replacement, err := Open(path)
+	if err != nil {
+		t.Fatalf("surviving native child blocked replacement authority: %v", err)
+	}
+	replacement.Close()
+}
+
 func TestIntentAttemptOutcomeAndOrderedJournal(t *testing.T) {
 	s := openTest(t)
 	v, op := recordTest(t, s)
