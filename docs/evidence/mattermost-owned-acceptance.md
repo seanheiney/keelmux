@@ -1,9 +1,9 @@
 # Owned Mattermost qualification
 
-The clean source `cb828b8a588f0ce6d49f36f696de5da78b08f66b` passed an
+The clean source `ef39b9e753ab270db900866bd6a81ed6e46ed927` passed an
 isolated real Mattermost test through both the channel service and source-built
 product daemon/CLI. The finite receipt is
-[`mattermost-owned-cb828b8.json`](mattermost-owned-cb828b8.json). This receipt
+[`mattermost-owned-ef39b9e.json`](mattermost-owned-ef39b9e.json). This receipt
 qualifies that source and environment; an integrated or packaged release needs
 its own exact-source run.
 
