@@ -376,5 +376,27 @@
     "message_sha256": "e95f40bd2cdd1f13c6c6f28048c3bfa957d240d99f27147f4397ac21a68166ec",
     "read_status": 200,
     "unique_exact_message": true
+  },
+  "fuller_feature_candidate_hold": {
+    "source_sha": "e80486f0fc7601db0608efaf8370d7bebd08ec82",
+    "plane": {
+      "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+      "comment_id": "7abbc90f-db9f-481d-9580-c7c79e4b197a",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true,
+      "source_sha": "e80486f0fc7601db0608efaf8370d7bebd08ec82",
+      "state": "In Progress",
+      "release_state": "held-no-tag"
+    },
+    "mattermost": {
+      "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+      "post_id": "y4m5kg9odtgqzjzci9wyagta4a",
+      "url": "https://chat.sean.net/seannet/pl/y4m5kg9odtgqzjzci9wyagta4a",
+      "message_sha256": "85346a0b9de7bb63cef40e97d7201f1478ad4ec5fa51415c33a1296d7b4703ef",
+      "read_status": 200,
+      "unique_exact_message": true
+    },
+    "publication": "held; no new tag or release"
   }
 }
