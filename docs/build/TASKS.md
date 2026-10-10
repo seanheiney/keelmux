@@ -22,7 +22,19 @@ Goldeneye [Keelmux / KEELMUX Plane](https://plane.local.sean.network/goldeneye/p
 | BP-014 / KEELMUX-4 | Commercial documentation and GitHub Pages | Static builder, 10 groups and 55 browser layouts qualified; deployment pending | integrated_acceptance; captain | Canonical guides and truthful qualification map | Responsive accessible navigation/search/install copy, actual qualified terminal images, complete guides and source-built static artifact |
 | BP-015 | Native PTY/process supervision without required tmux | Native default integrated; full race/vet and actual no-tmux daemon-loss proof passed; native providers/packages active | native_supervisor (GPT-6 Astra Ultra); GPT-6.1 Sol Ultra captain | Existing runtime/identity/journal contracts | Persistent owned PTY/process helpers, writer fencing, bounded parsed screen recovery, actual Unicode/resize/Ctrl-C/detach/reconnect and daemon-loss proof without tmux installed |
 
-Switcher/inbox refinement and owned real Mattermost qualification have integrated evidence. Current parallel streams are native supervision, managed IRCD, and the documentation site. The captain owns shared contracts, daemon/CLI/transport wiring, manifests, release qualification and integration. Workers publish contracts before dependencies and edit separate paths/worktrees. No worker may alter the frozen v0.1.0 tag or release binaries.
+## Five development lanes
+
+The owner requested at least five lanes on 2026-10-10. All five have specialist assignments; the execution pool permits three workers alongside the persistent captain, so completed or waiting lanes yield to the next independent work. Each contribution has its own paths/worktree and exact-source acceptance. The captain integrates shared interfaces and runs package/release gates.
+
+| Lane | Owner | Work and allowed paths | Current evidence / next gate |
+| --- | --- | --- | --- |
+| 1 · Native runtime | native_supervisor · GPT-6 Astra Ultra | Native PTY/process adapter and standalone provider acceptance | Strict Codex 0.159.0 and Claude 2.1.296 source proof passed at `4c265651`; package proof and independent controller review next |
+| 2 · Managed IRC | linux_runtime; managed_irc_channels | Pinned Ergo lifecycle/accounts and opt-in product acceptance | macOS/Linux module race/vet passed; actual macOS CLI/TLS/channel/inbox/reply/restart passed 50 checks at `0d1fd5a`; final source/package rerun next |
+| 3 · Installer and package | integrated_acceptance; captain; linux_runtime | Installer controls, release/runtime harnesses and exact archives | 22 controls and actual legacy archive compatibility passed; documented dependency repair removes startup terminal queries; clean schema2 macOS/Linux proof active |
+| 4 · Terminal UX and docs | terminal_ux | Selected runtime/repair affordance, three terminal-size captures, canonical guides and static site | Building compact truthful runtime/recovery context; source and visual review before integration; Pages deployment separate |
+| 5 · Structured Codex control | codex_controller · GPT-6 Astra Ultra | New controller module and its research/evidence only | Implementing durable primary lifecycle under the existing common authority; no new writer lease or model-submit capability; independent review before product wiring |
+
+Switcher/inbox refinement and owned real Mattermost qualification have integrated evidence. The captain owns shared contracts, daemon/CLI/transport wiring, manifests, release qualification and integration. Workers publish contracts before dependencies and edit separate paths/worktrees. No worker may alter the frozen v0.1.0 tag or release binaries.
 
 Tasks are implementation milestones, not shipped feature claims. Split them into small issues before parallel assignment. BP-008 remains an early experiment even while local terminal alpha is developed.
 

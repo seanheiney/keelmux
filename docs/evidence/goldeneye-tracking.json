@@ -127,5 +127,11 @@
     "message_sha256": "f50b30d4be6fead7ff4c9e5744eee8067e61842ce0c9dc0558869058f13cf4a1",
     "read_status": 200,
     "unique_exact_message": true
+  },
+  "development_lanes_comment": {
+    "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+    "comment_id": "994132f9-52f7-4d54-8157-e22e8e2caab0",
+    "write_status": 201,
+    "read_status": 200
   }
 }
