@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	"github.com/coder/websocket"
@@ -59,14 +60,54 @@ func Dial(ctx context.Context, path string) (*Conn, error) {
 	if err := privateSocket(path); err != nil {
 		return nil, err
 	}
-	transport := &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, "unix", path)
+	// Malformed HTTP upgrades can leave net/http's request lifetime before
+	// websocket.Dial validates them. Own cancellation through error cleanup.
+	var mu sync.Mutex
+	var raw []net.Conn
+	canceled := false
+	closeRaw := func() {
+		mu.Lock()
+		canceled = true
+		connections := append([]net.Conn(nil), raw...)
+		mu.Unlock()
+		for _, c := range connections {
+			_ = c.Close()
+		}
+	}
+	stopWatch := context.AfterFunc(ctx, closeRaw)
+	defer stopWatch()
+	transport := &http.Transport{DisableKeepAlives: true, DialContext: func(inner context.Context, _, _ string) (net.Conn, error) {
+		c, err := (&net.Dialer{}).DialContext(inner, "unix", path)
+		if err != nil {
+			return nil, err
+		}
+		mu.Lock()
+		if canceled {
+			mu.Unlock()
+			_ = c.Close()
+			err := ctx.Err()
+			if err == nil {
+				err = net.ErrClosed
+			}
+			return nil, err
+		}
+		raw = append(raw, c)
+		mu.Unlock()
+		return c, nil
 	}}
 	c, _, err := websocket.Dial(ctx, "ws://localhost/", &websocket.DialOptions{
-		HTTPClient:      &http.Client{Transport: transport},
+		HTTPClient:      &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
 		CompressionMode: websocket.CompressionDisabled,
 	})
 	if err != nil {
+		closeRaw()
+		transport.CloseIdleConnections()
+		return nil, err
+	}
+	stopWatch()
+	if err := ctx.Err(); err != nil {
+		closeRaw()
+		_ = c.CloseNow()
 		transport.CloseIdleConnections()
 		return nil, err
 	}
@@ -120,8 +161,8 @@ func (c *Conn) Close() error {
 }
 
 func validatePath(path string) error {
-	if !filepath.IsAbs(path) || len(path) > 100 {
-		return errors.New("broker socket requires a short absolute path")
+	if !filepath.IsAbs(path) || filepath.Clean(path) != path || len(path) > 100 {
+		return errors.New("broker socket requires a clean short absolute path")
 	}
 	return nil
 }

@@ -91,8 +91,19 @@ const (
 )
 
 type Baseline struct {
-	ProtocolVersion string
-	NativeBootstrap map[string]json.RawMessage
+	ProtocolVersion  string
+	Workspace        string
+	WorkspaceAliases []string // Home-verified aliases; never resolved at an entry.
+	NativeBootstrap  map[string]json.RawMessage
+}
+
+// OutputContext comes from the broker's trusted typed-ID/channel request map.
+// OriginalRequest is nil only for unsolicited native notifications/callbacks.
+type OutputContext struct {
+	Recipient         ConnectionBinding
+	UpstreamChannelID domain.ID
+	OriginalRequest   *Frame
+	OriginOperationID domain.ID
 }
 type Policy interface {
 	// Accept absent jsonrpc/"2.0"; reject malformed/batch/duplicate-key envelopes.
@@ -100,7 +111,7 @@ type Policy interface {
 	// Default-deny by schema/parameters/role; Authority checks one-shot bootstrap.
 	Classify(ConnectionBinding, Frame, Baseline) (EffectClass, error)
 	// Recheck live read scope; filter IDs/cursors and withhold unknown/global data.
-	NativeOutput(ConnectionBinding, Frame) (Frame, bool, error)
+	NativeOutput(OutputContext, Frame) (Frame, bool, error)
 }
 
 const (
@@ -119,7 +130,7 @@ type Intent struct {
 	UpstreamChannelID   domain.ID
 	DownstreamRequestID json.RawMessage // Separate from the persisted upstream Frame.ID.
 	Frame               Frame
-	CanonicalHash       [32]byte // Semantic target+payload; exclude only transport IDs.
+	CanonicalHash       [32]byte // Authority recomputes target+payload; exclude only transport IDs.
 	ClientUserMessageID string   // Persist before turn/start; not native idempotency.
 }
 type Receipt struct {
