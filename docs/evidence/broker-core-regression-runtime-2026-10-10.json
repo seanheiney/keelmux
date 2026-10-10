@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "tested_sha": "a0787357dc8c8cb3749deca43074fd4beafff1ca",
+  "verification_utc": "2026-10-10T18:57:29.968910+00:00",
+  "scope": "legacy_terminal_regression_on_codex_broker_source; actual Codex and Claude programs; no model turn or broker native-link claim",
+  "build": {
+    "command": "make build",
+    "result": "pass"
+  },
+  "source_identity": {
+    "command": "git diff --exit-code a0787357dc8c8cb3749deca43074fd4beafff1ca -- cmd internal go.mod go.sum Makefile",
+    "before_native_runs": "empty",
+    "after_native_runs": "empty"
+  },
+  "commands": [
+    "python3 tests/native_acceptance.py --report docs/evidence/broker-core-regression-native-core-2026-10-10.json --native-workspace /Volumes/DataSSD1/agent-backplane",
+    "python3 tests/native_gateway.py --report docs/evidence/broker-core-regression-native-gateway-2026-10-10.json --native-workspace /Volumes/DataSSD1/agent-backplane"
+  ],
+  "binary_sha256_before_and_after": {
+    "bp": "cac659f0ba230576f68ac50746ff2e492607866d24030bc8698ef26bf5ef7849",
+    "bpd": "17585c5be64c9cc4e53ad9257b8dfc438e018c830035a8d838a6747868b4de7b",
+    "bpg": "c527137fa31a1a23a91432b2b7b6e3dff86678b12f1eca804977cb9c137e3674"
+  },
+  "harness_sha256_before_and_after": {
+    "native_acceptance.py": "4480a541aea72432f8f0f497841f6a4b358d1e3d7d4b80f985f4d64a3301248f",
+    "native_gateway.py": "00255959715e48e1675f9ef55d3a76157dba4b786f20e537cd3f451c245fe3a6",
+    "gateway_acceptance.py": "fb4066ab7531bf58dc1459569e3a781e48bb9348d8f23dff0a99dbc51904f014"
+  },
+  "reports": {
+    "docs/evidence/broker-core-regression-native-core-2026-10-10.json": {
+      "sha256": "ff01e35a8352930d9f561f0a5398249e5a94fdd96dd9fc13a5481f1423958765",
+      "checks": 8,
+      "passes": 8,
+      "failures": 0
+    },
+    "docs/evidence/broker-core-regression-native-gateway-2026-10-10.json": {
+      "sha256": "ce8d44c979fba2920712f9ad4b8c89e136be638aa7ac4824b933ee7018dbe4bd",
+      "checks": 3,
+      "passes": 3,
+      "failures": 0
+    }
+  },
+  "cleanup": {
+    "owned_daemons_observed": 3,
+    "owned_entry_processes_observed": 1,
+    "all_observed_owned_temporary_state_removed": true,
+    "no_observed_owned_daemon_entry_or_tmux_socket_process_left": true,
+    "generated_python_cache_removed": true,
+    "default_user_tmux_used": false
+  },
+  "native_model_prompt_submitted": false,
+  "native_enter_sent": false,
+  "native_skill_invocation": "not_run",
+  "auth_login_billing_changes": false,
+  "missing_evidence": [
+    "Codex semantic broker native-link/bootstrap journey",
+    "authenticated model turns and verified effective account/model",
+    "actual old-version registry migration with live native sessions",
+    "real independent remote hosts and enrollment/authentication",
+    "host reboot/native resume",
+    "native skill loading/invocation",
+    "native-rendering entry crash recovery",
+    "display backpressure stress",
+    "cross-provider execution movement or continuity",
+    "Mattermost/IRC delivery",
+    "independent-user simplicity/accessibility pilot"
+  ]
+}
