@@ -76,7 +76,7 @@ func (m *Manager) BeginChannel(ctx context.Context, channel string, threadID, op
 	} else if !os.IsNotExist(e) {
 		return ChannelOperation{}, false, e
 	}
-	if _, e = m.probe(ctx, c); e != nil {
+	if e = m.requireLive(ctx, r); e != nil {
 		return ChannelOperation{}, false, e
 	}
 	if e = m.confirmedAccount(ctx, c); e != nil {
@@ -128,7 +128,7 @@ func (m *Manager) ConfirmChannel(ctx context.Context, channel string, threadID d
 	if e != nil {
 		return ChannelOperation{}, e
 	}
-	if _, e = m.probe(ctx, c); e != nil {
+	if e = m.requireLive(ctx, r); e != nil {
 		return ChannelOperation{}, e
 	}
 	if e = m.confirmedAccount(ctx, c); e != nil {

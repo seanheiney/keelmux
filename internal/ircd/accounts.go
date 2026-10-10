@@ -60,6 +60,9 @@ func (m *Manager) EnsureAccount(ctx context.Context, account string) (Credential
 		return Credential{}, ErrRepair
 	}
 	c := r.Config
+	if e = m.requireLive(ctx, r); e != nil {
+		return Credential{}, e
+	}
 	if account != c.Account {
 		return Credential{}, ErrConflict
 	}

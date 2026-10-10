@@ -41,6 +41,9 @@ func (m *Manager) Init(ctx context.Context, opts InitOptions) (Config, error) {
 			return Config{}, ErrConflict
 		}
 		if r.Stage != "ready" {
+			if privateMetadata(filepath.Join(m.dir, "ergo.db"), 0600) != nil {
+				return Config{}, ErrUncertain
+			}
 			if _, e = m.command(ctx, r.Config.Runtime.Path, "run", "--conf", filepath.Join(m.dir, "ergo.yaml"), "--smoke", "--quiet"); e != nil {
 				return Config{}, ErrRepair
 			}
@@ -259,6 +262,11 @@ func (m *Manager) readConfig(ctx context.Context) (configRecord, error) {
 		b, e := readFile(filepath.Join(m.dir, name), 128<<10, 0600)
 		if e != nil || digest(b) != want || len(want) != 64 {
 			return r, ErrRepair
+		}
+	}
+	if r.Stage == "ready" {
+		if privateMetadata(filepath.Join(m.dir, "ergo.db"), 0600) != nil {
+			return configRecord{}, ErrRepair
 		}
 	}
 	return r, nil

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"github.com/seanheiney/keelmux/internal/config"
 	"io"
 	"net/http"
 	"os"
@@ -204,6 +205,9 @@ func (m *Manager) runtimeInfo(ctx context.Context) (RuntimeInfo, error) {
 	e := readJSON(filepath.Join(m.dir, "runtime.json"), &r)
 	if e != nil {
 		return r, e
+	}
+	if config.EnsurePrivateDirectory(filepath.Join(m.dir, "runtime")) != nil {
+		return RuntimeInfo{}, ErrRepair
 	}
 	target, p, e := nativePin()
 	if e != nil || r.Version != Version || r.Source != SourceCommit || r.Target != target || r.ArchiveSHA256 != p.sha || r.Path != filepath.Join(m.dir, "runtime", "ergo") {

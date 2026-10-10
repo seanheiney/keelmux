@@ -3,11 +3,8 @@ package ircd
 import (
 	"bytes"
 	"context"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"syscall"
 	"testing"
 	"time"
 
@@ -26,7 +23,9 @@ func TestRealPinnedServer(t *testing.T) {
 		t.Fatal(e)
 	}
 	dir := filepath.Join(t.TempDir(), "server")
-	m, e := New(dir)
+	supervisor := newTestSupervisor(dir)
+	t.Cleanup(supervisor.cleanup)
+	m, e := NewWithSupervisor(dir, supervisor)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -37,35 +36,37 @@ func TestRealPinnedServer(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	cmd := exec.Command("/bin/sh", "-c", `umask 077; exec "$@"`, "private-ergo", c.Runtime.Path, "run", "--conf", filepath.Join(dir, "ergo.yaml"), "--quiet")
-	cmd.Dir = dir
-	cmd.Env = []string{"PATH=/usr/bin:/bin", "HOME=" + dir, "TMPDIR=" + dir}
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	if e = cmd.Start(); e != nil {
-		t.Fatal(e)
+	operation := domain.NewID("operation")
+	supervisor.loseLaunch = true
+	if _, e = m.Start(context.Background(), operation); e != ErrUncertain {
+		t.Fatal("lost launch ACK", e)
 	}
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
-	t.Cleanup(func() {
-		cmd.Process.Signal(syscall.SIGTERM)
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			cmd.Process.Kill()
-			<-done
-		}
-	})
+	supervisor.loseLaunch = false
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		_, e = m.probe(context.Background(), c)
-		if e == nil {
+		status, e := m.Status(context.Background())
+		if e == nil && status.Alive {
 			break
 		}
 		if time.Now().After(deadline) {
 			t.Fatal("real status probe", e)
 		}
 		time.Sleep(20 * time.Millisecond)
+	}
+	reopened, e := NewWithSupervisor(dir, supervisor)
+	if e != nil {
+		t.Fatal(e)
+	}
+	m = reopened
+	status, e := m.Start(context.Background(), operation)
+	if e != nil || !status.Alive || supervisor.launches != 1 {
+		t.Fatal("readonly launch reconciliation", e)
+	}
+	if _, e = m.Start(context.Background(), domain.NewID("operation")); e != ErrConflict || supervisor.launches != 1 {
+		t.Fatal("duplicate live start", e)
+	}
+	if e = m.Stop(context.Background(), domain.NewID("execution")); e != ErrConflict || supervisor.stops != 0 {
+		t.Fatal("foreign instance stop", e)
 	}
 	cred, e := m.EnsureAccount(context.Background(), c.Account)
 	if e != nil || cred.Account != c.Account || cred.CredentialRef != c.CredentialRef {
@@ -104,6 +105,21 @@ func TestRealPinnedServer(t *testing.T) {
 	}
 	if _, e = m.ConfirmChannel(context.Background(), "#keelmux-owned", thread); e != ErrUncertain {
 		t.Fatal("invented registration proof", e)
+	}
+	supervisor.loseStop = true
+	if e = m.Stop(context.Background(), status.Instance); e != ErrUncertain {
+		t.Fatal("lost stop ACK", e)
+	}
+	supervisor.loseStop = false
+	if e = m.Stop(context.Background(), status.Instance); e != nil || supervisor.stops != 1 {
+		t.Fatal("read-only stop reconciliation", e)
+	}
+	replacement, e := m.Restart(context.Background(), status.Instance, domain.NewID("operation"))
+	if e != nil || !replacement.Alive || replacement.Instance == status.Instance || supervisor.launches != 2 {
+		t.Fatal("explicit replacement", e)
+	}
+	if e = m.Stop(context.Background(), status.Instance); e != ErrConflict {
+		t.Fatal("stale instance accepted")
 	}
 	token, _ := readFile(filepath.Join(dir, "admin.token"), 8192, 0600)
 	token[0] = 'x'

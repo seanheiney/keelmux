@@ -203,3 +203,17 @@ func (b *boundedOutput) Write(p []byte) (int, error) {
 	b.data = append(b.data, p...)
 	return n, nil
 }
+
+func privateMetadata(path string, mode os.FileMode) error {
+	fd, e := syscall.Open(path, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC|syscall.O_NONBLOCK, 0)
+	if e != nil {
+		return ErrRepair
+	}
+	f := os.NewFile(uintptr(fd), path)
+	defer f.Close()
+	i, e := f.Stat()
+	if e != nil || !privateInfo(i, mode) {
+		return ErrRepair
+	}
+	return nil
+}

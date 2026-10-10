@@ -30,12 +30,12 @@ type Config struct {
 	Runtime                                                        RuntimeInfo
 }
 type Status struct {
-	Config                Config
-	Instance, OperationID domain.ID
-	State                 string
-	Alive                 bool
-	Version, StartTime    string
-	ObservedAt            time.Time
+	Config                                       Config
+	Instance, OperationID                        domain.ID
+	State                                        string
+	Alive                                        bool
+	Version, StartTime, GoVersion, RuntimeCommit string
+	ObservedAt                                   time.Time
 }
 type ChannelOperation struct {
 	ID, ServerID, ThreadID              domain.ID
