@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/seanheiney/keelmux/internal/domain"
+	"golang.org/x/sys/unix"
 )
 
 var helperPath string
@@ -510,5 +511,29 @@ func TestPrivateStateRejectsSymlinkAndPublicDirectory(t *testing.T) {
 	}
 	if _, err := New(private); err == nil {
 		t.Fatal("public state accepted")
+	}
+}
+
+func TestPrivateStateSpecialFilesFailWithoutBlocking(t *testing.T) {
+	dir := t.TempDir()
+	fifo := filepath.Join(dir, "fifo")
+	if err := unix.Mkfifo(fifo, 0600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link")
+	if err := os.Symlink(fifo, link); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{fifo, dir, link} {
+		done := make(chan error, 1)
+		go func() { _, err := readPrivate(path); done <- err }()
+		select {
+		case err := <-done:
+			if err == nil {
+				t.Fatalf("special file accepted: %s", path)
+			}
+		case <-time.After(time.Second):
+			t.Fatalf("special file blocked: %s", path)
+		}
 	}
 }

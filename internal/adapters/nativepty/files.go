@@ -27,7 +27,7 @@ func privateDirectory(path string) error {
 	return nil
 }
 func openPrivate(path string, flags int) (*os.File, error) {
-	fd, err := unix.Open(path, flags|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0600)
+	fd, err := unix.Open(path, flags|unix.O_NOFOLLOW|unix.O_CLOEXEC|unix.O_NONBLOCK, 0600)
 	if err != nil {
 		return nil, &os.PathError{Op: "open", Path: path, Err: err}
 	}

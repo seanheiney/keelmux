@@ -4,124 +4,176 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
+
+	"github.com/charmbracelet/x/ansi"
 )
 
-// outputFilter frames terminal controls across arbitrary PTY read boundaries.
-// Only completed, bounded sequences reach the tracker. OSC/DCS/APC/PM/SOS are
-// state-only (never forwarded to clients); known queries are answered once by
-// the supervisor. Original live printable/key-independent bytes are preserved.
+// outputFilter uses the same standards-aware parser as the terminal tracker.
+// Only regenerated complete controls reach clients: C0 inside ESC/CSI, raw C1
+// framing and UTF-8 continuation bytes cannot escape the control policy.
 type outputFilter struct {
-	state    byte
-	sequence []byte
-	overflow bool
+	parser           *ansi.Parser
+	visible, replies []byte
 }
 
-func (s *terminalScreen) process(data []byte) (visible, replies []byte) {
-	emit := func(p []byte) { _, _ = s.emulator.Write(p); visible = append(visible, p...) }
-	complete := func(blocked bool) {
-		seq := s.filter.sequence
-		if !s.filter.overflow {
-			_, _ = s.emulator.Write(seq)
-			answer, query := s.query(seq)
-			if query {
-				if len(replies)+len(answer) <= maxInput {
-					replies = append(replies, answer...)
-				} else {
-					s.degraded = true
-				}
-			} else if !blocked {
-				visible = append(visible, seq...)
-			}
-		} else {
-			s.degraded = true
+func (s *terminalScreen) initFilter() {
+	f := &s.filter
+	f.parser = ansi.NewParser()
+	f.parser.SetDataSize(65536)
+	f.parser.SetParamsSize(32)
+	control := func(sequence []byte, blocked bool) {
+		before := s.emulator.CursorPosition()
+		_, _ = s.emulator.Write(sequence)
+		after := s.emulator.CursorPosition()
+		// Positioning/erasure operations terminate the streaming grapheme tail.
+		// SGR and queries preserve delayed wrap, as real terminals do.
+		preserveWrap := len(sequence) > 2 && strings.ContainsRune("mnctp", rune(sequence[len(sequence)-1]))
+		s.glyph = ""
+		if before != after || !preserveWrap {
+			s.pendingWrap = false
 		}
-		s.filter.sequence = s.filter.sequence[:0]
-		s.filter.state = 0
-		s.filter.overflow = false
-	}
-	var plain []byte
-	flush := func() {
-		if len(plain) > 0 {
-			emit(plain)
-			plain = plain[:0]
-		}
-	}
-	for _, b := range data {
-		if s.filter.state == 0 {
-			if b == 0x1b {
-				flush()
-				s.filter.sequence = append(s.filter.sequence[:0], b)
-				s.filter.state = 'e'
+		answer, query := s.query(sequence)
+		if query {
+			if len(f.replies)+len(answer) <= maxInput {
+				f.replies = append(f.replies, answer...)
 			} else {
-				plain = append(plain, b)
+				s.degraded = true
 			}
-			continue
-		}
-		if (b == 0x18 || b == 0x1a) && s.filter.state != 'o' && s.filter.state != 's' && s.filter.state != 'O' && s.filter.state != 'S' {
-			s.filter = outputFilter{}
-			continue
-		}
-		if b == 0x1b && (s.filter.state == 'c' || s.filter.state == 'i' || s.filter.state == 'e') {
-			s.filter.sequence = []byte{b}
-			s.filter.state = 'e'
-			s.filter.overflow = false
-			continue
-		}
-		if len(s.filter.sequence) < 65536 {
-			s.filter.sequence = append(s.filter.sequence, b)
-		} else {
-			s.filter.overflow = true
-		}
-		switch s.filter.state {
-		case 'e':
-			switch b {
-			case '[':
-				s.filter.state = 'c'
-			case ']':
-				s.filter.state = 'o'
-			case 'P', '_', '^', 'X':
-				s.filter.state = 's'
-			default:
-				if b >= 0x20 && b <= 0x2f {
-					s.filter.state = 'i'
-				} else {
-					complete(false)
-				}
-			}
-		case 'i':
-			if b >= 0x30 && b <= 0x7e {
-				complete(false)
-			}
-		case 'c':
-			if b >= 0x40 && b <= 0x7e {
-				complete(false)
-			}
-		case 'o':
-			if b == 7 {
-				complete(true)
-			} else if b == 0x1b {
-				s.filter.state = 'O'
-			}
-		case 's':
-			if b == 0x1b {
-				s.filter.state = 'S'
-			}
-		case 'O':
-			if b == '\\' {
-				complete(true)
-			} else if b != 0x1b {
-				s.filter.state = 'o'
-			}
-		case 'S':
-			if b == '\\' {
-				complete(true)
-			} else if b != 0x1b {
-				s.filter.state = 's'
-			}
+		} else if !blocked {
+			f.visible = append(f.visible, sequence...)
 		}
 	}
-	flush()
-	return visible, replies
+	f.parser.SetHandler(ansi.Handler{
+		Print: func(r rune) { s.writeGlyph(r); f.visible = utf8.AppendRune(f.visible, r) },
+		Execute: func(b byte) {
+			// Normalize supported C1 cursor controls into unambiguous seven-bit form.
+			switch b {
+			case 0x84:
+				control([]byte("\x1bD"), false)
+			case 0x85:
+				control([]byte("\x1bE"), false)
+			case 0x8d:
+				control([]byte("\x1bM"), false)
+			default:
+				if b < 0x20 || b == 0x7f {
+					control([]byte{b}, false)
+				}
+			}
+		},
+		HandleEsc: func(cmd ansi.Cmd) {
+			if cmd.Final() == '\\' && cmd.Intermediate() == 0 {
+				return
+			}
+			var seq []byte
+			seq = append(seq, 0x1b)
+			if c := cmd.Intermediate(); c != 0 {
+				seq = append(seq, byte(c))
+			}
+			seq = append(seq, byte(cmd.Final()))
+			control(seq, false)
+		},
+		HandleCsi: func(cmd ansi.Cmd, params ansi.Params) {
+			var out strings.Builder
+			out.WriteString("\x1b[")
+			if c := cmd.Prefix(); c != 0 {
+				out.WriteByte(byte(c))
+			}
+			params.ForEach(-1, func(i, p int, more bool) {
+				if p >= 0 {
+					fmt.Fprintf(&out, "%d", p)
+				}
+				if i < len(params)-1 {
+					if more {
+						out.WriteByte(':')
+					} else {
+						out.WriteByte(';')
+					}
+				}
+			})
+			if c := cmd.Intermediate(); c != 0 {
+				out.WriteByte(byte(c))
+			}
+			out.WriteByte(byte(cmd.Final()))
+			control([]byte(out.String()), false)
+		},
+		HandleOsc: func(_ int, data []byte) {
+			if len(data) >= 65536 {
+				s.degraded = true
+				return
+			}
+			seq := append([]byte("\x1b]"), data...)
+			seq = append(seq, 0x1b, '\\')
+			control(seq, true)
+		},
+		HandleDcs: func(_ ansi.Cmd, _ ansi.Params, data []byte) {
+			if len(data) >= 65536 {
+				s.degraded = true
+			}
+		},
+		HandleApc: func(data []byte) {
+			if len(data) >= 65536 {
+				s.degraded = true
+			}
+		},
+		HandlePm: func(data []byte) {
+			if len(data) >= 65536 {
+				s.degraded = true
+			}
+		},
+		HandleSos: func(data []byte) {
+			if len(data) >= 65536 {
+				s.degraded = true
+			}
+		},
+	})
+}
+func (s *terminalScreen) process(data []byte) (visible, replies []byte) {
+	if s.filter.parser == nil {
+		s.initFilter()
+	}
+	s.filter.visible = nil
+	s.filter.replies = nil
+	s.filter.parser.Parse(data)
+	return s.filter.visible, s.filter.replies
+}
+
+// The pinned emulator finalizes its last grapheme at each Write. Keep a bounded
+// tail across arbitrary PTY reads; an extending rune replaces that exact cell
+// with the complete cluster so accents, VS16 and ZWJ sequences are preserved.
+func (s *terminalScreen) writeGlyph(r rune) {
+	text := string(r)
+	if s.glyph != "" {
+		combined := s.glyph + text
+		cluster, _ := ansi.FirstGraphemeCluster([]byte(combined), ansi.GraphemeWidth)
+		if len(cluster) == len(combined) {
+			if len(combined) > 256 {
+				s.degraded = true
+				return
+			}
+			row := s.glyphY + 1
+			if s.modes[6] {
+				row -= s.top - 1
+			}
+			_, _ = s.emulator.Write([]byte(fmt.Sprintf("\x1b[%d;%dH", row, s.glyphX+1)))
+			_, _ = s.emulator.Write([]byte(combined))
+			s.glyph = combined
+			s.pendingWrap = s.modes[7] && s.glyphX >= s.emulator.Width()-1
+			return
+		}
+	}
+	pos := s.emulator.CursorPosition()
+	s.glyphX, s.glyphY = pos.X, pos.Y
+	if s.pendingWrap && s.modes[7] {
+		s.glyphX = 0
+		s.glyphY++
+		if s.glyphY >= s.emulator.Height() {
+			s.glyphY = s.emulator.Height() - 1
+		}
+	}
+	_, _ = s.emulator.Write([]byte(text))
+	s.glyph = text
+	s.pendingWrap = s.modes[7] && s.glyphX >= s.emulator.Width()-1
 }
 
 // query returns only terminal protocol responses; it never routes arbitrary

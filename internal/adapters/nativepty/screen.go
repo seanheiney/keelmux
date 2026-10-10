@@ -16,16 +16,21 @@ import (
 // never replay raw OSC/DCS/APC, clipboard effects, terminal queries or history.
 // The terminal emulator is a state tracker, not an input producer.
 type terminalScreen struct {
-	filter        outputFilter
-	emulator      *vt.Emulator
-	modes         map[int]bool
-	visible       bool
-	pen, savedPen uv.Style
-	top, bottom   int
-	degraded      bool
+	filter              outputFilter
+	glyph               string
+	glyphX, glyphY      int
+	pendingWrap         bool
+	emulator            *vt.Emulator
+	modes               map[int]bool
+	visible             bool
+	pen, savedPen       uv.Style
+	mainPen             uv.Style
+	mainTop, mainBottom int
+	top, bottom         int
+	degraded            bool
 }
 
-var restoredModes = []int{1, 7, 9, 25, 1000, 1002, 1003, 1004, 1006, 2004}
+var restoredModes = []int{1, 6, 7, 9, 25, 1000, 1002, 1003, 1004, 1006, 2004}
 
 func newTerminalScreen(cols, rows int) *terminalScreen {
 	s := &terminalScreen{emulator: vt.NewEmulator(cols, rows), modes: map[int]bool{7: true, 25: true}, visible: true, top: 1, bottom: rows}
@@ -48,7 +53,19 @@ func newTerminalScreen(cols, rows int) *terminalScreen {
 		if _, ok := mode.(ansi.DECMode); ok {
 			s.modes[mode.Mode()] = false
 		}
-	}, CursorVisibility: func(visible bool) { s.visible = visible }})
+	}, CursorVisibility: func(visible bool) { s.visible = visible }, AltScreen: func(on bool) {
+		if on {
+			s.mainPen = s.pen
+			s.mainTop = s.top
+			s.mainBottom = s.bottom
+			s.top = 1
+			s.bottom = s.emulator.Height()
+		} else {
+			s.pen = s.mainPen
+			s.top = s.mainTop
+			s.bottom = s.mainBottom
+		}
+	}})
 	s.emulator.RegisterCsiHandler('m', func(params ansi.Params) bool { uv.ReadStyle(params, &s.pen); return false })
 	s.emulator.RegisterCsiHandler('r', func(params ansi.Params) bool {
 		s.top, _, _ = params.Param(0, 1)
@@ -69,6 +86,8 @@ func newTerminalScreen(cols, rows int) *terminalScreen {
 func (s *terminalScreen) write(data []byte) { _, _ = s.process(data) }
 func (s *terminalScreen) resize(cols, rows int) {
 	s.emulator.Resize(cols, rows)
+	s.glyph = ""
+	s.pendingWrap = false
 	s.top = 1
 	s.bottom = rows
 }
@@ -143,7 +162,17 @@ func (s *terminalScreen) snapshot(writer bool) []byte {
 		fmt.Fprintf(&out, "\x1b[?%d%c", mode, suffix)
 	}
 	pos := s.emulator.CursorPosition()
-	fmt.Fprintf(&out, "\x1b[%d;%dH", pos.Y+1, pos.X+1)
+	row := pos.Y + 1
+	if s.modes[6] {
+		row -= s.top - 1
+	}
+	fmt.Fprintf(&out, "\x1b[%d;%dH", row, pos.X+1)
+	if s.pendingWrap {
+		if cell := s.emulator.CellAt(pos.X, pos.Y); cell != nil && cell.Width == 1 {
+			out.WriteString(cell.Style.String())
+			out.WriteString(cell.Content)
+		}
+	}
 	out.WriteString(s.pen.String())
 	return []byte(out.String())
 }

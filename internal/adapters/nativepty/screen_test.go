@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/vt"
 	"github.com/creack/pty"
 )
@@ -82,7 +83,7 @@ func TestProtocolQueriesSplitBoundedAndNoReplay(t *testing.T) {
 		t.Fatal("snapshot reissued protocol query")
 	}
 	s.process([]byte("\x1b]52;c;" + strings.Repeat("x", 70000) + "\a"))
-	if !s.degraded || len(s.filter.sequence) > 65536 {
+	if !s.degraded {
 		t.Fatal("oversized terminal control unbounded")
 	}
 }
@@ -236,5 +237,91 @@ func TestSlowReaderDoesNotBlockNativeOutput(t *testing.T) {
 	o, err := b.Inspect(context.Background(), ref)
 	if err != nil || !o.Alive {
 		t.Fatalf("native child lost %+v %v", o, err)
+	}
+}
+
+func TestFilterRejectsC0AndC1ControlBypass(t *testing.T) {
+	for _, input := range []string{"\x1b\r]52;c;ZXZpbA==\a", "\x9d52;c;ZXZpbA==\x9c", "\x1b\r[6n", "\x9b6n"} {
+		s := newTerminalScreen(80, 24)
+		var visible, replies []byte
+		for _, b := range []byte(input) {
+			v, r := s.process([]byte{b})
+			visible = append(visible, v...)
+			replies = append(replies, r...)
+		}
+		downstream := vt.NewEmulator(80, 24)
+		if c, ok := downstream.InputPipe().(io.Closer); ok {
+			_ = c.Close()
+		}
+		effects := 0
+		downstream.RegisterOscHandler(52, func([]byte) bool { effects++; return true })
+		downstream.RegisterCsiHandler('n', func(_ ansi.Params) bool { effects++; return true })
+		_, _ = downstream.Write(visible)
+		downstream.Close()
+		s.close()
+		if effects != 0 {
+			t.Fatalf("control bypass input %q -> %q", input, visible)
+		}
+		if strings.Contains(input, "6n") && len(replies) == 0 {
+			t.Fatalf("query interception bypass %q", input)
+		}
+	}
+	s := newTerminalScreen(80, 24)
+	defer s.close()
+	v, _ := s.process([]byte("Ý中文"))
+	if string(v) != "Ý中文" {
+		t.Fatalf("UTF-8 continuation byte treated as C1: %q", v)
+	}
+}
+func TestSnapshotPreservesSplitGraphemeTail(t *testing.T) {
+	for _, chunks := range [][]string{{"e", "\u0301", "x"}, {"❤", "\ufe0f", "x"}, {"👩", "\u200d", "💻", "x"}, {"👩", "\U0001f3fd", "\u200d", "💻", "x"}} {
+		s := newTerminalScreen(80, 24)
+		for _, chunk := range chunks {
+			s.process([]byte(chunk))
+			s.snapshot(true)
+		}
+		expected := vt.NewEmulator(80, 24)
+		if c, ok := expected.InputPipe().(io.Closer); ok {
+			_ = c.Close()
+		}
+		_, _ = expected.Write([]byte(strings.Join(chunks, "")))
+		if got, want := s.emulator.String(), expected.String(); got != want {
+			t.Fatalf("split %q got %q want %q", chunks, got, want)
+		}
+		s.close()
+		expected.Close()
+	}
+}
+func TestSnapshotRestoresPendingWrap(t *testing.T) {
+	s := newTerminalScreen(5, 4)
+	defer s.close()
+	s.process([]byte("ABCDE"))
+	snapshot := s.snapshot(true)
+	client := vt.NewEmulator(5, 4)
+	if c, ok := client.InputPipe().(io.Closer); ok {
+		_ = c.Close()
+	}
+	defer client.Close()
+	_, _ = client.Write(snapshot)
+	v, _ := s.process([]byte("F"))
+	_, _ = client.Write(v)
+	if client.String() != s.emulator.String() {
+		t.Fatalf("pending wrap lost: %q vs %q", client.String(), s.emulator.String())
+	}
+}
+func TestSnapshotRestoresMainPenAfterAlternateScreen(t *testing.T) {
+	s := newTerminalScreen(40, 10)
+	defer s.close()
+	s.process([]byte("\x1b[31mA\x1b[?1049h\x1b[32mB\x1b[?1049l"))
+	client := vt.NewEmulator(40, 10)
+	if c, ok := client.InputPipe().(io.Closer); ok {
+		_ = c.Close()
+	}
+	defer client.Close()
+	_, _ = client.Write(s.snapshot(true))
+	v, _ := s.process([]byte("C"))
+	_, _ = client.Write(v)
+	if !client.CellAt(1, 0).Style.Equal(&s.emulator.CellAt(1, 0).Style) {
+		t.Fatal("restored active pen differs after alternate buffer exit")
 	}
 }

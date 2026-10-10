@@ -40,7 +40,9 @@ requested IDs/generation/workspace/argv/environment, resolved executable,
 effective-environment digest, a private auth nonce and inherited link token.
 Argv and environment values travel over an inherited pipe and are not persisted.
 
-Private state files use no-follow opens, owned 0600 files and a 0700 directory.
+Private state files use nonblocking no-follow opens before type validation,
+owned 0600 files and a 0700 directory. FIFO, directory and symlink state paths
+are rejected without waiting for a peer.
 Connections validate boot identity, supervisor PID/start, Unix peer PID/UID,
 socket type/mode and an exact authenticated runtime reference. Stop signals only
 the supervisor's direct `os.Process` handle, never a saved PID or process group.
@@ -51,8 +53,9 @@ to their own state and processes; this is cooperating ownership, not isolation.
 
 Live terminal bytes preserve native input, Unicode, escape keys, bracketed paste,
 resize and Ctrl-C. `Ctrl-G d` detaches; doubled Ctrl-G sends literal Ctrl-G.
-The tracker uses the pinned `charmbracelet/x/vt` emulator; reconnect restores the
-visible active screen, Unicode cells, SGR styling, cursor, vertical margins and
+The tracker uses the pinned `charmbracelet/x/vt` emulator with a bounded
+streaming grapheme tail for decomposed accents, variation selectors and ZWJ emoji; reconnect restores the
+visible active screen, Unicode cells, SGR styling, cursor, pending line wrap, vertical margins, origin mode and
 selected input modes through a fresh generated snapshot. Historical bytes are
 never replayed. Read-only attachment does not change the owned PTY dimensions.
 
@@ -61,7 +64,9 @@ CPR, status, primary/secondary device attributes, text dimensions, mode status,
 keyboard flags, version, and default foreground/background/cursor colors. These
 queries are stripped from client output and answered under the PTY write lock,
 including before the first client attaches. Snapshots cannot emit query answers.
-All OSC/DCS/APC/PM/SOS controls are suppressed from client output; clipboard,
+A standards-aware streaming parser normalizes C0-in-ESC and raw C1 framing while
+preserving UTF-8 continuation bytes. All OSC/DCS/APC/PM/SOS controls are suppressed
+from client output; clipboard,
 hyperlink, title and graphics side effects are not replayed. Unknown query
 capabilities are not invented.
 
@@ -97,7 +102,9 @@ single-launch behavior, missing/foreign supervisor identity, exact stop/link
 identity, private state and child umask, actual controller-process SIGKILL and
 recovery, one writer/read-only rules, Unicode, resize, Ctrl-C, raw escape keys,
 installed helper detach, bounded slow readers, screen/style/alternate-screen
-snapshots, and pre-attach CPR/DA readiness without model input.
+snapshots, pre-attach CPR/DA readiness without model input, C0/C1 query and
+clipboard-filter regressions, split combining/VS16/ZWJ sequences, pending wrap,
+main-buffer active pen restoration and finite-time special-file rejection.
 
 `go vet ./internal/adapters/nativepty ./cmd/keelmux-supervisor` checks both owned
 packages. Linux compilation is a separate check; macOS execution does not qualify
