@@ -1,0 +1,24 @@
+KEELMUX / All work
+0 in view / 0 total   g groups
+Search /
+OFFLINE / last observed inventory
+Reconnect with r. Attach is unavailable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Connection offline: 503: Owned fixture unavailable
+Enter attach  v read-only  / search  g groups  p draft  q quit

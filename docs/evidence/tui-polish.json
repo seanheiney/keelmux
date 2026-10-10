@@ -1,0 +1,294 @@
+{
+  "schema": 1,
+  "tested_source_sha": "f15340ad156c4985af78003d3c89b63aa7c0fd78",
+  "baseline_source_sha": "60b8bc705b2636b087bf2fd872e976aa466ad3e9",
+  "environment": {
+    "os": "macOS26.7.1",
+    "build": "25G309",
+    "arch": "arm64",
+    "go": "go1.26.6",
+    "term": "xterm-256color",
+    "capture_font": "Menlo16 cell raster"
+  },
+  "tests": {
+    "github.com/seanheiney/keelmux/internal/clientstate": {
+      "tests": 6,
+      "result": "pass"
+    },
+    "github.com/seanheiney/keelmux/internal/tui": {
+      "tests": 14,
+      "result": "pass"
+    },
+    "github.com/seanheiney/keelmux/cmd/bp": {
+      "tests": 3,
+      "result": "pass"
+    }
+  },
+  "commands": [
+    "go build -o work/tui-polish/keelmux-before ./cmd/bp (baseline60b8)",
+    "go build -o work/tui-polish/keelmux-after ./cmd/bp (clean tested source)",
+    "go test -race -json ./internal/tui ./internal/clientstate ./cmd/bp",
+    "go vet ./internal/tui ./internal/clientstate ./cmd/bp",
+    "python3 internal/tui/testdata/capture.py --binary work/tui-polish/keelmux-before --output work/tui-polish/before",
+    "python3 internal/tui/testdata/capture.py --binary work/tui-polish/keelmux-after --output work/tui-polish/after"
+  ],
+  "vet_result": "pass",
+  "capture_helper_sha256": "c13b1af0358af5ebb05be09457437eb73a5ce15655abf4ad199165a206d65956",
+  "captures": {
+    "before": [
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "inventory",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "f7fbacfd47e2db302e2bb5fc00d32f7646175b70c17adc5e07f42d2895d37fb1",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          120,
+          32
+        ],
+        "mode": "inventory",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "c799adb69778d40def4673327389bba954c09010ac6c143b99d684e23ed6d2fb",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          40,
+          14
+        ],
+        "mode": "inventory",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "4376b02731e98a431bbd8813318aea4e45a08b6a670d0c74e4e821e6ace79c42",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "empty",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "36de50dd0f8702f81d434b272009d8f47b58039c99b04c80b611feeb634f8622",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "offline",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "12500f4c9634a61c395f2334e833b3ca975ece4567b37fbd6482d059298eccf4",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "groups",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "367c95aa56d160c55333693540d7119401fe8f9a44c0f889dd1095e2f9433458",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "draft",
+        "binary_sha256": "f092f5591cbd7668795c7d4b0fe575fde99d1c34a615cbd8b755317a754ded23",
+        "raw_sha256": "f78af27404c932e17b0f6e4c9e71281e66ed43fec0ac55294c8764db2836807d",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      }
+    ],
+    "after": [
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "inventory",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "e22f41378b76086fa2c479b8148ad9c6f94147b97882a8f818252a00cd549a0f",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          120,
+          32
+        ],
+        "mode": "inventory",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "10235b911d2754c2ca11e966a33cdd9a41e44f58bda5454a87d7e6e6b429c6fd",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          40,
+          14
+        ],
+        "mode": "inventory",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "dd7065a0dc31c02ae0d73bee7f8bc21170f70b571612c5b2423052aae3bb3253",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "empty",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "4784152e1a9bca09cd87d569ade94114e2f814cc5a790146c29c71fb6446086c",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "offline",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "6c81286f33720d0fad19cc544c13f8e692939659bc3c0b97afb05e3b33a82434",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "groups",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "d40d71029cf98245d7b427b26306d4ff9b0023783f4bd5b2997864f3766815aa",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      },
+      {
+        "size": [
+          80,
+          24
+        ],
+        "mode": "draft",
+        "binary_sha256": "6a62ac8f88a0731bc8d1056a0e3165801f90c55374addf852b4f43b554f1fd66",
+        "raw_sha256": "343dce7d2fae9e59224d82f96824c130458f4d87139107034201c21b9c27e3d7",
+        "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+        "owned_state_removed": true,
+        "tui_quit_exit_zero_without_signals": true,
+        "actual_inventory_gets": 1,
+        "actual_mutating_requests": 0
+      }
+    ]
+  },
+  "artifact_sha256": {
+    "before-inventory-80x24.png": "4f82bd05a3cf6119a4c1f22aca8dcd14ef48927f65d6ed580b2fb429e2395a5f",
+    "before-inventory-80x24.txt": "9aa88d63be10051a982602c6ac95def690acfc2efdbcada1673438e0365d5e33",
+    "before-inventory-120x32.png": "0524231161a24d1aa8cc30394e18f3069d9584b929fc962cfdf7a0495a29d1d7",
+    "before-inventory-120x32.txt": "54837848375786ea2cd33bae9f0ad428db845455044a754d25323938c30eecd3",
+    "before-inventory-40x14.png": "97f3886a0de8931701a436050583f17566f0d28bf987a0d988884c2f21ed63c8",
+    "before-inventory-40x14.txt": "ace42623ca628f6a0f80761e6071983432ae28044c689e389481b7d395fc0805",
+    "before-empty-80x24.png": "a1985e68eb34d5703c4b02a67c2bde83044c1c03fce0bc80bc5c3285c54aaeb3",
+    "before-empty-80x24.txt": "56aa28f7f3b8d8235ff07e6a802d336c8284dc988a655f9fe1cd9e3959ccf242",
+    "before-offline-80x24.png": "3cbb6c2d1ac235e30cecd0f1aa8e417492174888a0b248497df785e45fe07e98",
+    "before-offline-80x24.txt": "9e3bb6e852b3a5c40a851ed4eed5bd02b1871c994ab9e20e3d289ec04a9d155e",
+    "before-groups-80x24.png": "f0f66faf814f9f95a840166afb3f5deeacc5a1e1e7d36a5e71170a00c670915a",
+    "before-groups-80x24.txt": "296ad20eec2db96877315e4702ab378cd53265ecfed3f58a9b9ebc8d4082101e",
+    "before-draft-80x24.png": "d74eb52e7857b01bef5960aedb0149daabafbe89e50611fe993de2ffd5d01ed5",
+    "before-draft-80x24.txt": "35e3af66b39fd713535c92c45158281947eff70b108d12062fcaead1ba4a4ed3",
+    "after-inventory-80x24.png": "e2e79acd17cfb50b54568cb8686c5af01e140851d94625f48c5f45863dcd4838",
+    "after-inventory-80x24.txt": "6de03d34eea029df1bf5a26abdc8105ef913bb0e16b9b232723296c11e0344d2",
+    "after-inventory-120x32.png": "64a159b5d0b88ff1d943ad3c5d3c97db17c65cdff35cc0581fabbef347143409",
+    "after-inventory-120x32.txt": "c95c37948cba573e8a332b7066d14aa029c86fd1370f8e83550dec6b03a00248",
+    "after-inventory-40x14.png": "b9d6526cfd64e03b73f779563262ef28efc922af01e7fa16ca18ebd6017d4080",
+    "after-inventory-40x14.txt": "a0367e8497ea285b46a49d048c0f26f889ac5ec0e4fa4c7b0cc09c968719c0ea",
+    "after-empty-80x24.png": "65dfaed75c5d8bbf38693e0b0dc6f1f8bb47ba52af0cedfccdcab60667db3ddd",
+    "after-empty-80x24.txt": "702abc8966525ae3c22fbec9690fde684025a6eb0b0c76a2643799e171c5f5ee",
+    "after-offline-80x24.png": "bbbeb864cc0766291f08e1bb93b09140a42c8b0aebbb9e048d41bb1097ee754d",
+    "after-offline-80x24.txt": "333e53c7433991dd6627647c2407514a62893cd9cc05bb131fde78534ed28cf0",
+    "after-groups-80x24.png": "699bb349938962a402f996a89f2f08491ee0e9db428537b86350094790a0acf6",
+    "after-groups-80x24.txt": "e3d4a2b38b5158f6a3477b3bfe3e751dc9783f458a4573c807f1a28ff4c0e8e2",
+    "after-draft-80x24.png": "f89cf2009cf6fb2c46c608769600651f968a7f7c84f1a47c799b8f7bafb36ad0",
+    "after-draft-80x24.txt": "7f50aef16c422b9c58316e74a819dd0b6bf83693e1df40cc04c3bf9d099120ff"
+  },
+  "qualified_change": {
+    "narrow40x14_visible_rows_before": 1,
+    "narrow40x14_visible_rows_after": 7,
+    "layout_tests": "48 color/monochrome views across four screens and six sizes, including wide graphemes and untrusted controls; resize retains exact selected row and attach action; durable recovery, group/filter/draft addressing controls"
+  },
+  "source_safety": {
+    "only_tui_implementation_changed": true,
+    "shared_entrypoints_store_protocol_release_unchanged": true,
+    "native_provider_launches": 0,
+    "product_daemon_launches": 0,
+    "tmux_launches": 0,
+    "model_prompts_submitted": 0
+  },
+  "limitations": [
+    "CUA refused com.apple.Terminal access: no native macOS Terminal screenshot",
+    "PNG rasterizes interpreted cells from actual PTY bytes; native font/theme/contrast and general terminal-emulator conformance not proven",
+    "Inventory is a deterministic private Unix HTTP fixture, not vendor/runtime evidence",
+    "No native attach/detach/reconnect rerun on changed source; ExecProcess lease/navigation regression is plumbing evidence",
+    "No packaged release/public push or Linux rendering proof"
+  ],
+  "diagnostics": [
+    "Initial helper batched draft shortcut+text, then used a premature fixed-delay screen assertion; final helper waits actual rendered mode",
+    "Initial helper stopped draining PTY during teardown and stalled; exact still-owned child lifetimes were stopped, helper repaired, final captures exit zero from q without signals"
+  ],
+  "result": "pass"
+}

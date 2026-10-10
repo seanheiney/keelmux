@@ -1,0 +1,24 @@
+  Keelmux / All work                                                0 sessions
+  / Search sessions
+    SESSION                                             PROVIDER    STATE
+  OFFLINE / last observed inventory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Connection offline; r reconnects. Attach unavailable.
+  r reconnect  / search  g groups
+  ↑/↓ select  g groups  p draft  r refresh  ? help  q quit

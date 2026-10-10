@@ -1,0 +1,24 @@
+  Keelmux / groups
+  Local collections · sessions keep running
+
+  › All work
+    API
+    Infrastructure
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Enter open  n new  c child  a add project  s pin session
+  d remove group  Esc return

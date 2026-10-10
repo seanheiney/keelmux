@@ -1,0 +1,24 @@
+  Keelmux / All work                                                0 sessions
+  / Search sessions
+    SESSION                                             PROVIDER    STATE
+  No sessions yet.
+  Launch with keelmux run codex or keelmux run claude.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ↑/↓ select  / search  g groups
+  ↑/↓ select  g groups  p draft  r refresh  ? help  q quit

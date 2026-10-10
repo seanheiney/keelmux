@@ -1,0 +1,24 @@
+KEELMUX / All work
+11 in view / 11 total   g groups
+Search /
+> api / tests  [codex / running]
+  billing / migration  [claude / running]
+  cli / docs  [codex / running]
+  data / import  [claude / running]
+  design / review  [codex / running]
+  edge / retries  [claude / missing]
+  gateway / reconnect  [codex / running]
+  infra / deploy  [claude / running]
+  search / indexing  [codex / running]
+  worker / queues  [claude / running]
+  zeta / cleanup  [codex / running]
+
+/work/keelmux/api / managed
+Model: unknown  Account: unknown
+Thread: thread_session_00
+Native attach supported; semantic delivery unavailable.
+
+
+
+
+Enter attach  v read-only  / search  g groups  p draft  q quit

@@ -1,0 +1,24 @@
+KEELMUX / local draft
+Thread: thread_session_00
+Recipient: lane_session_00
+Delivery unavailable; no prompt is submitted.
+Current target: codex / unknown
+
+Local addressed draft; no delivery._
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Text saves to this thread/recipient. Esc returns; Enter newline.
