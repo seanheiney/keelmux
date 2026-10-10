@@ -12,8 +12,10 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
+import time
 
 from release_acceptance import ALIASES, NAMES, Fixture, Harness, digest, need, snapshot
 
@@ -35,27 +37,48 @@ def run_native(h, argv, env, timeout=300, cleanup_timeout=90):
     h.commands += 1
     paths = [h.private / ('command-%d.%s' % (h.commands, stream))
              for stream in ('stdout', 'stderr')]
-    status = {'timed_out': False, 'graceful_cancel_requested': False,
+    status = {'timed_out': False, 'cancel_requested': False, 'graceful_cancel_requested': False,
               'cleanup_wait_expired': False}
-    with paths[0].open('wb') as out, paths[1].open('wb') as err:
-        for path in paths:
-            path.chmod(0o600)
-        with subprocess.Popen(argv, env=env, cwd=h.state, stdout=out, stderr=err) as child:
-            try:
-                child.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                status['timed_out'] = True
-                status['graceful_cancel_requested'] = True
-                child.terminate()
-                try:
-                    child.wait(timeout=cleanup_timeout)
-                except subprocess.TimeoutExpired:
-                    status['cleanup_wait_expired'] = True
-                    # This is the unreaped direct Python child, never a saved
-                    # provider/helper PID. Runtime cleanup remains unconfirmed.
-                    child.kill()
-                    child.wait(timeout=5)
-            status['returncode'] = child.returncode
+    def request_cancel(_signum, _frame):
+        # Keep ownership setup and cleanup atomic with respect to cancellation.
+        # A signal must not unwind Popen before we can cancel its exact child.
+        status['cancel_requested'] = True
+
+    previous_handlers = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)}
+    try:
+        for sig in previous_handlers:
+            signal.signal(sig, request_cancel)
+        with paths[0].open('wb') as out, paths[1].open('wb') as err:
+            for path in paths:
+                path.chmod(0o600)
+            with subprocess.Popen(argv, env=env, cwd=h.state, stdout=out, stderr=err) as child:
+                deadline = time.monotonic() + timeout
+                while child.poll() is None and not status['cancel_requested']:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        status['timed_out'] = True
+                        break
+                    try:
+                        child.wait(timeout=min(.1, remaining))
+                    except subprocess.TimeoutExpired:
+                        pass
+                    except KeyboardInterrupt:
+                        status['cancel_requested'] = True
+                if child.poll() is None:
+                    status['graceful_cancel_requested'] = True
+                    child.terminate()
+                    try:
+                        child.wait(timeout=cleanup_timeout)
+                    except subprocess.TimeoutExpired:
+                        status['cleanup_wait_expired'] = True
+                        # This is the unreaped direct Python child, never a saved
+                        # provider/helper PID. Runtime cleanup remains unconfirmed.
+                        child.kill()
+                        child.wait(timeout=5)
+                status['returncode'] = child.returncode
+    finally:
+        for sig, handler in previous_handlers.items():
+            signal.signal(sig, handler)
     return status
 
 
@@ -131,6 +154,7 @@ def main():
         report['native_cleanup_confirmed'] = (cleanup.get('owned_processes_no_longer_live') is True
                                                and cleanup.get('issues') == [])
         need(report['native_cleanup_confirmed'], 'native_cleanup_unconfirmed')
+        need(not native_run['cancel_requested'], 'native_harness_cancelled_after_cleanup')
         need(not native_run['timed_out'], 'native_harness_timed_out_after_cleanup')
         # The child freezes sibling bytes for its isolated process lifetime.
         # Prove these are exactly the binaries activated by the installer.

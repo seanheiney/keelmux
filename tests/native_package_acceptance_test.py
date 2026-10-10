@@ -3,8 +3,11 @@
 import json
 import os
 from pathlib import Path
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 
@@ -98,9 +101,58 @@ class PackageAcceptanceTest(unittest.TestCase):
     def test_completed_child_needs_no_signal(self):
         result = run_native(self.harness, [sys.executable, '-c', 'print("finite fixture")'],
                             dict(os.environ), timeout=3, cleanup_timeout=1)
-        self.assertEqual(result, {'timed_out': False, 'graceful_cancel_requested': False,
+        self.assertEqual(result, {'timed_out': False, 'cancel_requested': False, 'graceful_cancel_requested': False,
                                   'cleanup_wait_expired': False, 'returncode': 0})
         self.assertEqual((self.root / 'command-1.stdout').read_text(), 'finite fixture\n')
+
+    def test_wrapper_cancellation_waits_for_child_cleanup(self):
+        for cancellation in (signal.SIGINT, signal.SIGTERM):
+            with self.subTest(signal=cancellation):
+                root = self.root / str(cancellation)
+                root.mkdir()
+                fixture = root / 'fixture.py'
+                fixture.write_text(CANCELLABLE_FIXTURE)
+                code = r'''
+import json, os, sys
+from pathlib import Path
+from types import SimpleNamespace
+sys.path.insert(0, sys.argv[1])
+from native_package_acceptance import run_native
+root = Path(sys.argv[2])
+harness = SimpleNamespace(state=root, private=root, commands=0)
+result = run_native(harness, [sys.executable, str(root / 'fixture.py'), sys.argv[1],
+                             str(root), str(root / 'native.json')], dict(os.environ),
+                    timeout=30, cleanup_timeout=3)
+(root / 'wrapper.json').write_text(json.dumps(result))
+'''
+                wrapper = subprocess.Popen([sys.executable, '-c', code,
+                                            str(Path(__file__).parent), str(root)],
+                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                try:
+                    deadline = time.monotonic() + 5
+                    while not (root / 'ready').exists() and time.monotonic() < deadline:
+                        self.assertIsNone(wrapper.poll(), 'wrapper exited before owned child was ready')
+                        time.sleep(.02)
+                    self.assertTrue((root / 'ready').exists())
+                    wrapper.send_signal(cancellation)
+                    stdout, stderr = wrapper.communicate(timeout=5)
+                    self.assertEqual(wrapper.returncode, 0, (stdout, stderr))
+                    result = json.loads((root / 'wrapper.json').read_text())
+                    self.assertTrue(result['cancel_requested'])
+                    self.assertTrue(result['graceful_cancel_requested'])
+                    self.assertFalse(result['timed_out'])
+                    self.assertFalse(result['cleanup_wait_expired'])
+                    receipt = json.loads((root / 'native.json').read_text())
+                    self.assertEqual(receipt['result'], 'fail')
+                    self.assertTrue(receipt['cleanup']['owned_processes_no_longer_live'])
+                    self.assertEqual(receipt['cleanup']['issues'], [])
+                    requests = json.loads((root / 'requests.json').read_text())
+                    self.assertEqual(requests[0]['body']['execution_id'], 'owned-execution')
+                    self.assertEqual(requests[-1]['body']['instance'], 'owned-daemon-instance')
+                finally:
+                    if wrapper.poll() is None:
+                        wrapper.terminate()
+                        wrapper.communicate(timeout=5)
 
     def test_public_links_must_select_current_archive(self):
         prefix, bindir = self.root / 'install', self.root / 'bin'
