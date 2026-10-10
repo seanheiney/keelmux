@@ -1,4 +1,4 @@
-// Package codexbroker specifies an unimplemented local Codex 0.159.0 broker.
+// Package codexbroker bounds an experimental local Codex 0.159.0 broker.
 package codexbroker
 
 import (

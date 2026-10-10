@@ -2,7 +2,7 @@
 
 2026-10-10 · [tracking issue #12](https://github.com/seanheiney/agent-backplane/issues/12)
 
-**Decision:** the first runnable target is a private local broker for the real installed Codex 0.159.0 native CLI, zero-turn bootstrap/resume of one exact authoritative thread, and a typed scoped observer. `internal/codexbroker/contracts.go` defines proposed boundaries only. It implements no policy, durable actor, native lifecycle or semantic delivery. Existing terminal capability flags stay unchanged. No remote-machine, authenticated-turn or model-work claim follows from these interfaces or byte transport.
+**Decision:** the first runnable target is a private local broker for the real installed Codex 0.159.0 native CLI, zero-turn bootstrap/resume of one exact authoritative thread, and a typed scoped observer. The feature branch now contains a strict policy, private byte transport and experimental relay. Independent policy unit acceptance passed; durable actor integration, counted relay acceptance and the real native broker journey remain pending. Existing terminal capability flags stay unchanged. These internals do not add a product launcher, remote-machine support, authenticated turns or model-work evidence.
 
 ## Authority and identities
 
@@ -40,6 +40,8 @@ Decode the installed wire with jsonrpc either absent or exactly `2.0`; reject ba
 | Everything else | Deny until separately reviewed and tested; read-looking names do not establish safety. |
 
 The real native resume sends config with features.plugins=false, features.apps=false and web_search='cached'. Pin those exact reviewed defaults in the baseline; allowing arbitrary resume config is unsafe and rejecting all config breaks observed native startup. Suppress/redact `remoteControl/status/changed`, which can carry global server/install identifiers. The output policy receives a trusted upstream channel and original request from the broker's typed-ID map; client-supplied method names or coincident response IDs cannot establish that context. Contract values containing lease tokens are host-internal and must not be directly serialized to inventory/chat. Filter every native notification by permitted thread/turn scope, withhold unknown/unscoped events, and recheck live scope before output. A configured model name is not per-turn execution telemetry.
+
+The relay validates the pinned result body and selected native thread before settling a request acknowledgement. A mismatched or unsupported mapped result, unknown reply or privileged callback becomes a non-actionable durable blocker, rather than resolved idle evidence. Exact duplicate settled replies are recognized by channel, typed ID and full canonical frame digest. Actual output repeats projection inside `Authority.Deliver`, which holds the same gate as revocation through the final bounded downstream write. Disconnecting a native UI does not close its dedicated authoritative upstream channel.
 
 Later, separately authorized work may add bounded-text turn/start only while idle, exact-turn interrupt as its own durable intent, and tested typed command/file-change/user-input callbacks. Active turn/start can steer, so reject it initially. Defer steer, queues/goals writes, reviews, realtime, filesystem/command/process operations, config/auth writes or refresh, plugins/MCP/billing/uploads and other input forms. Never substitute terminal send-keys for denied semantic RPCs.
 
