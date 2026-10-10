@@ -1,0 +1,321 @@
+{
+  "authored_files": [
+    "README.md",
+    "PROVENANCE.json",
+    "verify.py"
+  ],
+  "copied_files": {
+    "LICENSE": {
+      "sha256": "69793670485e4ae8bf28fcbe5639141f604256d5bb6c1862571f3a32823fa221",
+      "upstream_path": "LICENSE"
+    },
+    "UPSTREAM_README.md": {
+      "sha256": "7e833229a4756671250358f368d6e7a140b868c77f6f7bd067541da2d664a4a5",
+      "upstream_path": "README.md"
+    },
+    "commands.go": {
+      "sha256": "e4733645ed4a3afe7b90585bc4014198f937d140d099b069ff16164d8e9fb949",
+      "upstream_path": "commands.go"
+    },
+    "commands_test.go": {
+      "sha256": "19474220d6821ffeb526a10b08f3a53f3e71a6cd8602881004ca8ab177379195",
+      "upstream_path": "commands_test.go"
+    },
+    "exec.go": {
+      "sha256": "80739d13c56f1a95ee08568fb667beb1edc9423f0d704afc9b32b97dba24f2d0",
+      "upstream_path": "exec.go"
+    },
+    "exec_test.go": {
+      "sha256": "0936acfeed563b6d7d1c67e5eefc5c6e893cd7f157b9bd6a9f1b3c42f5e1e1ec",
+      "upstream_path": "exec_test.go"
+    },
+    "focus.go": {
+      "sha256": "ac27153c7127a434edf501816150c1919fb6b8d9c8ddd542f4293a7e053a50d3",
+      "upstream_path": "focus.go"
+    },
+    "go.mod": {
+      "sha256": "903f2904b09b37dd74092f437ad306794e7633329ddc5af7b201d469e2d937fb",
+      "upstream_path": "go.mod"
+    },
+    "go.sum": {
+      "sha256": "5fe23fd458f3a5c92a77aa933e0a6d83de545a0b59b33c698a9c33e39d057755",
+      "upstream_path": "go.sum"
+    },
+    "inputreader_other.go": {
+      "sha256": "eb0ae77b31947e3e996b23de0b85b606c969b87a7a456ad564a3b1c3c3800b13",
+      "upstream_path": "inputreader_other.go"
+    },
+    "inputreader_windows.go": {
+      "sha256": "5e2fb998078e1455e9f8a5ec871f0ed950e219c93bbc04af17daa228074ba7ba",
+      "upstream_path": "inputreader_windows.go"
+    },
+    "key.go": {
+      "sha256": "364667133bcd72e7bfe22e30eb92d462f18aadaffa96a4c32cdccbe00368b43f",
+      "upstream_path": "key.go"
+    },
+    "key_other.go": {
+      "sha256": "ae456d473d43a8def40ca31ec7826a40392b84d47b8c27bfe3f12006bcf3c2ff",
+      "upstream_path": "key_other.go"
+    },
+    "key_sequences.go": {
+      "sha256": "a552fc2ce1e0eec029fef551f981a50bfd4166289aa378ec4bf8906f05395e48",
+      "upstream_path": "key_sequences.go"
+    },
+    "key_test.go": {
+      "sha256": "0bd074aa6295ce9de56929f0af78f198639e7c82b0a8ac538b0bca35eac41dca",
+      "upstream_path": "key_test.go"
+    },
+    "key_windows.go": {
+      "sha256": "a84bc6eb41a98580539236061f91c5b83fb2ffb61dd1dc4b8e80cf14e02943b5",
+      "upstream_path": "key_windows.go"
+    },
+    "logging.go": {
+      "sha256": "af7eaaf5b8ae2a4edc631a8750e93644459dae91bcb25e3c3de94a3b9e6593ad",
+      "upstream_path": "logging.go"
+    },
+    "logging_test.go": {
+      "sha256": "7b1523891eb1b7378ce0094c6a60f6412534fef6139eb80c561bd8da41dc8eb2",
+      "upstream_path": "logging_test.go"
+    },
+    "mouse.go": {
+      "sha256": "d91927f56a91dde0fe7f62ebcb26f954cd86bc68ae4006270e34417f8c2bc983",
+      "upstream_path": "mouse.go"
+    },
+    "mouse_test.go": {
+      "sha256": "39020c9e07b2231eaaf9e14b267c421b32870fb198a52acfa5cda7c9cc27fae8",
+      "upstream_path": "mouse_test.go"
+    },
+    "nil_renderer.go": {
+      "sha256": "6dcf82b44a05df0af91ce6b70443bdc88da2bc2a429276ca1811790dd71102cd",
+      "upstream_path": "nil_renderer.go"
+    },
+    "nil_renderer_test.go": {
+      "sha256": "ce9f21e9f74f092d93255ead5bb5633d762652a7c77112410a00086a366bbb1e",
+      "upstream_path": "nil_renderer_test.go"
+    },
+    "options.go": {
+      "sha256": "4f78a834d8f82ca45dda6f292bcc54b53f198c089a059d207ff02f8e606891ca",
+      "upstream_path": "options.go"
+    },
+    "options_test.go": {
+      "sha256": "a601f50dcf3dc81f02c1be69ec9e807f0f2aa74ca27cfa651e434681d481ef2c",
+      "upstream_path": "options_test.go"
+    },
+    "renderer.go": {
+      "sha256": "2c53589b014d3b7bc2c74d4c332d29862eb064971b150a66c0fa38f6fef61f43",
+      "upstream_path": "renderer.go"
+    },
+    "screen.go": {
+      "sha256": "13539b00d61af207d9c968ed198a0b57cff428d86d65509f54c9f146546523cb",
+      "upstream_path": "screen.go"
+    },
+    "screen_test.go": {
+      "sha256": "ae316cd554eb3c84866e59136309add25673044569497d151399f8500f49a3db",
+      "upstream_path": "screen_test.go"
+    },
+    "signals_unix.go": {
+      "sha256": "3954426922ae0a399a29769ed8e85ace7c451f33bb835b7009336ed086e65bf3",
+      "upstream_path": "signals_unix.go"
+    },
+    "signals_windows.go": {
+      "sha256": "25437273fa773a70b2a11c8f6f63674d7483460f65d0352a2c5ca1d2c1677c4a",
+      "upstream_path": "signals_windows.go"
+    },
+    "standard_renderer.go": {
+      "sha256": "fe30321708716b962f78965cab407c4edccac2bc22f9dd5e72ac506420a1b4d6",
+      "upstream_path": "standard_renderer.go"
+    },
+    "tea.go": {
+      "sha256": "93a3744362223921e3f82ded63c65bf8029ff77d2e4a46604b77fbd37f87162e",
+      "upstream_path": "tea.go"
+    },
+    "tea_test.go": {
+      "sha256": "f61e8482198aa5adfcdc92ce08268f2fc6130b7935bd6af8b2705b2336a3274b",
+      "upstream_path": "tea_test.go"
+    },
+    "tty.go": {
+      "sha256": "db99d0fe947fa401d079429dad62daaf4889c19f6121bb89258a132a87214144",
+      "upstream_path": "tty.go"
+    },
+    "tty_unix.go": {
+      "sha256": "1206fdac0fc2d6940ec957f4c530638df2b6611de4a123cfdb99375bd7545f3f",
+      "upstream_path": "tty_unix.go"
+    },
+    "tty_windows.go": {
+      "sha256": "af4316838b7cac5e9230b82a93b4b407ef91b755a57005135d93f0eb2c8b6aad",
+      "upstream_path": "tty_windows.go"
+    }
+  },
+  "excluded_upstream_files": [
+    ".gitattributes",
+    ".github/CODEOWNERS",
+    ".github/ISSUE_TEMPLATE/bug.yml",
+    ".github/ISSUE_TEMPLATE/bug_report.md",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.md",
+    ".github/dependabot.yml",
+    ".github/workflows/build.yml",
+    ".github/workflows/coverage.yml",
+    ".github/workflows/dependabot-sync.yml",
+    ".github/workflows/examples.yml",
+    ".github/workflows/lint-sync.yml",
+    ".github/workflows/lint.yml",
+    ".github/workflows/release.yml",
+    ".gitignore",
+    ".golangci.yml",
+    ".goreleaser.yml",
+    "Taskfile.yaml",
+    "examples/README.md",
+    "examples/altscreen-toggle/README.md",
+    "examples/altscreen-toggle/altscreen-toggle.gif",
+    "examples/altscreen-toggle/main.go",
+    "examples/autocomplete/main.go",
+    "examples/cellbuffer/main.go",
+    "examples/chat/README.md",
+    "examples/chat/chat.gif",
+    "examples/chat/main.go",
+    "examples/composable-views/README.md",
+    "examples/composable-views/composable-views.gif",
+    "examples/composable-views/main.go",
+    "examples/credit-card-form/README.md",
+    "examples/credit-card-form/credit-card-form.gif",
+    "examples/credit-card-form/main.go",
+    "examples/debounce/README.md",
+    "examples/debounce/debounce.gif",
+    "examples/debounce/main.go",
+    "examples/exec/README.md",
+    "examples/exec/exec.gif",
+    "examples/exec/main.go",
+    "examples/file-picker/main.go",
+    "examples/focus-blur/main.go",
+    "examples/fullscreen/README.md",
+    "examples/fullscreen/fullscreen.gif",
+    "examples/fullscreen/main.go",
+    "examples/glamour/README.md",
+    "examples/glamour/glamour.gif",
+    "examples/glamour/main.go",
+    "examples/go.mod",
+    "examples/go.sum",
+    "examples/help/README.md",
+    "examples/help/help.gif",
+    "examples/help/main.go",
+    "examples/http/README.md",
+    "examples/http/http.gif",
+    "examples/http/main.go",
+    "examples/list-default/README.md",
+    "examples/list-default/list-default.gif",
+    "examples/list-default/main.go",
+    "examples/list-fancy/README.md",
+    "examples/list-fancy/delegate.go",
+    "examples/list-fancy/list-fancy.gif",
+    "examples/list-fancy/main.go",
+    "examples/list-fancy/randomitems.go",
+    "examples/list-simple/README.md",
+    "examples/list-simple/list-simple.gif",
+    "examples/list-simple/main.go",
+    "examples/mouse/main.go",
+    "examples/package-manager/README.md",
+    "examples/package-manager/main.go",
+    "examples/package-manager/package-manager.gif",
+    "examples/package-manager/packages.go",
+    "examples/pager/README.md",
+    "examples/pager/artichoke.md",
+    "examples/pager/main.go",
+    "examples/pager/pager.gif",
+    "examples/paginator/README.md",
+    "examples/paginator/main.go",
+    "examples/paginator/paginator.gif",
+    "examples/pipe/README.md",
+    "examples/pipe/main.go",
+    "examples/pipe/pipe.gif",
+    "examples/prevent-quit/main.go",
+    "examples/progress-animated/README.md",
+    "examples/progress-animated/main.go",
+    "examples/progress-animated/progress-animated.gif",
+    "examples/progress-download/README.md",
+    "examples/progress-download/main.go",
+    "examples/progress-download/tui.go",
+    "examples/progress-static/README.md",
+    "examples/progress-static/main.go",
+    "examples/progress-static/progress-static.gif",
+    "examples/realtime/README.md",
+    "examples/realtime/main.go",
+    "examples/realtime/realtime.gif",
+    "examples/result/README.md",
+    "examples/result/main.go",
+    "examples/result/result.gif",
+    "examples/send-msg/README.md",
+    "examples/send-msg/main.go",
+    "examples/send-msg/send-msg.gif",
+    "examples/sequence/README.md",
+    "examples/sequence/main.go",
+    "examples/sequence/sequence.gif",
+    "examples/set-window-title/main.go",
+    "examples/simple/README.md",
+    "examples/simple/main.go",
+    "examples/simple/main_test.go",
+    "examples/simple/simple.gif",
+    "examples/simple/testdata/TestApp.golden",
+    "examples/spinner/README.md",
+    "examples/spinner/main.go",
+    "examples/spinner/spinner.gif",
+    "examples/spinners/README.md",
+    "examples/spinners/main.go",
+    "examples/spinners/spinners.gif",
+    "examples/split-editors/README.md",
+    "examples/split-editors/main.go",
+    "examples/split-editors/split-editors.gif",
+    "examples/stopwatch/README.md",
+    "examples/stopwatch/main.go",
+    "examples/stopwatch/stopwatch.gif",
+    "examples/suspend/main.go",
+    "examples/table-resize/main.go",
+    "examples/table/README.md",
+    "examples/table/main.go",
+    "examples/table/table.gif",
+    "examples/tabs/README.md",
+    "examples/tabs/main.go",
+    "examples/tabs/tabs.gif",
+    "examples/textarea/README.md",
+    "examples/textarea/main.go",
+    "examples/textarea/textarea.gif",
+    "examples/textinput/README.md",
+    "examples/textinput/main.go",
+    "examples/textinput/textinput.gif",
+    "examples/textinputs/README.md",
+    "examples/textinputs/main.go",
+    "examples/textinputs/textinputs.gif",
+    "examples/timer/README.md",
+    "examples/timer/main.go",
+    "examples/timer/timer.gif",
+    "examples/tui-daemon-combo/README.md",
+    "examples/tui-daemon-combo/main.go",
+    "examples/tui-daemon-combo/tui-daemon-combo.gif",
+    "examples/views/README.md",
+    "examples/views/main.go",
+    "examples/views/views.gif",
+    "examples/window-size/main.go",
+    "tutorials/basics/README.md",
+    "tutorials/basics/main.go",
+    "tutorials/commands/README.md",
+    "tutorials/commands/main.go",
+    "tutorials/go.mod",
+    "tutorials/go.sum"
+  ],
+  "exclusion_reason": "Repository CI/tooling, examples/tutorials and media are not required by the library package or its retained upstream unit tests. Every excluded path is listed; no production root Go source is excluded except tea_init.go.",
+  "removed_files": {
+    "tea_init.go": {
+      "reason": "Remove eager Lip Gloss terminal queries at package initialization; preserve all other v1.3.10 runtime behavior.",
+      "sha256": "87e7bcd11967ab1e5b0e541c5b89d3a0b4baf5695899f08dc1eeb6c94a4a5e91"
+    }
+  },
+  "schema": 1,
+  "upstream": {
+    "commit": "9edf69c677c7353eca5fae6d3ea3986af39717b7",
+    "go_mod_sum": "h1:ORQfo0fk8U+po9VaNvnV95UPWA1BitP1E0N6xJPlHr4=",
+    "module": "github.com/charmbracelet/bubbletea",
+    "module_sum": "h1:otUDHWMMzQSB0Pkc87rm691KZ3SWa4KUlvF9nRvCICw=",
+    "repository": "https://github.com/charmbracelet/bubbletea",
+    "version": "v1.3.10"
+  }
+}
