@@ -1,0 +1,40 @@
+[?25l[?1049h[2J[H[?25l[?2004h[H [1;36mKeelmux / All work          0 sessions[0m[K
+ [90m/ Search sessions[0m[K
+ [90m  SESSION                     PROVIDER[0m[K
+ [90mLoading authorized inventory…[0m[K
+[K
+[K
+[K
+[K
+[K
+[K
+[K
+[K
+ [1;36m↑/↓ select  / search  g groups[0m[K
+ [90mc inbox  u usage  g groups  q quit[0m[K[14;H[H [1;36mKeelmux / All work         11 sessions[0m[K
+
+
+ [7m› api / tests                    codex[0m[K
+   billing / migration           claude[K
+   cli / docs                     codex[K
+   data / import                 claude[K
+   design / review                codex[K
+   edge / retries      missing / claude[K
+
+ /work/keelmux/api / managed[K
+ [33mRuntime: unknown / running[0m[K
+ [1;36mEnter attach  v view  / find[0m[K
+[14;H[H [1;36mKeelmux / usage · api / tests[0m[K
+ [90mHost host_local[0m[K
+ [90mSession session_00[0m[K
+ [90mLocal observations · last 24 hours · …[0m[K
+ [33mCoverage unknown; totals describe the…[0m[K
+ Provider calls observed: 0[K
+ [90mUser-entered calls: 1 · not provider …[0m[K
+ Actual models observed: unknown[K
+ [90mCalls with unknown actual model: 0[0m[K
+ [90mStale records: 0 · conflicted records…[0m[K
+ Tool calls measured: unknown · 0 call…[K
+ [90mNative token measurements: unknown[0m[K
+ [90mAccounts and money hidden in this ses…[0m[K
+ [1;36m↑↓ scroll   r reread   Esc return[0m[K[14;H

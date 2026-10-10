@@ -116,3 +116,5 @@ There is no interactive ledger editor or automatic correction workflow in this b
 Select a session and press **u**. The panel filters the client's existing local ledger to that exact host and session for the last 24 hours in UTC, with a 15-minute freshness threshold. It keeps account and money detail hidden. Use arrows or **j/k** to scroll, **r** to reread, and **Escape**, **q** or **u** to return.
 
 For sessions reached through an entry, this remains a local ledger view. It grants no remote account access and makes no native RPC or model request. Use the CLI's explicit filters and detail flags when you need a broader local review.
+
+[View the captured 80-column panel](../site/evidence/usage-6a6b20c/usage-80x24.png). This is an actual owned PTY capture with illustrative inventory and one manual observation, rasterized from terminal cells. [Three-size capture receipt](../site/evidence/usage-6a6b20c/receipt.json) records exact source, executable digest, cleanup and zero model activity.

@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "source_commit": "6a6b20cd1def5e6ad0e93d4e59020a79659c89f3",
+  "binary_sha256": "0e15a812e3ed39ffadd0bbaafb76f5cb5253924b25bfce03c62ac6aa19a7661b",
+  "scope": "Actual owned PTY with deterministic fixture inventory and one manual imported observation; PNGs rasterize cells",
+  "model_turns": 0,
+  "provider_launches": 0,
+  "external_service_posts": 0,
+  "captures": [
+    {
+      "size": [
+        80,
+        24
+      ],
+      "mode": "usage",
+      "binary_sha256": "0e15a812e3ed39ffadd0bbaafb76f5cb5253924b25bfce03c62ac6aa19a7661b",
+      "raw_sha256": "ed845d5eaf96f8745282f71b02a5e92f3950543419fc69266da73fa51fce2569",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0
+    },
+    {
+      "size": [
+        120,
+        32
+      ],
+      "mode": "usage",
+      "binary_sha256": "0e15a812e3ed39ffadd0bbaafb76f5cb5253924b25bfce03c62ac6aa19a7661b",
+      "raw_sha256": "7a695d146f30aa8ac94495a5c85fa7e6165f1778f628891842b33e661716e097",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "mode": "usage",
+      "binary_sha256": "0e15a812e3ed39ffadd0bbaafb76f5cb5253924b25bfce03c62ac6aa19a7661b",
+      "raw_sha256": "963b2eed9f8c4f24d82bd58c347990ee4d10383a259b28503ce0570b08146ca8",
+      "capture": "Actual PTY; PNG rasterizes interpreted cells, not native Terminal screenshot",
+      "owned_state_removed": true,
+      "tui_quit_exit_zero_without_signals": true,
+      "actual_inventory_gets": 1,
+      "actual_mutating_requests": 0
+    }
+  ],
+  "files_sha256": {
+    "usage-120x32.txt": "a08f710436fe9fed1d32514cfbf9ddbb425aee595fea4ecf3a1a009c74953fcb",
+    "usage-120x32.png": "9e8360ce6406b9ba1fb4d05d4c47fff964f961fdf461b92d07c95166eef7b28e",
+    "usage-80x24.txt": "c6a1f1c0613a8df23c2d5189dcd60437ea877cf34ebbf16f22ead8432266c4ef",
+    "usage-40x14.txt": "9c71fea06b559b546d6b47119577b04b9fa8eee81fd2641857108fbdf57f6b1c",
+    "usage-40x14.ansi": "963b2eed9f8c4f24d82bd58c347990ee4d10383a259b28503ce0570b08146ca8",
+    "usage-80x24.png": "36a79da31a7e636715610421908e32fed4976875d2c36c85e3c689d3a12ce345",
+    "usage-80x24.ansi": "ed845d5eaf96f8745282f71b02a5e92f3950543419fc69266da73fa51fce2569",
+    "usage-120x32.ansi": "7a695d146f30aa8ac94495a5c85fa7e6165f1778f628891842b33e661716e097",
+    "usage-40x14.png": "fd18823be999ccdf5266cb1b71d754ad0e9dc239804d57ae7db9dcae0cb64fe2"
+  }
+}

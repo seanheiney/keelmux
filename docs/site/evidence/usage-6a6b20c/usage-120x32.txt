@@ -1,0 +1,32 @@
+  Keelmux / usage · api / tests
+  Host host_local
+  Session session_00
+  Local observations · last 24 hours · UTC
+  Coverage unknown; totals describe the recorded subset.
+  Provider calls observed: 0
+  User-entered calls: 1 · not provider evidence
+  Actual models observed: unknown
+  Calls with unknown actual model: 0
+  Stale records: 0 · conflicted records: 0
+  Tool calls measured: unknown · 0 calls unknown
+  Native token measurements: unknown
+  Accounts and money hidden in this session view.
+  keelmux usage --help opens filters and explicit manual import.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ↑↓ scroll   r reread   Esc return
