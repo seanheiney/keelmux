@@ -20,6 +20,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/adapters/nativepty"
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/chatadapter"
+	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/ircd"
 	"github.com/seanheiney/keelmux/internal/protocol"
@@ -97,6 +98,7 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	var controlDone <-chan error
 	var supervisorPIDs []int
 	var controlPIDs []int
+	var processProofs []managedProductProcessProof
 	// Cleanup only uses exact private daemon/supervisor authentication. Retain
 	// failed state for repair if any owned process's exit cannot be established.
 	t.Cleanup(func() {
@@ -122,6 +124,7 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 			}
 		}
 		if d, e := client.Daemon(clean); e == nil {
+			controlPIDs = append(controlPIDs, d.PID)
 			if client.ShutdownDaemon(clean, d.Instance) != nil {
 				cleanupOK = false
 			}
@@ -162,8 +165,11 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 			cleanupOK = false
 		}
 		checks["exact_authenticated_cleanup"] = cleanupOK
+		report["owned_process_proofs"] = processProofs
+		report["owned_native_execution_count"] = len(processProofs)
+		report["owned_native_helper_count"] = len(processProofs)
 		report["finished_at"] = time.Now().UTC()
-		report["failed_stage"] = stage
+		report["final_stage"] = stage
 		report["passed"] = !t.Failed() && cleanupOK
 		if path := os.Getenv("KEELMUX_MANAGED_IRCD_REPORT"); path != "" {
 			if !filepath.IsAbs(path) || !strings.HasPrefix(filepath.Base(path), "managed-ircd-product-") || filepath.Ext(path) != ".json" {
@@ -226,6 +232,7 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	control := exec.Command(filepath.Join(bin, "keelmuxd"), "--state", state)
 	control.Env = env
 	ensure(control.Start() == nil, "actual_daemon_started")
+	controlPIDs = append(controlPIDs, control.Process.Pid)
 	done := make(chan error, 1)
 	controlDone = done
 	go func() { done <- control.Wait() }()
@@ -242,7 +249,9 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	session, e := client.Launch(ctx, launch)
 	fixture = session.Session.Execution.Runtime
 	ensure(e == nil && fixture.Backend == "native" && fixture.ExecutionID != "" && fixture.Pane == "", "actual_native_fixture_running")
-	supervisorPIDs = append(supervisorPIDs, managedProductSupervisorPID(t, state, fixture.ExecutionID))
+	fixtureProof := managedProductOwnedProcess(t, state, fixture.ExecutionID)
+	processProofs = append(processProofs, fixtureProof)
+	supervisorPIDs = append(supervisorPIDs, fixtureProof.SupervisorPID)
 	ensure(managedProductWait(ctx, 5*time.Second, func() bool { return !managedProductMissing(ready) }), "fixture_byte_input_sentinel_ready")
 	report["fixture_execution"] = fixture.ExecutionID
 	report["stable_thread"] = session.Session.ThreadID
@@ -263,7 +272,9 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	cli(&started, true, "ircd", "start", "--operation", string(startOp))
 	ircInstance = started.Instance
 	ensure(started.Alive && started.OperationID == startOp, "actual_cli_ircd_start")
-	supervisorPIDs = append(supervisorPIDs, managedProductSupervisorPID(t, state, ircInstance))
+	ircProof := managedProductOwnedProcess(t, state, ircInstance)
+	processProofs = append(processProofs, ircProof)
+	supervisorPIDs = append(supervisorPIDs, ircProof.SupervisorPID)
 	var same protocol.IRCDStatus
 	cli(&same, true, "ircd", "start", "--operation", string(startOp))
 	ensure(same.Instance == ircInstance, "same_ircd_start_operation_no_replay")
@@ -345,14 +356,20 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	stage = "actual control restart"
 	beforeControl, e := client.Daemon(ctx)
 	ensure(e == nil && beforeControl.Build.Commit == source, "actual_control_source_identity")
+	beforeControlStart := managedProductControlStart(t, beforeControl.PID)
 	beforeIRC, e := manager.Status(ctx)
 	ensure(e == nil && beforeIRC.Instance == ircInstance, "native_ircd_before_control_restart")
 	cli(nil, true, "daemon", "restart", "--instance", beforeControl.Instance)
 	afterControl, e := client.Daemon(ctx)
 	ensure(e == nil && afterControl.Instance != beforeControl.Instance && afterControl.PID != beforeControl.PID && afterControl.Build.Commit == source, "actual_control_process_replaced")
 	controlPIDs = append(controlPIDs, beforeControl.PID, afterControl.PID)
+	report["control_processes"] = []map[string]any{
+		{"instance": beforeControl.Instance, "pid": beforeControl.PID, "process_start": beforeControlStart},
+		{"instance": afterControl.Instance, "pid": afterControl.PID, "process_start": managedProductControlStart(t, afterControl.PID)},
+	}
 	afterIRC, e := manager.Status(ctx)
 	ensure(e == nil && afterIRC.Alive && afterIRC.Instance == beforeIRC.Instance && afterIRC.StartTime == beforeIRC.StartTime, "native_ircd_survives_control_restart")
+	ensure(managedProductOwnedProcess(t, state, ircInstance) == ircProof && managedProductOwnedProcess(t, state, fixture.ExecutionID) == fixtureProof, "exact_native_process_and_helper_lifetimes_preserved")
 	sessions, e := client.List(ctx)
 	ensure(e == nil && len(sessions) == 1 && sessions[0].ThreadID == binding.ThreadID && sessions[0].Execution.Runtime == fixture && sessions[0].Execution.State == "running", "native_fixture_stable_identity_survives_control_restart")
 	history, e = client.ChannelHistory(ctx, binding.ThreadID, 0, 100)
@@ -375,7 +392,16 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 		history, e = client.ChannelHistory(ctx, binding.ThreadID, 0, 100)
 		return e == nil && managedProductCount(history, secondInbound, "alice") == 1
 	}), "allowlisted_intake_after_control_restart")
-	ensure(collect() && countRemote(reply, connection.Account) == 1, "actual_bot_reply_no_duplicate_after_retries_restart")
+	for i := 0; i < 20; i++ {
+		ensure(collect() && countRemote(reply, connection.Account) == 1, "actual_bot_reply_no_duplicate_after_retries_restart")
+		timer := time.NewTimer(50 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			t.Fatal("bounded duplicate observation cancelled")
+		case <-timer.C:
+		}
+	}
 	stage = "native input isolation"
 	input, e := os.ReadFile(sentinel)
 	observed, observeErr := native.Inspect(ctx, fixture)
@@ -390,7 +416,9 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	ensure(replacement.Alive && replacement.Instance != ircInstance, "actual_ircd_explicit_replacement")
 	cli(nil, false, "ircd", "stop", "--instance", string(ircInstance))
 	ircInstance = replacement.Instance
-	supervisorPIDs = append(supervisorPIDs, managedProductSupervisorPID(t, state, ircInstance))
+	replacementProof := managedProductOwnedProcess(t, state, ircInstance)
+	processProofs = append(processProofs, replacementProof)
+	supervisorPIDs = append(supervisorPIDs, replacementProof.SupervisorPID)
 	cli(&same, true, "ircd", "status")
 	ensure(same.Alive && same.Instance == replacement.Instance, "stale_stop_preserves_replacement")
 	registeredAgain, e := manager.ConfirmChannel(ctx, binding.ChannelID, binding.ThreadID)
@@ -398,6 +426,10 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	cli(&human, true, "ircd", "account", "alice")
 	ensure(human.Account == "alice", "human_account_readonly_after_ircd_replacement")
 	report["ircd_instances"] = []domain.ID{started.Instance, replacement.Instance}
+	stage = "explicit exact fixture cleanup"
+	cli(nil, true, "stop", string(session.Session.ID), "--operation", string(domain.NewID("op")))
+	stopped, e := native.Inspect(ctx, fixture)
+	ensure(e == nil && !stopped.Alive && stopped.Ref == fixture, "actual_cli_exact_native_fixture_stop")
 	stage = "complete"
 }
 
@@ -441,17 +473,36 @@ func managedProductDigest(t *testing.T, path string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// Project only the owned helper PID for a read-only exit check; never publish
+type managedProductProcessProof struct {
+	ExecutionID     domain.ID `json:"execution_id"`
+	PID             int       `json:"execution_pid"`
+	ProcessStart    string    `json:"execution_process_start"`
+	SupervisorPID   int       `json:"supervisor_pid"`
+	SupervisorStart string    `json:"supervisor_process_start"`
+}
+
+// Project only owned lifetime evidence for a read-only exit check; never publish
 // the receipt's authentication token or send signals from persisted PID data.
-func managedProductSupervisorPID(t *testing.T, state string, execution domain.ID) int {
+func managedProductOwnedProcess(t *testing.T, state string, execution domain.ID) managedProductProcessProof {
 	t.Helper()
 	sum := sha256.Sum256([]byte(execution))
-	b, e := os.ReadFile(filepath.Join(state, "native", hex.EncodeToString(sum[:])[:24]+".json"))
+	b, e := config.ReadPrivateSecret(filepath.Join(state, "native", hex.EncodeToString(sum[:])[:24]+".json"))
 	var projected struct {
-		PID int `json:"supervisor_pid"`
+		PID   int               `json:"supervisor_pid"`
+		Start string            `json:"supervisor_start"`
+		Ref   domain.RuntimeRef `json:"ref"`
 	}
-	if e != nil || json.Unmarshal(b, &projected) != nil || projected.PID <= 0 {
+	if e != nil || json.Unmarshal(b, &projected) != nil || projected.PID <= 0 || projected.Start == "" || projected.Ref.PID <= 0 || projected.Ref.ExecutionID != execution || projected.Ref.ProcessStart == "" {
 		t.Fatal("owned native helper receipt unavailable")
 	}
-	return projected.PID
+	return managedProductProcessProof{ExecutionID: execution, PID: projected.Ref.PID, ProcessStart: projected.Ref.ProcessStart, SupervisorPID: projected.PID, SupervisorStart: projected.Start}
+}
+
+func managedProductControlStart(t *testing.T, pid int) string {
+	t.Helper()
+	b, e := exec.Command("/bin/ps", "-p", fmt.Sprint(pid), "-o", "lstart=").Output()
+	if e != nil || strings.TrimSpace(string(b)) == "" {
+		t.Fatal("owned control process lifetime observation unavailable")
+	}
+	return strings.TrimSpace(string(b))
 }
