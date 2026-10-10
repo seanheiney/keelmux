@@ -691,7 +691,16 @@ func (a *IRC) Fetch(ctx context.Context, b channels.Binding, cursor string, limi
 		}
 	}
 	if position.Generation != s.generation || position.Sequence > s.sequence || len(s.buffer) > 0 && position.Sequence+1 < s.buffer[0].Sequence {
-		return channels.FetchResult{}, channels.ErrHistoryGap
+		// Report the lost range before consuming any retained event. The home
+		// commits this scoped checkpoint separately, preserves the gap warning,
+		// then requests current live events on its next poll. No replay of the
+		// disconnected or evicted history is implied by this new generation.
+		checkpoint := ircCursor{Binding: string(b.ID), Generation: s.generation, Sequence: s.sequence}
+		if len(s.buffer) > 0 {
+			checkpoint.Sequence = s.buffer[0].Sequence - 1
+		}
+		raw, _ := json.Marshal(checkpoint)
+		return channels.FetchResult{Evidence: s.proof, Messages: []channels.RemoteMessage{}, NextCursor: base64.RawURLEncoding.EncodeToString(raw), HasMore: len(s.buffer) > 0}, channels.ErrHistoryGap
 	}
 	result := channels.FetchResult{Evidence: s.proof, Messages: []channels.RemoteMessage{}}
 	for _, entry := range s.buffer {

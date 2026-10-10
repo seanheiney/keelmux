@@ -410,10 +410,18 @@ func TestIRCBoundedBufferSignalsGapAndReconnectionEpoch(t *testing.T) {
 	for i := 0; i < ircBufferSize+1; i++ {
 		f.push(fmt.Sprintf("@account=alice;msgid=live%d;time=2023-11-14T22:13:21Z :alice!u@h PRIVMSG #room :authored %d", i, i))
 	}
+	var checkpoint channels.FetchResult
 	eventually(t, func() bool {
-		_, err = a.Fetch(context.Background(), b, first.NextCursor, 1)
+		checkpoint, err = a.Fetch(context.Background(), b, first.NextCursor, 1)
 		return errors.Is(err, channels.ErrHistoryGap)
 	})
+	if !checkpoint.Evidence.Matches(b) || len(checkpoint.Messages) != 0 || checkpoint.NextCursor == "" || checkpoint.NextCursor == first.NextCursor || !checkpoint.HasMore {
+		t.Fatal("overflow did not provide a separate verified live checkpoint", checkpoint)
+	}
+	retained, err := a.Fetch(context.Background(), b, checkpoint.NextCursor, 1)
+	if err != nil || len(retained.Messages) != 1 || retained.Messages[0].ID != "live1" || !retained.HasMore || f.dialCount() != 1 {
+		t.Fatal("overflow checkpoint did not resume earliest retained event", retained, err)
+	}
 	f.mu.Lock()
 	conn := f.connections[len(f.connections)-1]
 	f.mu.Unlock()
@@ -426,9 +434,54 @@ func TestIRCBoundedBufferSignalsGapAndReconnectionEpoch(t *testing.T) {
 		defer s.mu.Unlock()
 		return !s.alive
 	})
-	_, err = a.Fetch(context.Background(), b, first.NextCursor, 1)
+	checkpoint, err = a.Fetch(context.Background(), b, retained.NextCursor, 1)
 	if !errors.Is(err, channels.ErrHistoryGap) || f.dialCount() != 2 {
 		t.Fatal("old cursor silently pretended replay after disconnect", err)
+	}
+	if !checkpoint.Evidence.Matches(b) || len(checkpoint.Messages) != 0 || checkpoint.NextCursor == "" || checkpoint.NextCursor == retained.NextCursor || checkpoint.HasMore {
+		t.Fatal("reconnection did not provide an empty verified live checkpoint", checkpoint)
+	}
+	f.push("@account=alice;msgid=after-reconnect;time=2023-11-14T22:13:22Z :alice!u@h PRIVMSG #room :Future live note")
+	eventually(t, func() bool {
+		retained, err = a.Fetch(context.Background(), b, checkpoint.NextCursor, 1)
+		return err == nil && len(retained.Messages) == 1
+	})
+	if retained.Messages[0].ID != "after-reconnect" || retained.HasMore || f.dialCount() != 2 {
+		t.Fatal("reconnection checkpoint did not resume future live event", retained, err)
+	}
+}
+
+func TestIRCGapCheckpointRetainsBufferedNewGenerationEvents(t *testing.T) {
+	f, a, b := newIRCFixture(t)
+	if _, err := a.Probe(context.Background(), b); err != nil {
+		t.Fatal(err)
+	}
+	first, err := a.Fetch(context.Background(), b, "", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.mu.Lock()
+	s := a.states[string(b.ID)]
+	a.mu.Unlock()
+	// A persisted cursor from an earlier daemon/connection epoch cannot prove
+	// history continuity. Already retained messages remain available only after
+	// the caller separately commits the zero-message checkpoint.
+	s.mu.Lock()
+	s.generation = "new-owned-generation"
+	s.mu.Unlock()
+	f.push("@account=alice;msgid=retained-new-epoch;time=2023-11-14T22:13:22Z :alice!u@h PRIVMSG #room :Retained new live note")
+	eventually(t, func() bool {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		return len(s.buffer) == 1
+	})
+	checkpoint, err := a.Fetch(context.Background(), b, first.NextCursor, 10)
+	if !errors.Is(err, channels.ErrHistoryGap) || !checkpoint.Evidence.Matches(b) || len(checkpoint.Messages) != 0 || !checkpoint.HasMore || checkpoint.NextCursor == "" || checkpoint.NextCursor == first.NextCursor {
+		t.Fatal("new epoch gap was not separately checkpointed", checkpoint, err)
+	}
+	next, err := a.Fetch(context.Background(), b, checkpoint.NextCursor, 10)
+	if err != nil || len(next.Messages) != 1 || next.Messages[0].ID != "retained-new-epoch" || f.dialCount() != 1 {
+		t.Fatal("new epoch checkpoint lost retained current live data", next, err)
 	}
 }
 
