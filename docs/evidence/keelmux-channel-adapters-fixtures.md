@@ -73,3 +73,12 @@ for explicit coverage reporting. `InitialCoverage` labels REST adapters
 can be surfaced as `history_gap`. No-history IRC reconciliation performs no
 fresh login/JOIN after disconnection, and a pending stable local delivery ID
 cannot cause another PRIVMSG with a mutated payload hash.
+
+`CanonicalChannel` retains Mattermost/Slack IDs exactly and restricts IRC
+channel references to ASCII letters, digits, `- _ . /` after `#` or `&`, with
+ASCII letters lowercased before immutable route comparison. This subset agrees
+under ASCII, RFC1459 and strict RFC1459 case mapping; special-equivalent
+characters (`[]{}\\|^~`) and Unicode channel names are unsupported until a
+negotiated case contract is persisted. IRC requires this canonical stored
+address, accepts safe wire case aliases and returns the same pinned ChannelID.
+Services-account identity retains exact case and is never nickname authority.

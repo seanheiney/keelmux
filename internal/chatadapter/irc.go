@@ -132,7 +132,13 @@ func ircEndpoint(b channels.Binding) (string, error) {
 }
 
 func ircChannel(s string) bool {
-	return len(s) > 1 && len(s) <= 200 && (s[0] == '#' || s[0] == '&') && utf8.ValidString(s) && !strings.ContainsAny(s, "\x00\x07\r\n ,:")
+	canonical, err := channels.CanonicalChannel(channels.IRC, s)
+	return err == nil && canonical == s
+}
+
+func sameIRCChannel(wire, pinned string) bool {
+	canonical, err := channels.CanonicalChannel(channels.IRC, wire)
+	return err == nil && canonical == pinned
 }
 
 func ircNick(s string) bool {
@@ -474,11 +480,11 @@ func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority 
 			s.nick = m.Params[0]
 			welcome = true
 		case "JOIN":
-			if !joinSent || len(m.Params) < 1 || m.Params[0] != s.binding.ChannelID {
+			if !joinSent || len(m.Params) < 1 || !sameIRCChannel(m.Params[0], s.binding.ChannelID) {
 				break
 			}
 			nick, _, _ := strings.Cut(m.Prefix, "!")
-			if nick == s.nick {
+			if strings.EqualFold(nick, s.nick) {
 				if tag := m.Tags["account"]; tag != "" && tag != account {
 					return errBinding
 				}
@@ -561,13 +567,13 @@ func (s *ircSession) receive(m ircMessage) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	nick, _, _ := strings.Cut(m.Prefix, "!")
-	if m.Command == "ERROR" || m.Command == "901" || m.Command == "ACCOUNT" && nick == s.nick && (len(m.Params) != 1 || m.Params[0] != s.proof.SelfID) || m.Command == "PART" && nick == s.nick && len(m.Params) > 0 && m.Params[0] == s.binding.ChannelID || m.Command == "KICK" && len(m.Params) > 1 && m.Params[0] == s.binding.ChannelID && m.Params[1] == s.nick {
+	if m.Command == "ERROR" || m.Command == "901" || m.Command == "ACCOUNT" && strings.EqualFold(nick, s.nick) && (len(m.Params) != 1 || m.Params[0] != s.proof.SelfID) || m.Command == "PART" && strings.EqualFold(nick, s.nick) && len(m.Params) > 0 && sameIRCChannel(m.Params[0], s.binding.ChannelID) || m.Command == "KICK" && len(m.Params) > 1 && sameIRCChannel(m.Params[0], s.binding.ChannelID) && strings.EqualFold(m.Params[1], s.nick) {
 		return false
 	}
 	if m.Command == "900" && (len(m.Params) < 3 || m.Params[2] != s.proof.SelfID) {
 		return false
 	}
-	if m.Command == "NICK" && nick == s.nick {
+	if m.Command == "NICK" && strings.EqualFold(nick, s.nick) {
 		if len(m.Params) != 1 || !ircNick(m.Params[0]) {
 			return false
 		}
@@ -616,7 +622,7 @@ func (s *ircSession) receive(m ircMessage) bool {
 	}
 	if p := s.pending[label]; label != "" && p != nil {
 		r := unconfirmed(s.proof)
-		if m.Command == "PRIVMSG" && len(m.Params) == 2 && m.Params[0] == s.binding.ChannelID && m.Params[1] == p.Text && m.Tags["account"] == s.proof.SelfID && channels.ValidID(m.Tags["msgid"]) {
+		if m.Command == "PRIVMSG" && len(m.Params) == 2 && sameIRCChannel(m.Params[0], s.binding.ChannelID) && m.Params[1] == p.Text && m.Tags["account"] == s.proof.SelfID && channels.ValidID(m.Tags["msgid"]) {
 			r = channels.SendResult{State: channels.Delivered, RemoteID: m.Tags["msgid"], Evidence: s.proof}
 		} else if m.Command == "401" || m.Command == "403" || m.Command == "404" || m.Command == "442" || m.Command == "482" {
 			r = failed()
@@ -634,7 +640,7 @@ func (s *ircSession) receive(m ircMessage) bool {
 	}
 	// Unknown/batched history is not a live-source receipt. Client-only account
 	// tags, nicknames and messages without server source IDs grant no authority.
-	if label != "" || m.Tags["batch"] != "" || m.Command != "PRIVMSG" || len(m.Params) != 2 || m.Params[0] != s.binding.ChannelID {
+	if label != "" || m.Tags["batch"] != "" || m.Command != "PRIVMSG" || len(m.Params) != 2 || !sameIRCChannel(m.Params[0], s.binding.ChannelID) {
 		return true
 	}
 	account, id := m.Tags["account"], m.Tags["msgid"]

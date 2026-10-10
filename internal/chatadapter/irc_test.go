@@ -185,7 +185,12 @@ func (f *ircFixture) serve(conn net.Conn) {
 				return
 			}
 		case "JOIN":
-			if !f.write(conn, "@account=self :"+nick+"!u@h JOIN "+m.Params[0]) {
+			wireNick, wireChannel := nick, m.Params[0]
+			if mode == "wire-case" {
+				wireNick = strings.ToUpper(nick)
+				wireChannel = strings.ToUpper(wireChannel)
+			}
+			if !f.write(conn, "@account=self :"+wireNick+"!u@h JOIN "+wireChannel) {
 				return
 			}
 		case "PRIVMSG":
@@ -205,6 +210,9 @@ func (f *ircFixture) serve(conn net.Conn) {
 				continue
 			}
 			target, account := m.Params[0], "self"
+			if mode == "wire-case" {
+				target = strings.ToUpper(target)
+			}
 			if mode == "wrong-target" {
 				target = "#foreign"
 			}
@@ -528,5 +536,37 @@ func TestIRCWireBoundsTLSCanonicalizationAndInjection(t *testing.T) {
 		if err != nil || got != tc.want {
 			t.Fatal("canonical endpoint", got, err)
 		}
+	}
+}
+
+func TestIRCCanonicalRouteAcceptsOnlySafeWireCaseAliases(t *testing.T) {
+	f, a, b := newIRCFixture(t)
+	f.mode = "wire-case"
+	canonical, err := channels.CanonicalChannel(channels.IRC, "#ROOM")
+	if err != nil || canonical != b.ChannelID {
+		t.Fatal("canonical bind address", err)
+	}
+	if _, err := a.Probe(context.Background(), b); err != nil {
+		t.Fatal("wire case membership", err)
+	}
+	f.push("@account=Alice;msgid=upper-case;time=2023-11-14T22:13:21Z :alice!u@h PRIVMSG #ROOM :same canonical route")
+	var page channels.FetchResult
+	eventually(t, func() bool { page, _ = a.Fetch(context.Background(), b, "", 1); return len(page.Messages) == 1 })
+	if page.Messages[0].ChannelID != "#room" || page.Messages[0].ActorID != "Alice" {
+		t.Fatal("wire alias changed route or services-account identity")
+	}
+	d, m := testDelivery(b)
+	r, _ := a.Send(context.Background(), b, d, m)
+	if r.State != channels.Delivered {
+		t.Fatal("wire case reply acknowledgement")
+	}
+	raw := b
+	raw.ID = "new-raw-binding"
+	raw.ChannelID = "#ROOM"
+	if _, err := a.Probe(context.Background(), raw); err == nil {
+		t.Fatal("uncanonical raw address accepted as a second route")
+	}
+	if f.dialCount() != 1 {
+		t.Fatal("raw alias opened another route connection")
 	}
 }
