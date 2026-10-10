@@ -414,8 +414,18 @@ func (s *Service) Sync(ctx context.Context, id domain.ID) (protocol.ChannelSyncR
 	result, err := a.Fetch(ctx, b, cursor, 15)
 	if err != nil {
 		if errors.Is(err, channels.ErrHistoryGap) {
+			// An authenticated IRC connection may provide a checkpoint for the
+			// retained live stream. Commit only that zero-message cursor under
+			// the original CAS; the lost range remains explicitly unobserved.
+			if b.Provider == channels.IRC && result.Evidence.Matches(b) && len(result.Messages) == 0 && result.NextCursor != "" && result.NextCursor != cursor && channels.ValidCursor(result.NextCursor) {
+				if _, checkpointErr := s.db.ImportChannelMessages(ctx, b.ID, cursor, result); checkpointErr != nil {
+					s.markIntake(id, "gap", false, true)
+					return out, checkpointErr
+				}
+				out.HasMore = result.HasMore
+			}
 			s.markIntake(id, "gap", false, true)
-			return out, errors.New("channel intake has a history gap; complete replay is unavailable")
+			return out, errors.New("channel intake has a history gap; only a verified live checkpoint can resume intake")
 		}
 		s.markIntake(id, "unavailable", false, false)
 		return out, errors.New("channel intake unavailable; delivery records remain intact")
