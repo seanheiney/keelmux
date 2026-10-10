@@ -9,6 +9,7 @@ package daemon_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -179,9 +180,14 @@ type relayAcceptanceEnv struct {
 	frames     chan cb.Frame
 	upCount    atomic.Int64
 	runDone    chan error
+	runStarted bool
 }
 
 func relayAcceptanceNew(t *testing.T, policy cb.Policy, smallBuffer bool) *relayAcceptanceEnv {
+	return relayAcceptanceSetup(t, policy, smallBuffer, true)
+}
+
+func relayAcceptanceSetup(t *testing.T, policy cb.Policy, smallBuffer, startNative bool) *relayAcceptanceEnv {
 	t.Helper()
 	dir, err := os.MkdirTemp("/tmp", "bp-relay-")
 	if err != nil {
@@ -252,14 +258,19 @@ func relayAcceptanceNew(t *testing.T, policy cb.Policy, smallBuffer bool) *relay
 			}
 		}
 	}()
-	go func() { e.runDone <- e.channel.RunNative(ctx, e.native.server) }()
+	if startNative {
+		e.runStarted = true
+		go func() { e.runDone <- e.channel.RunNative(ctx, e.native.server) }()
+	}
 	t.Cleanup(func() {
 		cancel()
 		_ = e.channel.Close()
-		select {
-		case <-e.runDone:
-		case <-time.After(time.Second):
-			t.Error("owned native fixture loop did not stop")
+		if e.runStarted {
+			select {
+			case <-e.runDone:
+			case <-time.After(time.Second):
+				t.Error("owned native fixture loop did not stop")
+			}
 		}
 		select {
 		case <-readerDone:
@@ -288,6 +299,12 @@ func relayAcceptanceCanonicalJSON(t *testing.T, raw []byte) []byte {
 		t.Fatal("owned fixture JSON is invalid")
 	}
 	return relayAcceptanceJSON(t, value)
+}
+
+func relayAcceptanceAbsentID(raw json.RawMessage) bool {
+	// The durable CallbackKey has no omitempty tag. A nil host-side ID therefore
+	// round-trips through JSON as null; neither representation names a native ID.
+	return len(raw) == 0 || bytes.Equal(raw, []byte("null"))
 }
 func (e *relayAcceptanceEnv) write(t *testing.T, raw []byte) {
 	t.Helper()
@@ -714,22 +731,129 @@ func TestCodexRelayAcceptanceUnknownChangedAndCallbackQuarantine(t *testing.T) {
 }
 
 func TestCodexRelayAcceptanceMalformedOwnedSourceCannotBecomeIdleEvidence(t *testing.T) {
-	e := relayAcceptanceNew(t, cb.NewPolicy(), false)
-	// There is no outstanding request whose PendingAck happens to block
-	// handover. The owned source itself became untrustworthy; UI disposal alone
-	// must not erase that unresolved protocol outcome from home authority.
-	raw := []byte(`{"id":"source_malformed","result":{},"error":{"code":-32000,"message":"fixture"}}`)
-	if err := e.up.server.Write(e.ctx, raw); err != nil {
-		t.Fatal(err)
+	for name, fixture := range map[string]struct {
+		raw         []byte
+		requireHash bool
+	}{
+		"mixed_envelope": {[]byte(`{"id":"source_malformed","result":{},"error":{"code":-32000,"message":"fixture"}}`), false},
+		"duplicate_key":  {[]byte(`{"id":"source_malformed","result":{"fixture":"first"},"result":{"fixture":"second"}}`), true},
+		"non_json":       {[]byte(`{source malformed fixture`), true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			e := relayAcceptanceNew(t, cb.NewPolicy(), false)
+			// No outstanding request's PendingAck happens to block handover. UI
+			// disposal alone cannot erase the owned source's unknown outcome.
+			if err := e.up.server.Write(e.ctx, fixture.raw); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := e.native.client.Read(e.ctx); err == nil {
+				t.Fatal("malformed owned source did not close disposable UI")
+			}
+			if _, err := e.handover(t, "malformed_source_next"); err == nil {
+				t.Fatal("malformed owned source became resolved fixture-idle handover evidence")
+			}
+			e.blocked(t)
+			callbacks := e.callbacks(t)
+			if len(callbacks) != 1 || callbacks[0].Origin != e.binding || !relayAcceptanceAbsentID(callbacks[0].Key.RequestID) || callbacks[0].Key.UpstreamChannelID == "" || callbacks[0].Attributed || callbacks[0].Resolved || callbacks[0].DecisionState != cb.Uncertain {
+				t.Fatal("malformed source invented native correlation or lost original origin")
+			}
+			// Malformed JSON must retain evidence tied to all original bytes.
+			// Standard JSON object decoding silently collapses duplicate keys;
+			// comparing its parsed form would manufacture a false retention pass.
+			var digest struct {
+				Bytes  int
+				SHA256 json.RawMessage
+			}
+			_ = json.Unmarshal(callbacks[0].Payload, &digest)
+			originalHash := sha256.Sum256(fixture.raw)
+			var arrayHash [32]byte
+			var hexHash string
+			arrayErr := json.Unmarshal(digest.SHA256, &arrayHash)
+			hexErr := json.Unmarshal(digest.SHA256, &hexHash)
+			fullDigest := digest.Bytes == len(fixture.raw) && ((arrayErr == nil && arrayHash == originalHash) || (hexErr == nil && hexHash == fmt.Sprintf("%x", originalHash)))
+			if fixture.requireHash && !fullDigest && !bytes.Equal(callbacks[0].Payload, fixture.raw) {
+				t.Fatal("quarantine lost full-original malformed source evidence")
+			}
+			if !fixture.requireHash && !fullDigest && !bytes.Equal(relayAcceptanceCanonicalJSON(t, callbacks[0].Payload), relayAcceptanceCanonicalJSON(t, fixture.raw)) {
+				t.Fatal("quarantine lost complete mixed source envelope")
+			}
+			if e.upCount.Load() != 0 {
+				t.Fatal("malformed source recovery created an upstream request")
+			}
+		})
 	}
-	if _, err := e.native.client.Read(e.ctx); err == nil {
-		t.Fatal("malformed owned source did not close disposable UI")
+}
+
+func TestCodexRelayAcceptanceUnexpectedSourceLossAndExplicitClose(t *testing.T) {
+	for _, explicit := range []bool{false, true} {
+		name := "unexpected_loss"
+		if explicit {
+			name = "explicit_controller_close"
+		}
+		t.Run(name, func(t *testing.T) {
+			e := relayAcceptanceNew(t, cb.NewPolicy(), false)
+			if explicit {
+				// Establish the intended attached-state positive through actual
+				// transport delivery; API construction alone is not UI readiness.
+				e.request(t, 1, "thread/read", map[string]any{"threadId": "native_A"})
+				u := e.nextUpstream(t)
+				e.threadReply(t, u.ID, "native_A")
+				e.nextNative(t)
+				e.receipt(t, u.ID, cb.Acknowledged)
+				_ = e.channel.Close()
+			} else if err := e.up.server.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := e.native.client.Read(e.ctx); err == nil {
+				t.Fatal("source loss retained disposable UI")
+			}
+			_, err := e.handover(t, "source_loss_next")
+			if explicit {
+				if err != nil || len(e.callbacks(t)) != 0 {
+					t.Fatal("explicit controller closure fabricated unknown source outcome", err)
+				}
+			} else {
+				if err == nil {
+					t.Fatal("unexpected owned source loss became resolved idle evidence")
+				}
+				e.blocked(t)
+				c := e.callbacks(t)
+				if len(c) != 1 || !relayAcceptanceAbsentID(c[0].Key.RequestID) || c[0].Attributed || c[0].Resolved || c[0].DecisionState != cb.Uncertain {
+					t.Fatal("lost source invented native request correlation or lost durable blocker")
+				}
+			}
+			wantCount := int64(0)
+			if explicit {
+				wantCount = 1
+			}
+			if e.upCount.Load() != wantCount {
+				t.Fatal("source-loss resolution manufactured an upstream request")
+			}
+		})
 	}
-	if _, err := e.handover(t, "malformed_source_next"); err == nil {
-		t.Fatal("malformed owned source became resolved fixture-idle handover evidence")
+}
+
+func TestCodexRelayAcceptanceClosedChannelRefusesLateNative(t *testing.T) {
+	e := relayAcceptanceSetup(t, cb.NewPolicy(), false, false)
+	_ = e.channel.Close()
+	// RunNative is deliberately called after the owned home channel has ended;
+	// no scheduling assumption or artificial blocking policy is required.
+	lateDone := make(chan error, 1)
+	e.runStarted = true
+	go func() {
+		err := e.channel.RunNative(e.ctx, e.native.server)
+		e.runDone <- err
+		lateDone <- err
+	}()
+	select {
+	case err := <-lateDone:
+		if err == nil {
+			t.Fatal("closed home channel accepted late native transport")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("closed home channel retained late native reader")
 	}
-	e.blocked(t)
 	if e.upCount.Load() != 0 {
-		t.Fatal("malformed source recovery created an upstream request")
+		t.Fatal("late native transport created an upstream effect")
 	}
 }
