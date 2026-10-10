@@ -7,6 +7,8 @@ import (
 	"errors"
 	"reflect"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/domain"
@@ -54,7 +56,7 @@ func New(manager Manager, registrar Registrar, binder Binder, sessions Sessions)
 }
 func validID(id domain.ID, kind string) bool {
 	s := string(id)
-	if len(s) != len(kind)+33 || s[:min(len(s), len(kind)+1)] != kind+"_" {
+	if len(s) != len(kind)+33 || !strings.HasPrefix(s, kind+"_") {
 		return false
 	}
 	for _, r := range s[len(kind)+1:] {
@@ -71,10 +73,22 @@ func validAllowlist(actors []string) bool {
 	}
 	seen := map[string]bool{}
 	for _, actor := range actors {
-		if !channels.ValidID(actor) || seen[actor] {
+		if !validAccount(actor) || seen[actor] {
 			return false
 		}
 		seen[actor] = true
+	}
+	return true
+}
+
+func validAccount(s string) bool {
+	if len(s) < 1 || len(s) > 32 || s[0] < 'a' || s[0] > 'z' {
+		return false
+	}
+	for _, r := range s {
+		if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+			return false
+		}
 	}
 	return true
 }
@@ -102,7 +116,8 @@ func (s *Service) Bind(ctx context.Context, in protocol.IRCDBindRequest) (protoc
 		return zero, err
 	}
 	channel, err := ircdchannel.ChannelName(session.ThreadID)
-	if err != nil || route.ServerID != cfg.ID || route.ThreadID != session.ThreadID || route.Endpoint != cfg.Endpoint || route.RealmID != cfg.RealmID || route.Account != cfg.Account || route.CredentialRef != cfg.CredentialRef || route.CAFile != cfg.CAFile || route.Channel != channel || route.RegisteredAt == "" || route.ConfirmedAt.IsZero() || !validOperation(route.OperationID) {
+	registered, registrationErr := time.Parse(time.RFC3339Nano, route.RegisteredAt)
+	if err != nil || route.ServerID != cfg.ID || route.ThreadID != session.ThreadID || route.Endpoint != cfg.Endpoint || route.RealmID != cfg.RealmID || route.Account != cfg.Account || route.CredentialRef != cfg.CredentialRef || route.CAFile != cfg.CAFile || route.Channel != channel || registrationErr != nil || registered.IsZero() || route.ConfirmedAt.IsZero() || !validOperation(route.OperationID) {
 		return zero, ircd.ErrConflict
 	}
 	allow := append([]string{}, in.Allowlist...)

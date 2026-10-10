@@ -20,7 +20,7 @@ Provision and control a private pinned Ergo server explicitly:
   keelmux ircd start [--operation OPERATION_ID]
   keelmux ircd stop --instance EXECUTION_ID
   keelmux ircd restart --instance EXECUTION_ID [--operation OPERATION_ID]
-  keelmux ircd account
+  keelmux ircd account [ACCOUNT]
   keelmux ircd bind --session SESSION_ID --allow-user SERVICES_ACCOUNT \
     [--binding BINDING_ID] [--operation CHANNEL_OPERATION_ID]
 
@@ -49,6 +49,18 @@ func validIRCDID(raw, kind string) bool {
 }
 func validIRCDOperation(raw string) bool {
 	return validIRCDID(raw, "operation") || validIRCDID(raw, "op")
+}
+
+func validIRCDAccountName(s string) bool {
+	if len(s) < 1 || len(s) > 32 || s[0] < 'a' || s[0] > 'z' {
+		return false
+	}
+	for _, r := range s {
+		if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 func manageIRCD(ctx context.Context, c *protocol.Client, args []string) error {
@@ -121,10 +133,17 @@ func manageIRCD(ctx context.Context, c *protocol.Client, args []string) error {
 		}
 		return c.StopIRCD(ctx, domain.ID(*instance))
 	case "account":
-		if len(args) != 1 {
-			return errors.New("ircd account takes no arguments and manages only the private bot")
+		if len(args) > 2 {
+			return errors.New("ircd account accepts at most one canonical services account")
 		}
-		out, err := c.IRCDAccount(ctx, "keelmux-bot")
+		account := "keelmux-bot"
+		if len(args) == 2 {
+			account = args[1]
+		}
+		if !validIRCDAccountName(account) {
+			return errors.New("ircd account needs a lowercase ASCII services account, at most 32 characters")
+		}
+		out, err := c.IRCDAccount(ctx, account)
 		if err != nil {
 			return err
 		}
@@ -144,8 +163,8 @@ func manageIRCD(ctx context.Context, c *protocol.Client, args []string) error {
 		}
 		seen := map[string]bool{}
 		for _, actor := range allow {
-			if seen[actor] {
-				return errors.New("ircd bind rejects duplicate allow-user identities")
+			if !validIRCDAccountName(actor) || seen[actor] {
+				return errors.New("ircd bind requires distinct canonical ASCII allow-user services accounts")
 			}
 			seen[actor] = true
 		}

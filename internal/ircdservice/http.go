@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -208,13 +209,13 @@ func (s *Service) Handler() http.Handler {
 		if !request(w, r, &in) {
 			return
 		}
+		if !validAccount(in.Account) {
+			failed(w, channels.ErrInvalid)
+			return
+		}
 		cfg, err := s.manager.Config()
 		if err != nil {
 			failed(w, err)
-			return
-		}
-		if in.Account != cfg.Account || in.Account != "keelmux-bot" {
-			failed(w, ircd.ErrConflict)
 			return
 		}
 		cred, err := s.manager.EnsureAccount(r.Context(), in.Account)
@@ -222,10 +223,11 @@ func (s *Service) Handler() http.Handler {
 			failed(w, err)
 			return
 		}
-		if cred.Account != cfg.Account || cred.CredentialRef != cfg.CredentialRef {
+		if cred.Account != in.Account || !filepath.IsAbs(cred.CredentialRef) || filepath.Clean(cred.CredentialRef) != cred.CredentialRef {
 			failed(w, ircd.ErrConflict)
 			return
 		}
+		cfg.Account, cfg.CredentialRef = cred.Account, cred.CredentialRef
 		reply(w, 200, protocol.ProjectIRCDConnection(cfg))
 	})
 	mux.HandleFunc("POST /v1/ircd/bind", func(w http.ResponseWriter, r *http.Request) {
