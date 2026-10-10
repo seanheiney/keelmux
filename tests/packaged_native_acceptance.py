@@ -26,6 +26,30 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def process_lifetime(pid):
+    if platform.system() == "Linux":
+        try:
+            data = Path("/proc/%d/stat" % pid).read_text()
+        except (FileNotFoundError, ProcessLookupError):
+            return None
+        fields = data[data.rfind(")")+2:].split()
+        assert len(fields) >= 20, "owned process evidence is malformed"
+        return "linux-ticks:"+fields[19], fields[0]
+    observed = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart=", "-o", "stat="],
+                              env=dict(os.environ, LC_ALL="C"), capture_output=True, text=True, timeout=2)
+    if observed.returncode == 1 and not observed.stdout.strip():
+        return None
+    assert observed.returncode == 0, "owned process evidence could not be read"
+    fields = observed.stdout.split()
+    assert len(fields) == 6, "owned process evidence is malformed"
+    return "darwin-lstart:"+" ".join(fields[:5]), fields[5]
+
+
+def same_live_lifetime(pid, started):
+    observed = process_lifetime(pid)
+    return observed is not None and observed[0] == started and "Z" not in observed[1]
+
+
 def verify_package(directory, source):
     directory = directory.resolve()
     manifest = json.loads((directory / "RELEASE.json").read_bytes())
@@ -65,9 +89,14 @@ class PackageHome(Acceptance):
         self.report["installed_artifact"] = identity
         self.report["execution_source"] = "Installed canonical release binaries; no product build is invoked."
         self.tmux_receipt = None
+        self.pane_lifetimes = {}
 
     def launch(self, *args, **kwargs):
         reply = super().launch(*args, **kwargs)
+        ref = reply[0]["execution"]["runtime"]
+        pane_pid = int(self.tmux("display-message", "-p", "-t", ref["pane"], "#{pane_pid}"))
+        assert pane_pid == ref["pid"] and same_live_lifetime(pane_pid, ref["process_start"]), "owned pane lifetime differs"
+        self.pane_lifetimes[pane_pid] = ref["process_start"]
         if self.tmux_receipt is None:
             path = self.state / "tmux.sock"
             info = path.lstat()
@@ -78,7 +107,8 @@ class PackageHome(Acceptance):
                 else:
                     pid = struct.unpack("3i", peer.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))[0]
             assert int(self.tmux("display-message", "-p", "#{pid}")) == pid, "owned tmux peer/renderer PID differs"
-            started = command(["/bin/ps", "-p", str(pid), "-o", "lstart="])
+            started, state = process_lifetime(pid)
+            assert "Z" not in state, "owned tmux server was already dead"
             self.tmux_receipt = (path, info.st_dev, info.st_ino, pid, started)
         return reply
 
@@ -120,20 +150,30 @@ class PackageHome(Acceptance):
                 self.daemon.wait(timeout=5)
         if self.tmux_receipt:
             path, device, inode, pid, started = self.tmux_receipt
-            try:
-                current = command(["/bin/ps", "-p", str(pid), "-o", "lstart="])
-                if command(["/bin/ps", "-p", str(pid), "-o", "stat="]).startswith("Z"):
-                    current = None  # Recorded process is dead, awaiting reaping.
-            except subprocess.CalledProcessError:
-                current = None
-            if current == started:
+            current = process_lifetime(pid)
+            if current is not None and current[0] == started and "Z" not in current[1]:
                 info = path.lstat()
                 if (info.st_dev, info.st_ino) == (device, inode) and int(self.tmux("display-message", "-p", "#{pid}")) == pid:
                     self.tmux("kill-server")
                 else:
                     issues.append("tmux_cleanup_identity_changed")
-            elif current is not None:
+            elif current is not None and current[0] != started:
                 issues.append("tmux_cleanup_process_changed")
+            lifetimes = dict(self.pane_lifetimes)
+            lifetimes[pid] = started
+            deadline = time.monotonic()+5
+            while time.monotonic() < deadline:
+                if not any(same_live_lifetime(process, lifetime) for process, lifetime in lifetimes.items()):
+                    break
+                time.sleep(0.05)
+            if same_live_lifetime(pid, started):
+                issues.append("owned_tmux_server_remains_live")
+            if any(same_live_lifetime(process, lifetime) for process, lifetime in self.pane_lifetimes.items()):
+                issues.append("owned_pane_remains_live")
+        self.report["cleanup"] = {"owned_panes_recorded": len(self.pane_lifetimes),
+                                  "recorded_server_and_pane_lifetimes_not_live": not issues,
+                                  "completion_checked_after_server_shutdown": True,
+                                  "no_pane_pid_signals": True}
         self.report["cleanup_issues"] = issues
         checked = bool(self.report["checks"]) or embedded
         self.report["qualification"] = ("Embedded execution home; native journey verdict is in the gateway receipt."
