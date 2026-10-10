@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "project_id": "307ddb14-3cca-4188-b5b1-6299c45756ec",
+  "project_url": "https://plane.local.sean.network/goldeneye/projects/307ddb14-3cca-4188-b5b1-6299c45756ec",
+  "project_create_http": 201,
+  "issues": [
+    {
+      "id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+      "sequence_id": 1,
+      "name": "Ship fuller Keelmux communications release",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "71ebb996-25df-4a39-849e-f7fb91032273",
+      "get_verified": true
+    },
+    {
+      "id": "640e42a5-dbd7-44a4-b428-f8b66244f2bc",
+      "sequence_id": 2,
+      "name": "Qualify authored channel inbox and real Mattermost",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "c8840907-c1ff-43a4-aece-9c5ff182ebe8",
+      "get_verified": true
+    },
+    {
+      "id": "71ad8eac-a9e0-4535-99d5-4966b6ca8a9a",
+      "sequence_id": 3,
+      "name": "Provision and manage a private local Ergo IRCD",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "61c21826-e187-4f28-9523-ffc97bd6532a",
+      "get_verified": true
+    },
+    {
+      "id": "00d73587-291b-40a2-9e99-78a3898ca9e5",
+      "sequence_id": 4,
+      "name": "Publish commercial documentation and GitHub Pages site",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "af62632c-e4fc-4a12-81ed-1361a163af9d",
+      "get_verified": true
+    },
+    {
+      "id": "745e3b29-62f4-4033-b6ba-baea5652cf98",
+      "sequence_id": 5,
+      "name": "Implement structured native agent controllers",
+      "state": "Backlog",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "8f52d8d4-b55b-4359-b7ff-88810d7a89be",
+      "get_verified": true
+    },
+    {
+      "id": "305ab0cf-8529-4c2a-86bb-74769bd70aed",
+      "sequence_id": 6,
+      "name": "Deliver enrolled remote hosts and agent continuity",
+      "state": "Backlog",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "517f9520-70f7-45e5-9fc9-530602a1caf1",
+      "get_verified": true
+    },
+    {
+      "id": "4e371257-457f-43f7-bfdd-144f362b9d1c",
+      "sequence_id": 7,
+      "name": "Published v0.1.0 terminal lifecycle and installer",
+      "state": "Done",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "57f88d46-6761-460f-bbb9-68fea060a6d8",
+      "get_verified": true
+    },
+    {
+      "id": "c9291318-8eb9-415f-95cb-a3e81608f3bc",
+      "sequence_id": 8,
+      "name": "Own native PTY supervision without mandatory tmux",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "edb6104b-812a-473a-b923-6ece3eeecb7e",
+      "get_verified": true
+    }
+  ],
+  "mattermost": {
+    "post_http_status": 200,
+    "post_id": "nt13pwhahfrkxbw6azuctpi61e",
+    "post_url": "https://chat.sean.net/seannet/pl/nt13pwhahfrkxbw6azuctpi61e",
+    "post_read_verified": true,
+    "message_sha256": "77e55847336ebe0d8b8e818b4b4d41c093fd0e16944a0994eb728b64d9950746",
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "channel_url": "https://chat.sean.net/seannet/channels/keelmux",
+    "dedicated_webhook_created_http": 201,
+    "dedicated_webhook_channel_locked": true,
+    "transport": "verified exact running Mattermost container bridge; local Unix API readback",
+    "credential_private": true,
+    "owner_joined": "sean",
+    "updated_at": "2026-10-10T20:47:34.870735+00:00"
+  },
+  "latest_release_comment": {
+    "id": "2e2f680e-bd3f-41ef-8ee7-b3047221e8fa",
+    "http_status": 201
+  },
+  "updated_at": "2026-10-10T20:48:44.915199+00:00",
+  "scope": "Dedicated project coordination and acceptance evidence; no credentials included."
+}
