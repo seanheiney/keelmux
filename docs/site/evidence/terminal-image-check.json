@@ -1,0 +1,81 @@
+{
+  "source": "d73c3fbb3b45793c5d0b0cc304b19bedf5aaab1f",
+  "ansi_sha256": "803216634ace729ae90e893e0965414c62c8a490b433249ed4085e4bd7829357",
+  "png_sha256": "d5d9f2e7402ad492ea410e5fcd69784c3a2c0c19fda244d2b9a8dfaebad3a52a",
+  "ansi_replay_text_equal": true,
+  "ansi_replay_png_byte_equal": true,
+  "all_nonempty_rows_have_pixels": true,
+  "rows": [
+    {
+      "row": 1,
+      "text_nonempty": true,
+      "pixels_non_background": 988
+    },
+    {
+      "row": 2,
+      "text_nonempty": true,
+      "pixels_non_background": 1146
+    },
+    {
+      "row": 3,
+      "text_nonempty": true,
+      "pixels_non_background": 1161
+    },
+    {
+      "row": 4,
+      "text_nonempty": true,
+      "pixels_non_background": 696
+    },
+    {
+      "row": 5,
+      "text_nonempty": true,
+      "pixels_non_background": 1187
+    },
+    {
+      "row": 6,
+      "text_nonempty": true,
+      "pixels_non_background": 1081
+    },
+    {
+      "row": 7,
+      "text_nonempty": true,
+      "pixels_non_background": 1504
+    },
+    {
+      "row": 8,
+      "text_nonempty": true,
+      "pixels_non_background": 1283
+    },
+    {
+      "row": 9,
+      "text_nonempty": true,
+      "pixels_non_background": 377
+    },
+    {
+      "row": 10,
+      "text_nonempty": true,
+      "pixels_non_background": 498
+    },
+    {
+      "row": 11,
+      "text_nonempty": false,
+      "pixels_non_background": 0
+    },
+    {
+      "row": 12,
+      "text_nonempty": true,
+      "pixels_non_background": 1424
+    },
+    {
+      "row": 13,
+      "text_nonempty": true,
+      "pixels_non_background": 1435
+    },
+    {
+      "row": 14,
+      "text_nonempty": true,
+      "pixels_non_background": 258
+    }
+  ],
+  "qualification": "Original-size view shows provider/root/bot. Cell raster only; not a native Terminal screenshot. No missing row in saved PNG or TUI cell capture."
+}
