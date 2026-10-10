@@ -107,6 +107,7 @@ func (m *testManager) EnsureAccount(ctx context.Context, account string) (ircd.C
 }
 
 type testSessions struct {
+	afterMembership               *domain.Session
 	session                       domain.Session
 	project                       domain.Project
 	projectCalls, membershipCalls int
@@ -116,6 +117,9 @@ type testSessions struct {
 
 func (s *testSessions) Session(ctx context.Context, id domain.ID) (domain.Session, error) {
 	s.calls++
+	if s.calls > 1 && s.afterMembership != nil {
+		return *s.afterMembership, nil
+	}
 	return s.session, nil
 }
 
@@ -309,6 +313,8 @@ func TestBindingProofCannotGrantNativeDispatchOrChangeIdentity(t *testing.T) {
 	}{
 		{"dispatch", func(out *protocol.ChannelStatus) { out.SemanticDispatch = true }},
 		{"account", func(out *protocol.ChannelStatus) { out.SelfID = "foreign" }},
+		{"project", func(out *protocol.ChannelStatus) { out.ProjectID = domain.NewID("project") }},
+		{"addressing", func(out *protocol.ChannelStatus) { out.IRCAddressed = false }},
 		{"thread", func(out *protocol.ChannelStatus) { out.ThreadID = domain.NewID("thread") }},
 	} {
 		t.Run(change.name, func(t *testing.T) {
@@ -328,6 +334,8 @@ func TestBindRejectsIdentityDriftBeforeBinding(t *testing.T) {
 		change func(*ircdchannel.Route)
 	}{
 		{"thread", func(r *ircdchannel.Route) { r.ThreadID = domain.NewID("thread") }},
+		{"project", func(r *ircdchannel.Route) { r.ProjectID = domain.NewID("project") }},
+		{"nick", func(r *ircdchannel.Route) { r.Nick = "foreign" }},
 		{"server", func(r *ircdchannel.Route) { r.ServerID = domain.NewID("ircd") }},
 		{"realm", func(r *ircdchannel.Route) { r.RealmID = "127.0.0.1:1" }},
 		{"endpoint", func(r *ircdchannel.Route) { r.Endpoint = "ircs://external.example:6697" }},
@@ -432,6 +440,50 @@ func TestProtocolAndRequestScopeAreExact(t *testing.T) {
 			s.Handler().ServeHTTP(out, req)
 			if out.Code < 400 || len(m.calls) != 0 {
 				t.Fatal("ambiguous request scope reached manager")
+			}
+		})
+	}
+}
+
+type sessionOnly struct{ session domain.Session }
+
+func (s *sessionOnly) Session(ctx context.Context, id domain.ID) (domain.Session, error) {
+	return s.session, nil
+}
+
+func TestManagedBindRequiresExplicitProjectAndMembershipBeforeExternalIO(t *testing.T) {
+	for _, kind := range []string{"missing-project", "project-id", "host", "workspace", "invalid-name", "missing-registry", "membership-conflict", "thread-drift"} {
+		t.Run(kind, func(t *testing.T) {
+			s, _, r, b, sessions := setup(t)
+			in := protocol.IRCDBindRequest{ProjectID: sessions.project.ID, ID: domain.NewID("binding"), SessionID: sessions.session.ID, OperationID: domain.NewID("operation"), Allowlist: []string{"alice"}}
+			switch kind {
+			case "missing-project":
+				in.ProjectID = ""
+			case "project-id":
+				sessions.project.ID = domain.NewID("project")
+			case "host":
+				sessions.project.HostID = domain.NewID("host")
+			case "workspace":
+				sessions.project.Workspace = filepath.Join(sessions.project.Workspace, "other")
+			case "invalid-name":
+				sessions.project.Name = "bad\nname"
+			case "missing-registry":
+				s.sessions = &sessionOnly{session: sessions.session}
+			case "membership-conflict":
+				sessions.membershipError = domain.ConflictError{Reason: "different immutable membership"}
+			case "thread-drift":
+				copy := sessions.session
+				copy.ThreadID = domain.NewID("thread")
+				sessions.afterMembership = &copy
+			}
+			if _, e := s.Bind(context.Background(), in); e == nil || r.calls != 0 || len(b.calls) != 0 {
+				t.Fatal("unproven project membership reached external routing")
+			}
+			if kind == "missing-project" && sessions.calls != 0 {
+				t.Fatal("missing explicit project resolved inferred session")
+			}
+			if (kind == "project-id" || kind == "host" || kind == "workspace" || kind == "invalid-name") && sessions.membershipCalls != 0 {
+				t.Fatal("invalid registry identity committed membership")
 			}
 		})
 	}

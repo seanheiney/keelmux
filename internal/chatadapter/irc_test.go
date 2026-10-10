@@ -16,18 +16,21 @@ import (
 	"time"
 
 	"github.com/seanheiney/keelmux/internal/channels"
+	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/ircd"
 )
 
 type ircFixture struct {
-	t                                        *testing.T
-	mu                                       sync.Mutex
-	writeMu                                  sync.Mutex
-	wg                                       sync.WaitGroup
-	connections                              []net.Conn
-	dials, posts, chunks                     int
-	nick, label, text                        string
-	mode, missingCap, wrongAccount, password string
-	ended, authenticated                     bool
+	t                                                             *testing.T
+	mu                                                            sync.Mutex
+	writeMu                                                       sync.Mutex
+	wg                                                            sync.WaitGroup
+	connections                                                   []net.Conn
+	dials, posts, chunks                                          int
+	nick, label, text                                             string
+	mode, missingCap, wrongAccount, password                      string
+	account, authTarget, authMask, authSuccessTarget, welcomeNick string
+	ended, authenticated                                          bool
 }
 
 func newIRCFixture(t *testing.T) (*ircFixture, *IRC, channels.Binding) {
@@ -111,7 +114,11 @@ func (f *ircFixture) serve(conn net.Conn) {
 		}
 		f.mu.Lock()
 		mode, missing, wrong, password := f.mode, f.missingCap, f.wrongAccount, f.password
+		identity, authTarget, authMask, successTarget, welcomeNick := f.account, f.authTarget, f.authMask, f.authSuccessTarget, f.welcomeNick
 		f.mu.Unlock()
+		if identity == "" {
+			identity = "self"
+		}
 		switch m.Command {
 		case "NICK":
 			if len(m.Params) == 1 {
@@ -141,7 +148,10 @@ func (f *ircFixture) serve(conn net.Conn) {
 				f.mu.Lock()
 				f.ended = true
 				f.mu.Unlock()
-				if !f.write(conn, ":server 001 "+nick+" :Welcome") {
+				if welcomeNick == "" {
+					welcomeNick = nick
+				}
+				if !f.write(conn, ":server 001 "+welcomeNick+" :Welcome") {
 					return
 				}
 			}
@@ -166,14 +176,14 @@ func (f *ircFixture) serve(conn net.Conn) {
 				continue
 			}
 			decoded, err := base64.StdEncoding.DecodeString(payload)
-			if err != nil || string(decoded) != "self\x00self\x00"+password {
+			if err != nil || string(decoded) != identity+"\x00"+identity+"\x00"+password {
 				f.t.Error("SASL fixture received incorrect credential framing")
 				return
 			}
 			f.mu.Lock()
 			f.authenticated = true
 			f.mu.Unlock()
-			account := "self"
+			account := identity
 			if wrong != "" {
 				account = wrong
 			}
@@ -181,7 +191,16 @@ func (f *ircFixture) serve(conn net.Conn) {
 				f.write(conn, ":server 904 "+nick+" :SASL authentication failed")
 				return
 			}
-			if !f.write(conn, ":server 900 "+nick+" "+nick+"!u@h "+account+" :Logged in", ":server 903 "+nick+" :SASL authentication successful") {
+			if authTarget == "" {
+				authTarget = nick
+			}
+			if authMask == "" {
+				authMask = nick + "!u@h"
+			}
+			if successTarget == "" {
+				successTarget = authTarget
+			}
+			if !f.write(conn, ":server 900 "+authTarget+" "+authMask+" "+account+" :Logged in", ":server 903 "+successTarget+" :SASL authentication successful") {
 				return
 			}
 		case "JOIN":
@@ -190,7 +209,7 @@ func (f *ircFixture) serve(conn net.Conn) {
 				wireNick = strings.ToUpper(nick)
 				wireChannel = strings.ToUpper(wireChannel)
 			}
-			if !f.write(conn, "@account=self :"+wireNick+"!u@h JOIN "+wireChannel) {
+			if !f.write(conn, "@account="+identity+" :"+wireNick+"!u@h JOIN "+wireChannel) {
 				return
 			}
 		case "PRIVMSG":
@@ -209,7 +228,7 @@ func (f *ircFixture) serve(conn net.Conn) {
 			if mode == "late" {
 				continue
 			}
-			target, account := m.Params[0], "self"
+			target, account := m.Params[0], identity
 			if mode == "wire-case" {
 				target = strings.ToUpper(target)
 			}
@@ -221,13 +240,13 @@ func (f *ircFixture) serve(conn net.Conn) {
 			}
 			echo := "@label=" + label + ";account=" + account + ";msgid=source-reply :" + nick + "!u@h PRIVMSG " + target + " :" + m.Params[1]
 			if mode == "no-msgid" {
-				echo = "@label=" + label + ";account=self :" + nick + "!u@h PRIVMSG " + target + " :" + m.Params[1]
+				echo = "@label=" + label + ";account=" + identity + " :" + nick + "!u@h PRIVMSG " + target + " :" + m.Params[1]
 			}
 			if mode == "rejected" {
 				echo = "@label=" + label + " :server 404 " + nick + " #room :Cannot send"
 			}
 			if mode == "batch" || mode == "incomplete-batch" {
-				body := "@batch=b1;account=self;msgid=source-reply :" + nick + "!u@h PRIVMSG " + target + " :" + m.Params[1]
+				body := "@batch=b1;account=" + identity + ";msgid=source-reply :" + nick + "!u@h PRIVMSG " + target + " :" + m.Params[1]
 				if !f.write(conn, "@label="+label+" :server BATCH +b1 labeled-response", body) {
 					return
 				}
@@ -622,4 +641,128 @@ func TestIRCCanonicalRouteAcceptsOnlySafeWireCaseAliases(t *testing.T) {
 	if f.dialCount() != 1 {
 		t.Fatal("raw alias opened another route connection")
 	}
+}
+
+func managedIRCFixture(t *testing.T) (*ircFixture, *IRC, channels.Binding, string) {
+	t.Helper()
+	f, a, b := newIRCFixture(t)
+	b.ThreadID, b.ProjectID, b.IRCAddressed = domain.NewID("thread"), domain.NewID("project"), true
+	account, e := ircd.ThreadAccount(b.ThreadID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	b.SelfID = account
+	f.account = account
+	secret, _ := json.Marshal(ircSecret{Account: account, Password: f.password, Nick: account})
+	if os.WriteFile(b.CredentialRef, secret, 0600) != nil {
+		t.Fatal("managed private fixture secret")
+	}
+	return f, a, b, account
+}
+
+func TestManagedIRCExactAddressSelectsOneThreadAndProject(t *testing.T) {
+	f1, a1, b1, n1 := managedIRCFixture(t)
+	f2, a2, b2, n2 := managedIRCFixture(t)
+	f3, a3, b3, n3 := managedIRCFixture(t)
+	b2.ProjectID = b1.ProjectID
+	b3.ChannelID = "#other-project"
+	fixtures := []*ircFixture{f1, f2, f3}
+	adapters := []*IRC{a1, a2, a3}
+	bindings := []channels.Binding{b1, b2, b3}
+	for i, a := range adapters {
+		if p, e := a.Probe(context.Background(), bindings[i]); e != nil || p.SelfID != bindings[i].SelfID {
+			t.Fatal("exact thread account", e)
+		}
+	}
+	texts := []string{"unaddressed approve /bin/sh", n1 + ": first", "@" + n2 + " second", strings.ToUpper(n1) + ": alias", "body " + n1 + ": late", n1 + ": @" + n2 + " body mention", n3 + ": wrong project", n1 + ": ", "@" + n1 + "\tinvalid separator"}
+	for i, text := range texts {
+		line := fmt.Sprintf("@account=alice;msgid=source-%d;time=2026-10-10T22:13:21Z :alice!u@h PRIVMSG #room :%s", i, text)
+		for _, f := range fixtures {
+			f.push(line)
+		}
+	}
+	for _, f := range fixtures {
+		f.push("@account=alice;msgid=other-project-source;time=2026-10-10T22:13:22Z :alice!u@h PRIVMSG #other-project :" + n3 + ": third")
+	}
+	wants := [][]string{{texts[1], texts[5]}, {texts[2]}, {n3 + ": third"}}
+	for i, a := range adapters {
+		deadline := time.Now().Add(time.Second)
+		var r channels.FetchResult
+		for time.Now().Before(deadline) {
+			r, _ = a.Fetch(context.Background(), bindings[i], "", 100)
+			if len(r.Messages) >= len(wants[i]) {
+				break
+			}
+			time.Sleep(time.Millisecond)
+		}
+		if len(r.Messages) != len(wants[i]) {
+			t.Fatalf("recipient %d crossed scope: %d", i, len(r.Messages))
+		}
+		for j, m := range r.Messages {
+			if m.Text != wants[i][j] || m.ActorID != "alice" || m.ChannelID != bindings[i].ChannelID {
+				t.Fatal("addressed inbox changed authored text or exact scope")
+			}
+		}
+	}
+}
+
+func TestManagedIRCRejectsNickAdoptionAndAuthenticationAmbiguity(t *testing.T) {
+	for _, mode := range []string{"target", "mask", "mixed-placeholder", "success-target", "welcome-rewrite", "account", "missing-nick", "nick-rewrite", "channel-case-nick-alias"} {
+		t.Run(mode, func(t *testing.T) {
+			f, a, b, nick := managedIRCFixture(t)
+			switch mode {
+			case "target":
+				f.authTarget = "foreign"
+			case "mask":
+				f.authMask = "foreign!u@h"
+			case "mixed-placeholder":
+				f.authTarget = "*"
+			case "success-target":
+				f.authTarget = "*"
+				f.authMask = "*"
+				f.authSuccessTarget = nick
+			case "welcome-rewrite":
+				f.welcomeNick = "renamed"
+			case "account":
+				f.wrongAccount = "foreign"
+			case "missing-nick":
+				raw, _ := json.Marshal(ircSecret{Account: nick, Password: f.password})
+				os.WriteFile(b.CredentialRef, raw, 0600)
+			case "nick-rewrite":
+				raw, _ := json.Marshal(ircSecret{Account: nick, Password: f.password, Nick: "renamed"})
+				os.WriteFile(b.CredentialRef, raw, 0600)
+			case "channel-case-nick-alias":
+				f.mode = "wire-case"
+			}
+			if _, e := a.Probe(context.Background(), b); e == nil {
+				t.Fatal("managed nick/identity adopted")
+			}
+			if f.postCount() != 0 {
+				t.Fatal("invalid identity posted")
+			}
+			if (mode == "missing-nick" || mode == "nick-rewrite") && f.dialCount() != 0 {
+				t.Fatal("unowned thread secret reached network")
+			}
+		})
+	}
+	f, a, b, nick := managedIRCFixture(t)
+	f.authTarget, f.authMask = "*", "*"
+	if p, e := a.Probe(context.Background(), b); e != nil || p.SelfID != nick {
+		t.Fatal("exact paired placeholder SASL refused", e)
+	}
+	f.push(":" + nick + "!u@h NICK :renamed")
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		a.mu.Lock()
+		s := a.states[string(b.ID)]
+		a.mu.Unlock()
+		s.mu.Lock()
+		alive := s.alive
+		s.mu.Unlock()
+		if !alive {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("managed own nick rewrite retained connection")
 }
