@@ -54,6 +54,7 @@ type process struct {
 	start, boot string
 	socket      string
 	inode       os.FileInfo
+	socketOwned bool
 }
 
 func boot(ctx context.Context) (string, error) {
@@ -114,7 +115,7 @@ func (p *process) stop() {
 	}
 	// Native endpoints can live under a shared per-user daemon parent. Remove
 	// only the exact inode from our completed launch; never change the parent.
-	if p.socket != "" {
+	if p.socketOwned && p.socket != "" {
 		current, err := os.Lstat(p.socket)
 		if err == nil && os.SameFile(current, p.inode) {
 			_ = os.Remove(p.socket)
@@ -198,6 +199,7 @@ func (h *harness) launch(ctx context.Context, requested string) (*process, error
 					p.stop()
 					return nil, errors.New("upstream Unix peer PID differs from spawned app-server")
 				}
+				p.socketOwned = true
 				// Dial verifies exact owned 0700 parent and 0600 socket. This helper
 				// resolves only the alias created by its live spawned child.
 				c, err := wire.Dial(ctx, actual)
