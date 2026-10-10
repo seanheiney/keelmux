@@ -2,7 +2,7 @@
 
 A terminal-first, user-owned bouncer for agent work: keep real model CLIs running on your machines, reach permitted sessions through one connection, and continue work across terminals and supported chat clients.
 
-This is a new product repository. Implementation is beginning; no terminal alpha, federation, chat delivery, account failover, or captain automation is certified yet.
+The local terminal core is runnable on the tested macOS arm64 setup. Real Codex and Claude programs can be launched, entered from the TUI, detached, and recovered after daemon loss. Federation transport, native skill preload, and broader acceptance are still being integrated. See [current evidence and gaps](docs/build/STATUS.md).
 
 ## Product contract
 
@@ -30,7 +30,22 @@ Start with two real CLIs and launch → link → attach → detach → reconnect
 
 ## Development
 
-The initial stack under evaluation is Go, a per-user daemon, SQLite, tmux on a dedicated socket, and Bubble Tea. The captain must record dependency versions and establish reproducible build, test, and installation commands in the first implementation milestone.
+The implementation uses Go, a per-user daemon, SQLite, tmux on a dedicated socket, and Bubble Tea. Dependencies are pinned in `go.mod` and `go.sum`.
+
+```sh
+make build
+make check
+./bin/bp doctor
+./bin/bp run --workspace /path/to/project codex
+./bin/bp run --workspace /path/to/project claude
+./bin/bp
+```
+
+Use arrows or `j`/`k` to select work, `/` to search, Enter to open its native terminal, and `v` for a read-only attachment. In the native terminal, **Ctrl-G d** returns to the switcher; **Ctrl-G Ctrl-G** sends a literal Ctrl-G. `g` cycles optional local group views; `p` edits a local draft without sending it to a model.
+
+`bp --state DIR` selects an isolated private state directory. The default is `~/.local/state/agent-backplane`. Run in a terminal with a valid `TERM` such as `xterm-256color`. The daemon starts automatically and keeps native sessions running when the TUI exits. `bp list`, `bp inspect SESSION`, and `bp reconcile` expose current evidence. Launch and stop retries must preserve the printed operation ID.
+
+The current tmux backend supports cooperating managed writers. The same OS user can reach its own tmux socket directly. Semantic chat input, native resume, model/account attribution, and cross-host execution movement are not yet implemented.
 
 Run provider processes using existing authorized native logins. Automated fixtures must use isolated temporary state and a dedicated test tmux socket. Authenticated model turns, live remote resources, and external mutations require separate evidence and are never implied by fixture success.
 

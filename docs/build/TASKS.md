@@ -4,16 +4,18 @@ GitHub issues are the task records for this separate product repository. The cap
 
 | ID | Task | State | Owner | Depends on | Acceptance |
 | --- | --- | --- | --- | --- | --- |
-| BP-001 | Repository and reviewed spec import | Complete locally | Bootstrap coordinator | — | Full documents saved; clean initial commit; private remote |
-| BP-002 | Domain/protocol contracts and runnable build [#1](https://github.com/seanheiney/agent-backplane/issues/1) | Contracts built; integrating | Captain | BP-001 | Explicit IDs/capabilities/outcomes; reproducible Go build and meaningful tests |
-| BP-003 | Durable registry, journal and daemon [#2](https://github.com/seanheiney/agent-backplane/issues/2) | In progress | durable_state; codex/bp-storage | BP-002 | Serialized SQLite mutations; intents/outcomes; restart reconciliation |
-| BP-004 | Dedicated tmux lifecycle and native attach [#3](https://github.com/seanheiney/agent-backplane/issues/3) | In progress | native_runtime; codex/bp-runtime | BP-002 | Exact markers; survivor discovery; native attach/detach; no duplicate start |
-| BP-005 | TUI switcher and remembered groups/place [#4](https://github.com/seanheiney/agent-backplane/issues/4) | In progress | terminal_interface; codex/bp-tui | BP-002 | Real inventory; find/open; optional groups; restored selection; clear capability states |
-| BP-006 | Provider discovery, link and skill preload | Ready | Provider worker | BP-002 | Codex/Claude exact linking; truthful modes; owned config preserved; repeatable install/remove |
-| BP-007 | Integrated two-provider terminal alpha | Waiting | Captain plus independent validator | BP-003–006 | Full native journey, daemon loss and adverse-state evidence against exact SHA |
-| BP-008 | Two-server one-entry federation proof [#7](https://github.com/seanheiney/agent-backplane/issues/7) | Experiment active; real host unselected | Captain until worker available | BP-002, BP-004 | Authenticated scope, routed inventory/attach, reconnect/revoke, no false host migration |
+| BP-001 | Repository and reviewed spec import | Complete; private remote verified | Bootstrap coordinator | — | Full documents saved; clean initial commit; private remote |
+| BP-002 | Domain/protocol contracts and runnable build [#1](https://github.com/seanheiney/agent-backplane/issues/1) | Integrated; build/race/vet pass | Captain; codex/captain-core | BP-001 | Explicit IDs/capabilities/outcomes; reproducible Go build and meaningful tests |
+| BP-003 | Durable registry, journal and daemon [#2](https://github.com/seanheiney/agent-backplane/issues/2) | Integrated; independent validation active | durable_state 25122b1; captain b962535 | BP-002 | Serialized SQLite mutations; intents/outcomes; restart reconciliation |
+| BP-004 | Dedicated tmux lifecycle and native attach [#3](https://github.com/seanheiney/agent-backplane/issues/3) | Integrated; two real programs observed | native_runtime 9b1c35f | BP-002 | Exact markers; survivor discovery; native attach/detach; no duplicate start |
+| BP-005 | TUI switcher and remembered groups/place [#4](https://github.com/seanheiney/agent-backplane/issues/4) | Integrated; independent native/fixture matrix active | terminal_interface c28e742 | BP-002 | Real inventory; find/open; optional groups; restored selection; clear capability states |
+| BP-006 | Provider discovery, link and skill preload [#5](https://github.com/seanheiney/agent-backplane/issues/5) | In progress; exact nonce link integrated | terminal_interface; codex/bp-providers | BP-002 | Codex/Claude exact linking; truthful modes; owned config preserved; repeatable install/remove |
+| BP-007 | Integrated two-provider terminal alpha [#6](https://github.com/seanheiney/agent-backplane/issues/6) | Independent acceptance active | integrated_acceptance; codex/bp-acceptance; captain | BP-003–006 | Full native journey, daemon loss and adverse-state evidence against exact SHA |
+| BP-008 | Two-server one-entry federation proof [#7](https://github.com/seanheiney/agent-backplane/issues/7) | Native transport active; real host unselected | native_runtime; codex/bp-transport; captain | BP-002, BP-004 | Authenticated scope, routed inventory/attach, reconnect/revoke, no false host migration |
 | BP-009 | Bidirectional communication thread bridge | Waiting | Communication worker | BP-007, BP-008 | Addressed Mattermost path then declared IRC mode; correct delivery/replay/input arbitration |
 | BP-010 | Readiness, auth repair, usage and bounded continuity | Waiting | Continuity worker | BP-007 | Shared repair; qualified meters; eligible route; one task/thread; uncertain effects reconciled |
 | BP-011 | Optional group and personal advice captains | Waiting | Coordination worker | BP-009, BP-010 | Scoped sourced reports; useful attention; accounted usage; zero unchanged-idle model activity |
 
 Tasks are implementation milestones, not shipped feature claims. Split them into small issues before parallel assignment. BP-008 remains an early experiment even while local terminal alpha is developed.
+
+Integrated contributions: TUI c28e742 → 2a98946; store/daemon 25122b1 → a40d15e; tmux 9b1c35f → 48dbd4d. Source b962535 passes the integrated build/check and fixes native-runtime inheritance of the registry authority lock. See STATUS and exact-SHA evidence before interpreting any task as accepted.
