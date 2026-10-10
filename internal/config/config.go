@@ -2,6 +2,7 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/seanheiney/agent-backplane/internal/domain"
@@ -51,6 +52,10 @@ func privateFile(path string, flags int) (*os.File, error) {
 	}
 	return f, nil
 }
+
+// HostID accepts only the product-generated host_<32 lowercase hex> identity.
+// Malformed legacy or interrupted writes require explicit repair; they remain
+// untouched rather than silently assigning a different execution authority.
 func (p Paths) HostID() (domain.ID, error) {
 	path := filepath.Join(p.Dir, "host-id")
 	f, err := privateFile(path, syscall.O_RDONLY)
@@ -60,8 +65,8 @@ func (p Paths) HostID() (domain.ID, error) {
 		if err != nil {
 			return "", err
 		}
-		if len(b) == 0 || len(b) > 256 {
-			return "", errors.New("invalid or oversized host identity; repair required")
+		if !validHostID(b) {
+			return "", errors.New("host identity must be host_ followed by 32 lowercase hex digits; repair required")
 		}
 		if err := syncDirectory(p.Dir); err != nil {
 			return "", err
@@ -90,6 +95,17 @@ func (p Paths) HostID() (domain.ID, error) {
 		err = syncDirectory(p.Dir)
 	}
 	return id, err
+}
+func validHostID(value []byte) bool {
+	if len(value) != len("host_")+32 || !bytes.HasPrefix(value, []byte("host_")) {
+		return false
+	}
+	for _, b := range value[len("host_"):] {
+		if !((b >= '0' && b <= '9') || (b >= 'a' && b <= 'f')) {
+			return false
+		}
+	}
+	return true
 }
 func (p Paths) Lock() (*os.File, error) {
 	f, err := privateFile(filepath.Join(p.Dir, "daemon.lock"), syscall.O_CREAT|syscall.O_RDWR)
