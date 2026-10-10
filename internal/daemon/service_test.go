@@ -3,6 +3,7 @@ package daemon
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -473,6 +474,62 @@ func TestStaleStopAndLostAckNeverRepeatsEffect(t *testing.T) {
 			collision := in
 			collision.ExecutionID = "replacement"
 			assertConflict(t, e.service.Stop(context.Background(), collision))
+		})
+	}
+}
+
+func TestDelayedOldStopCannotReachReplacementExecution(t *testing.T) {
+	for _, recorded := range []bool{false, true} {
+		t.Run(fmt.Sprint(recorded), func(t *testing.T) {
+			e := setup(t)
+			ctx := context.Background()
+			old := e.launch(t).Session
+			in := protocol.SessionRequest{SessionID: old.ID, ExecutionID: old.Execution.ID, Generation: old.Execution.Generation, OperationID: "delayed-stop"}
+			if recorded {
+				if _, _, err := e.store.Record(ctx, domain.Operation{ID: in.OperationID, Kind: "stop", SessionID: old.ID, ExecutionID: old.Execution.ID}, payload(in), nil); err != nil {
+					t.Fatal(err)
+				}
+			}
+			// No continuation API exists yet. Install a synthetic newer current
+			// execution while authority is closed to exercise the delayed request
+			// boundary without claiming native continuation support.
+			next := old
+			next.Execution.ID = "execution_replacement"
+			next.Execution.Generation++
+			next.Execution.Runtime.ExecutionID = next.Execution.ID
+			next.Execution.Runtime.OperationID = "replacement-launch"
+			next.Execution.Runtime.PID++
+			next.Execution.Runtime.ProcessStart = "replacement-start"
+			if err := e.store.Close(); err != nil {
+				t.Fatal(err)
+			}
+			db, err := sql.Open("sqlite", e.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, _ := json.Marshal(next)
+			_, err = db.ExecContext(ctx, "UPDATE sessions SET data=? WHERE id=?", data, next.ID)
+			db.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			e.store, err = store.Open(e.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			e.service, err = New(e.store, e.backend, "host")
+			if err != nil {
+				t.Fatal(err)
+			}
+			e.backend.refs[next.Execution.ID] = next.Execution.Runtime
+			assertConflict(t, e.service.Stop(ctx, in))
+			if _, stops := e.backend.counts(); stops != 0 {
+				t.Fatal("delayed old stop reached a runtime")
+			}
+			got, err := e.store.Session(ctx, next.ID)
+			if err != nil || got.Execution != next.Execution {
+				t.Fatalf("replacement changed: %v", err)
+			}
 		})
 	}
 }
