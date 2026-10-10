@@ -43,6 +43,8 @@ keelmux channels history --after 0 --limit 50 thread_EXACT
 
 History uses an authored sequence cursor. To read the next page, pass the last returned sequence as `--after`. It does not mix terminal output into chat history.
 
+In the switcher, select the session and press **c**. Choose one destination with **b**, then Enter; **p** composes a local reply, **Enter** adds a newline and **Ctrl-S** queues it. **]** and **[** move through local history pages without changing that destination or draft. **d** checks the selected local reply's receipt and **u** reconciles an uncertain one read-only. [Daily keys and recovery](daily-use.md#channel-inbox).
+
 Channel status separates `active` configuration from observed intake. `intake` reports `idle`, `healthy`, `unavailable`, `gap` or `disabled`; `last_check` and `last_success` qualify freshness. `more_history` describes the last committed page. A failed poll preserves the last successful observation. Mattermost/Slack coverage is scoped snapshots since activation; IRC coverage is the current live connection only. `history_gap` means complete replay is unavailable, even when a binding remains active.
 
 Every reply names one destination. Multiple bindings on one thread do not broadcast to one another:

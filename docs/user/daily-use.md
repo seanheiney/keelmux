@@ -52,7 +52,7 @@ A changed target is shown before future delivery can be added. Current model int
 
 After [binding a thread](channels.md), select its session and press **c**. Incoming notes are authored snapshots, with their sender and binding visible. **b**, then Enter chooses one active destination; **p** opens a local reply. **Enter** adds a newline and **Ctrl-S** queues the exact reply to chat. Escape returns to the inbox or work. Reply text never enters a native composer.
 
-Use arrows to select a note, **PgUp/PgDn** to scroll its text, **d** to query its exact delivery receipt and **u** to reconcile an uncertain receipt read-only. **r** refreshes the snapshot and any saved queue intent. **?** shows the contextual keys. Configuration activity, intake freshness, a local queue receipt and an acknowledged external post remain separately labeled.
+Use arrows to select a note, **PgUp/PgDn** to scroll its text, **]** for the next history page and **[** for the previous page. Each page contains at most 100 notes; paging preserves the chosen destination and reply draft. **d** queries the selected local note's exact delivery receipt and **u** reconciles an uncertain receipt read-only. **r** refreshes the current page and any saved queue intent. **?** shows the contextual keys. Configuration activity, intake freshness, a local queue receipt and an acknowledged external post remain separately labeled.
 
 If the queue acknowledgement is lost, the saved intent is frozen. Reopen Keelmux and query its receipt; do not create a replacement ID. An explicit Ctrl-S retry can reuse that exact intent only after the local service reports it missing and the same destination remains active. An uncertain external post is never resent. See [receipt meanings](channels.md#read-and-reply).
 
