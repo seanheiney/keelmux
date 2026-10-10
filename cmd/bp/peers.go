@@ -42,7 +42,7 @@ func managePeers(ctx context.Context, stateDir string, args []string, out io.Wri
 	}
 	command := args[0]
 	fs := flag.NewFlagSet("keelmux peers "+command, flag.ContinueOnError)
-	fs.SetOutput(out)
+	fs.SetOutput(io.Discard)
 	var file, principal, sessions string
 	var refresh bool
 	switch command {
@@ -60,7 +60,11 @@ func managePeers(ctx context.Context, stateDir string, args []string, out io.Wri
 		return errors.New("unknown peers command; use peers --help")
 	}
 	if err := fs.Parse(args[1:]); err != nil {
-		return err
+		if errors.Is(err, flag.ErrHelp) {
+			_, e := fmt.Fprint(out, peersHelp)
+			return e
+		}
+		return errors.New("invalid peers arguments; use peers --help")
 	}
 	var selected domain.ID
 	var cfg peers.Config

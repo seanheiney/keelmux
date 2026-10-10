@@ -110,3 +110,14 @@ func TestPeerCLIRefusesSymlinkedClientState(t *testing.T) {
 		t.Fatal("refused command created state")
 	}
 }
+
+func TestPeerCLIInvalidFlagDiagnosticsDoNotEchoPrivateValues(t *testing.T) {
+	dir := filepath.Join(groupsTestRoot(t), "missing")
+	for _, args := range [][]string{{"list", "--refresh=PRIVATE_VALUE"}, {"list", "--PRIVATE_FLAG=value"}} {
+		var out bytes.Buffer
+		err := managePeers(context.Background(), dir, args, &out)
+		if err == nil || strings.Contains(err.Error()+out.String(), "PRIVATE") {
+			t.Fatal("parser echoed invalid private argument", err, out.String())
+		}
+	}
+}

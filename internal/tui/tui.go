@@ -110,6 +110,8 @@ type model struct {
 	channelSending       bool
 	channelError         string
 	channelReceipts      map[domain.ID]channels.Delivery
+	usagePanel           *usagePanel
+	usageEpoch           uint64
 }
 
 func newModel(ctx context.Context, client *protocol.Client, path string, s clientstate.State) *model {
@@ -231,6 +233,9 @@ func (m *model) move(delta int) {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case usageSnapshotMsg:
+		m.acceptUsage(msg)
+		return m, nil
 	case channelSnapshotMsg:
 		return m, m.acceptChannelSnapshot(msg)
 	case channelSendMsg:
@@ -319,6 +324,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.busy {
 			return m, nil
 		}
+		if m.screen == "usage" {
+			return m, m.usageKey(msg)
+		}
 		if strings.HasPrefix(m.screen, "channel") {
 			return m, m.channelKey(msg)
 		}
@@ -401,8 +409,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "c":
 			return m, m.openChannels()
+		case "u":
+			return m, m.openUsage()
 		case "?":
-			m.status = "Enter owns native input; v observes. c opens authored notes. Native drafts and channel replies stay separate."
+			m.status = "Enter owns native input; v observes. c opens authored notes; u reads local usage. Native drafts and channel replies stay separate."
 		}
 	}
 	return m, nil

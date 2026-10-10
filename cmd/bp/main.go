@@ -119,6 +119,12 @@ func run() error {
 	if len(args) > 0 && args[0] == "peers" {
 		return peersCommand(*state, *entry, args[1:])
 	}
+	if len(args) > 0 && args[0] == "usage" {
+		return usageCommand(*state, *entry, args[1:])
+	}
+	if len(args) > 0 && args[0] == "diagnose" {
+		return diagnoseCommand(*state, *entry, args[1:])
+	}
 	p, err := config.Resolve(*state)
 	if err != nil {
 		return err
@@ -363,6 +369,7 @@ keelmux stop SESSION [--operation ID]  Stop current execution; preserve ID on re
 keelmux reconcile                     Recheck surviving executions
 keelmux daemon status|stop|restart    Inspect or restart only the owned daemon
 keelmux doctor                        Check local binaries and daemon
+keelmux diagnose [--json]             Read existing state without starting services
 keelmux version [--json]              Print release and protocol provenance
 keelmux providers                     Inspect qualified native status without model work
 keelmux channels --help               Bind chat roots, read authored inbox and reply
@@ -370,6 +377,7 @@ keelmux ircd --help                   Provision and manage a private IRC server
 keelmux projects --help               Create and inspect durable project identities
 keelmux groups --help                 Manage company/product navigation collections
 keelmux peers --help                  Explicit pinned SSH inventory
+keelmux usage --help                  Contextual source-qualified usage
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

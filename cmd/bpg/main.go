@@ -22,7 +22,6 @@ import (
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/federation"
-	peerregistry "github.com/seanheiney/keelmux/internal/peers"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/transport"
 )
@@ -128,36 +127,11 @@ func run() error {
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
 		return errors.New("entry companion executable unavailable")
 	}
-	var peers []federation.Peer
-	registries := map[string]*peerregistry.Registry{}
-	defer func() {
-		for _, r := range registries {
-			_ = r.Close()
-		}
-	}()
-	for _, peer := range conf.Peers {
-		if peer.Socket != "" {
-			peers = append(peers, federation.Peer{HostID: peer.HostID, Source: transport.NewClient(peer.Socket)})
-			continue
-		}
-		r := registries[peer.InventoryStore]
-		if r == nil {
-			info, e := os.Lstat(peer.InventoryStore)
-			if e != nil || !info.IsDir() {
-				return errors.New("enrolled inventory_store must already exist as a private directory")
-			}
-			var eOpen error
-			r, eOpen = peerregistry.Open(peer.InventoryStore, nil)
-			if eOpen != nil {
-				return eOpen
-			}
-			registries[peer.InventoryStore] = r
-		}
-		if _, err := r.View(peer.HostID, conf.Principal); err != nil {
-			return errors.New("entry host has no enrollment for the selected principal")
-		}
-		peers = append(peers, federation.Peer{HostID: peer.HostID, Source: peerregistry.Source{Registry: r, HostID: peer.HostID, Principal: conf.Principal}})
+	peers, closePeers, err := entrySources(conf)
+	if err != nil {
+		return err
 	}
+	defer closePeers()
 	var grants []federation.Grant
 	for _, grant := range conf.Grants {
 		grants = append(grants, federation.Grant{Principal: conf.Principal, HostID: grant.HostID, Sessions: grant.Sessions})
