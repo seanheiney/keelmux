@@ -104,7 +104,7 @@
     "id": "2e2f680e-bd3f-41ef-8ee7-b3047221e8fa",
     "http_status": 201
   },
-  "updated_at": "2026-10-10T21:09:08.774247+00:00",
+  "updated_at": "2026-10-10T21:43:51.087871+00:00",
   "scope": "Dedicated project coordination and acceptance evidence; no credentials included.",
   "native_milestone_comments": [
     {
@@ -133,5 +133,25 @@
     "comment_id": "994132f9-52f7-4d54-8157-e22e8e2caab0",
     "write_status": 201,
     "read_status": 200
+  },
+  "irc_project_threads_scope": {
+    "issue_id": "71ad8eac-a9e0-4535-99d5-4966b6ca8a9a",
+    "comment_id": "61e60150-d6e6-4e6b-99ec-12825a23e930",
+    "write_status": 201,
+    "read_status": 200
+  },
+  "irc_project_threads_implementation": {
+    "issue_id": "71ad8eac-a9e0-4535-99d5-4966b6ca8a9a",
+    "comment_id": "bbdad1b8-85d4-45cc-8415-b38a7ad1dfa1",
+    "write_status": 201,
+    "read_status": 200
+  },
+  "mattermost_irc_project_implementation": {
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "post_id": "aomsi6w16bbefkfadkk86gcmbw",
+    "url": "https://chat.sean.net/seannet/pl/aomsi6w16bbefkfadkk86gcmbw",
+    "message_sha256": "2c8918743a3eb18b9910161347ebfa3e283a38d21cba91a220788c78fabe7469",
+    "read_status": 200,
+    "unique_exact_message": true
   }
 }
