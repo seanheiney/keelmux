@@ -1,6 +1,6 @@
 # Installation
 
-Keelmux is a per-user application. Bring tmux and your selected provider's native CLI and login. It needs no product account or root service.
+Keelmux is a per-user application. Bring your selected provider's native CLI and login. The published v0.1.0 runtime requires tmux; development/source builds include native supervision and require no tmux. It needs no product account or root service.
 
 ## One-line installation
 
@@ -18,7 +18,7 @@ keelmux version --json
 keelmux doctor
 ```
 
-`doctor` requires tmux and at least one launchable native provider. It can start the private daemon; it does not submit a model turn or sign in. See the [support matrix](support-matrix.md) for tested combinations.
+Development `doctor` checks the bundled supervisor and at least one launchable native provider. The historical v0.1.0 doctor checks tmux. It can start the private daemon; it does not submit a model turn or sign in. See the [support matrix](support-matrix.md) for tested combinations.
 
 ## Pin and review
 
@@ -69,7 +69,7 @@ Uninstall removes only unchanged installer-owned application files and matching 
 
 ## Build from source
 
-Install the Go version declared in `go.mod`, tmux and your selected native CLI through their normal workflows:
+Install the Go version declared in `go.mod` and your selected native CLI through their normal workflows:
 
 ```sh
 git clone https://github.com/seanheiney/keelmux.git

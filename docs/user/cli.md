@@ -12,7 +12,8 @@ Global flags precede the command. Flags belonging to `run` precede the provider 
 | `keelmux version` | Display application version, source commit and protocol |
 | `keelmux help` | Show command help |
 | `keelmux providers` | Probe native installation/version and qualified login status |
-| `keelmux doctor` | Check tmux, native providers and daemon; missing prerequisites exit nonzero |
+| `keelmux ircd --help` | Provision, inspect, start/stop/restart a private IRC server and bind stable thread channels; development only |
+| `keelmux doctor` | Check the native supervisor, providers and daemon; missing prerequisites exit nonzero |
 | `keelmux daemon status` | Inspect the live daemon instance and loaded build without starting one |
 | `keelmux daemon stop [--instance INSTANCE]` | Stop only that live daemon; preserve native sessions |
 | `keelmux daemon restart [--instance INSTANCE]` | Restart the daemon and reconcile surviving native terminals |

@@ -16,7 +16,7 @@ After client loss, reopen the same state. Pending attachment identity remains sa
 
 After a lost launch or stop response, retry only the same operation and request. **Completed**, **failed** and **outcome uncertain** are distinct. Unknown effects do not trigger automatic replay. Preserve the original execution and inspect it before taking another action.
 
-The tested daemon-restart journey preserves surviving tmux executions. It does not prove native conversation resume after provider exit or host reboot. If the native CLI exits, keep the registry and its native history and use that provider's supported recovery workflow separately. Keelmux's product native-resume command is unfinished.
+The tested daemon-restart journey preserves surviving owned executions. The native development runtime survives actual control-daemon loss without tmux; historical v0.1.0 uses its qualified tmux adapter. It does not prove native conversation resume after provider exit or host reboot. If the native CLI exits, keep the registry and its native history and use that provider's supported recovery workflow separately. Keelmux's product native-resume command is unfinished.
 
 ## Operate the daemon
 
@@ -68,7 +68,7 @@ chmod 600 "$KEELMUX_BACKUP/registry.sqlite" "$KEELMUX_BACKUP/host-id"
 
 `quick_check` should return `ok`. A snapshot made during live work is consistent at its capture point; later operations are outside that snapshot.
 
-Close the switcher before copying `place.json` to keep its saved navigation and drafts. For a full coordinated authority bundle, also preserve the private `tmux.sock.bp/` receipts and any entry receipts. Those files are not in SQLite and are captured at a separate instant during an online backup. For a custom home, inspect and stop `keelmux --state "$KEELMUX_STATE" daemon status` and `keelmux --state "$KEELMUX_STATE" daemon stop`; default-state commands can address a different home. Stop the exact owned entry through its verified foreground lifecycle before taking a coordinated offline bundle. Copy owned regular state files and directories, excluding live sockets and lock files. Treat the whole backup as private: runtime receipts can contain launch correlation.
+Close the switcher before copying `place.json` to keep its saved navigation and drafts. For a full coordinated authority bundle, also preserve private `native/` supervisor receipts, optional `irc/` configuration/account/database/journals, legacy `tmux.sock.bp/` receipts and any entry receipts. Those files are not in SQLite and are captured at a separate instant during an online backup. For a custom home, inspect and stop `keelmux --state "$KEELMUX_STATE" daemon status` and `keelmux --state "$KEELMUX_STATE" daemon stop`; default-state commands can address a different home. Stop the exact owned entry through its verified foreground lifecycle before taking a coordinated offline bundle. Copy owned regular state files and directories, excluding live sockets and lock files. Treat the whole backup as private: runtime receipts can contain launch correlation.
 
 ## Restore conservatively
 

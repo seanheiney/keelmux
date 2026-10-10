@@ -6,7 +6,8 @@ Start with the selected state and exact session. Preserve operation IDs and draf
 | --- | --- | --- |
 | `keelmux` is not found | Installation destination and current shell PATH | Use the installed absolute executable path; apply the printed PATH step yourself |
 | Daemon companion unavailable | CLI and daemon executables are beside each other | Reinstall the complete verified release or use the complete source `bin/` build |
-| tmux unavailable | `keelmux doctor` | Install tmux through your normal trusted package workflow, then retry |
+| Native supervisor unavailable | `keelmux doctor` | Install the complete native release with its bundled supervisor; preserve uncertain execution records |
+| tmux unavailable for an existing legacy execution | `keelmux inspect SESSION` | Restore tmux for that exact legacy session; new native sessions do not depend on it |
 | Provider unavailable/unrecognized version | `keelmux providers` | Install or repair that native CLI separately; unsupported versions require their own acceptance |
 | Native login or trust prompt | Actual native CLI screen | Complete that provider's own intended workflow; Keelmux does not bypass it |
 | Model/account shows `unknown` | `keelmux inspect SESSION` evidence/source | Treat it as unknown; credential presence and launch are not per-session attribution |
@@ -30,7 +31,7 @@ Start with the selected state and exact session. Preserve operation IDs and draf
 
 ## Collect a useful report
 
-Provide the application build/source, OS/architecture, tmux/native versions, exact command with sensitive values removed, expected versus observed behavior, session capability state and operation outcome. State whether the issue used local native terminals, authored channels or the experimental entry/broker. For channels, include the provider/server version, finite intake/receipt state and a synthetic reproduction; exclude bot tokens, private note text and raw server responses.
+Provide the application build/source, OS/architecture, runtime backend and native CLI versions, exact command with sensitive values removed, expected versus observed behavior, session capability state and operation outcome. State whether the issue used local native terminals, authored channels or the experimental entry/broker. For channels, include the provider/server version, finite intake/receipt state and a synthetic reproduction; exclude bot tokens, private note text and raw server responses.
 
 `providers` and `inspect` already qualify unknown evidence, but their JSON may contain local executable/workspace paths and stable IDs. Review it before posting. Native screens, full state directories, runtime receipts and logs can contain more sensitive material. The project does not need credential files or private launch tokens to reproduce a report.
 

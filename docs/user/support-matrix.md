@@ -4,6 +4,14 @@ Keelmux declares support per provider, version, platform, authentication mode an
 
 The current runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6 and tmux 3.7b, with installed **Codex CLI 0.159.0** and **Claude Code 2.1.296**. Four archive targets build: macOS/Linux, arm64/amd64. Independent macOS arm64 packaged installation and authority-refusal acceptance passed on source `0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44`: [package receipt](../evidence/keelmux-release-macos-independent.md). Linux arm64 terminal-backend acceptance runs actual packaged binaries in a pinned Debian container with explicit fixture programs; it does not prove native Linux Codex or Claude behavior. Other provider versions and build-only targets need their own receipts. The tagged release attaches its final exact-source qualification separately.
 
+## Independent native runtime development
+
+The development default owns native PTY/process supervision. Optional tmux compatibility only addresses previously recorded executions; a failed native launch cannot fall back to tmux. See the [architecture decision](../architecture/0002-native-runtime-ownership.md).
+
+Integrated source `7f13006` passed full race tests and vet. Its actual daemon test uses a PATH containing only Keelmux binaries, kills and restarts the control daemon, and verifies the same child PID/start/execution survives. Native transport tests exercise Unicode, resize, Escape, literal Ctrl-G, detach, caller terminal restoration and reconnect using the real helper. Independent terminal review found and repaired control-framing, split-grapheme and special-file refusal defects before this integration.
+
+Real native-supervised pinned Ergo persistence passed separately on macOS arm64 and isolated nonroot Linux arm64; its exact module/runtime receipt remains separate from whole-product and final-package qualification. Actual Codex/Claude native-supervisor startup and final installer/package reruns are active gates. The historical provider receipts below qualify the v0.1.0 tmux runtime.
+
 ## Terminal core
 
 | Capability | Evidence | Limit |

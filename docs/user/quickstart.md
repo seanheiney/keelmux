@@ -1,6 +1,6 @@
 # Your first session
 
-You need a terminal, tmux and an installed Codex or Claude Code CLI. Authenticate through that provider's normal workflow before using it for model work. Keelmux does not sign you in, copy credentials or install a provider CLI.
+You need a terminal and an installed Codex or Claude Code CLI. Published v0.1.0 additionally needs tmux; the development/source build bundles native supervision. Authenticate through that provider's normal workflow before using it for model work. Keelmux does not sign you in, copy credentials or install a provider CLI.
 
 The tested runtime is macOS on Apple Silicon. Check the [support matrix](support-matrix.md) before relying on another platform or CLI version. Installation and release availability are described in [Installation](install.md).
 
@@ -12,7 +12,7 @@ keelmux providers
 keelmux doctor
 ```
 
-`providers` probes native version and login status without a model turn. A credential status is narrower than verified account identity, model access or quota. `doctor` checks tmux, at least one launchable native provider and daemon reachability. Missing prerequisites return a nonzero exit status; a passing check does not establish account or model access.
+`providers` probes native version and login status without a model turn. A credential status is narrower than verified account identity, model access or quota. Development `doctor` checks the bundled native supervisor, at least one launchable native provider and daemon reachability. Published v0.1.0 checks its tmux prerequisite. Missing prerequisites return a nonzero exit status; a passing check does not establish account or model access.
 
 ## Launch work
 

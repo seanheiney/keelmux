@@ -2,7 +2,7 @@
 
 **Keep your agents running. Keep your place.**
 
-Keelmux is a terminal bouncer for real Codex and Claude Code sessions. Launch work on your machine, leave the terminal, and return to the same running process from a fast session switcher. Your native CLI keeps its login, workspace, permissions and conversation.
+Keelmux is an independent terminal backplane for real Codex and Claude Code sessions. Launch work on your machine, leave the terminal, and return to the same running process from a fast session switcher. Your native CLI keeps its login, workspace, permissions and conversation.
 
 ```text
 keelmux run codex       →  work keeps running
@@ -14,7 +14,7 @@ Ctrl-G d                →  return to your switcher
 
 ## Install
 
-With tmux and your chosen native CLI installed:
+The published v0.1.0 installer selects the historical tmux release. Development builds bundle an independent native supervisor; tmux is optional for existing sessions. Bring your chosen native CLI and its native login.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | sh
@@ -37,7 +37,7 @@ The daemon starts automatically. Closing the switcher keeps native processes run
 
 ## What you get
 
-- **Real native terminals.** Unicode, resize, alternate screens and native keyboard behavior pass through the owned tmux session.
+- **Real native terminals.** Unicode, resize, alternate screens and native keyboard behavior use owned native supervision in development; v0.1.0 uses its qualified tmux adapter.
 - **Durable control.** Stable work identity, execution generations, exact operation receipts and one cooperating managed writer keep reconnect and uncertain outcomes explicit.
 - **A focused switcher.** Find work quickly; groups are optional, and drafts stay local until you use the native CLI.
 - **Owned skill setup.** Preview provider-specific connection skills, apply only selected bundles, and archive matching owned bundles on removal.
@@ -45,7 +45,7 @@ The daemon starts automatically. Closing the switcher keeps native processes run
 
 The current native runtime evidence covers **macOS arm64, Codex 0.159.0 and Claude Code 2.1.296**. Linux terminal-backend checks use explicit fixtures; native Linux providers and other architectures need their own acceptance; see the [support matrix](docs/user/support-matrix.md) for exact release artifacts and qualifications.
 
-A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Independent remote enrollment, semantic Mattermost/IRC delivery, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
+A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Development builds add authored Mattermost/Slack/IRC inboxes, explicit replies and an optional managed Ergo server. Independent remote enrollment, structured model dispatch, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
 
 ## Operate with confidence
 
@@ -53,6 +53,7 @@ A private entry can expose explicitly permitted sessions from multiple execution
 | --- | --- |
 | First session and daily navigation | [Quickstart](docs/user/quickstart.md), [TUI](docs/user/daily-use.md) |
 | Install, upgrade, rollback or uninstall | [Installation](docs/user/install.md) |
+| Thread bindings and private IRC service | [Authored channels](docs/user/channels.md), [Managed IRC](docs/user/managed-irc.md) |
 | Provider readiness and connection skills | [Providers](docs/user/configuration.md#native-configuration), [Setup](docs/user/skills.md) |
 | Backups, permissions and daemon operation | [Operations](docs/user/operations.md) |
 | Lost replies, crashed clients or missing sessions | [Recovery](docs/user/operations.md#recover-a-session), [Troubleshooting](docs/user/troubleshooting.md) |
@@ -75,6 +76,6 @@ make check
 ./bin/keelmux version --json
 ```
 
-Go 1.26+, SQLite, Bubble Tea and pinned Go dependencies; tmux is required at runtime. [Contributing](CONTRIBUTING.md) explains the contracts and isolated tests. The [full specification](docs/product/PRODUCT_SPEC.md) and [build plan](docs/build/BUILD_PLAN.md) retain the longer-term product vision.
+Go 1.26+, SQLite, Bubble Tea and pinned Go dependencies; The development runtime owns its PTYs and processes without tmux. [Contributing](CONTRIBUTING.md) explains the contracts and isolated tests. The [full specification](docs/product/PRODUCT_SPEC.md) and [build plan](docs/build/BUILD_PLAN.md) retain the longer-term product vision.
 
 [MIT](LICENSE). No telemetry service or model API key is required by the local switcher.

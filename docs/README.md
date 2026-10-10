@@ -2,7 +2,7 @@
 
 Keelmux keeps real agent terminals on your machine and gives you one switcher for returning to work. Native CLIs retain their own login, model interaction and permission controls.
 
-Start with [your first session](user/quickstart.md). The published v0.1.0 release is a terminal product with an experimental private entry path. This development branch adds scoped authored inboxes and explicit chat replies for the next release. Cross-server enrollment, account routing and structured Codex prompts retain separate unfinished gates.
+Start with [your first session](user/quickstart.md). The published v0.1.0 release is a terminal product with an experimental private entry path. This development branch adds native PTY/process supervision, scoped authored inboxes, explicit chat replies and an optional managed IRC server for the next release. Cross-server enrollment, account routing and structured Codex prompts retain separate unfinished gates.
 
 | I want to… | Read |
 | --- | --- |
@@ -10,6 +10,7 @@ Start with [your first session](user/quickstart.md). The published v0.1.0 releas
 | Launch, attach, detach and return | [Quickstart](user/quickstart.md) |
 | Switch work, organize groups and keep drafts | [Daily use](user/daily-use.md) |
 | Bind a thread to Mattermost, Slack or IRC | [Channels — next release](user/channels.md) |
+| Run and bind a private owned IRC server | [Managed IRC — next release](user/managed-irc.md) |
 | Install the connection skill without overwriting my setup | [Skills and linking](user/skills.md) |
 | Find a command or flag | [CLI reference](user/cli.md) |
 | Choose state paths and inspect local files | [Configuration](user/configuration.md) |
