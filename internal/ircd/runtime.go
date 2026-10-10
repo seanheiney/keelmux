@@ -104,11 +104,13 @@ func (m *Manager) installArchive(ctx context.Context, archive io.Reader) (Runtim
 	if e != nil {
 		return RuntimeInfo{}, e
 	}
-	dir := filepath.Join(m.dir, "runtime")
-	if os.Mkdir(dir, 0700) != nil {
+	finalDir := filepath.Join(m.dir, "runtime")
+	dir, e := os.MkdirTemp(m.dir, ".runtime-stage-")
+	if e != nil {
 		return RuntimeInfo{}, ErrRepair
 	}
-	if syncDir(m.dir) != nil {
+	defer os.RemoveAll(dir)
+	if os.Chmod(dir, 0700) != nil {
 		return RuntimeInfo{}, ErrRepair
 	}
 	for _, name := range []string{"ergo", "LICENSE", "default.yaml"} {
@@ -120,12 +122,15 @@ func (m *Manager) installArchive(ctx context.Context, archive io.Reader) (Runtim
 			return RuntimeInfo{}, ErrRepair
 		}
 	}
-	r := RuntimeInfo{Version: Version, Source: SourceCommit, Target: target, ArchiveSHA256: p.sha, BinarySHA256: digest(files["ergo"]), DefaultSHA256: digest(files["default.yaml"]), LicenseSHA256: digest(files["LICENSE"]), Path: filepath.Join(dir, "ergo")}
-	out, e := m.command(ctx, r.Path, "--version")
+	r := RuntimeInfo{Version: Version, Source: SourceCommit, Target: target, ArchiveSHA256: p.sha, BinarySHA256: digest(files["ergo"]), DefaultSHA256: digest(files["default.yaml"]), LicenseSHA256: digest(files["LICENSE"]), Path: filepath.Join(finalDir, "ergo")}
+	out, e := m.command(ctx, filepath.Join(dir, "ergo"), "--version")
 	if e != nil || strings.TrimSpace(string(out)) != "ergo-"+Version {
 		return RuntimeInfo{}, ErrUnavailable
 	}
-	if writeJSON(filepath.Join(m.dir, "runtime.json"), r, false) != nil {
+	if writeJSON(filepath.Join(dir, "runtime.json"), r, false) != nil {
+		return RuntimeInfo{}, ErrRepair
+	}
+	if syncDir(dir) != nil || renameDirectoryExclusive(dir, finalDir) != nil || syncDir(m.dir) != nil {
 		return RuntimeInfo{}, ErrRepair
 	}
 	return r, nil
@@ -202,7 +207,10 @@ func unpack(raw []byte, prefix string) (map[string][]byte, error) {
 }
 func (m *Manager) runtimeInfo(ctx context.Context) (RuntimeInfo, error) {
 	var r RuntimeInfo
-	e := readJSON(filepath.Join(m.dir, "runtime.json"), &r)
+	e := readJSON(filepath.Join(m.dir, "runtime", "runtime.json"), &r)
+	if os.IsNotExist(e) {
+		e = readJSON(filepath.Join(m.dir, "runtime.json"), &r)
+	}
 	if e != nil {
 		return r, e
 	}

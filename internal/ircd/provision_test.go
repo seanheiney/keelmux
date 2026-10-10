@@ -201,3 +201,30 @@ func TestPinnedDistributionArchives(t *testing.T) {
 		})
 	}
 }
+
+func TestRuntimeDirectoryPublication(t *testing.T) {
+	d := t.TempDir()
+	stage := filepath.Join(d, "stage")
+	target := filepath.Join(d, "target")
+	os.Mkdir(stage, 0700)
+	os.WriteFile(filepath.Join(stage, "manifest"), []byte("verified"), 0600)
+	os.Mkdir(target, 0700)
+	before, e := os.Stat(target)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = renameDirectoryExclusive(stage, target); e == nil {
+		t.Fatal("overwrote existing directory")
+	}
+	after, e := os.Stat(target)
+	if e != nil || !os.SameFile(before, after) {
+		t.Fatal("foreign destination changed")
+	}
+	if e = renameDirectoryExclusive(stage, filepath.Join(d, "fresh")); e != nil {
+		t.Fatal(e)
+	}
+	b, e := os.ReadFile(filepath.Join(d, "fresh", "manifest"))
+	if e != nil || string(b) != "verified" {
+		t.Fatal("publication incomplete", e)
+	}
+}
