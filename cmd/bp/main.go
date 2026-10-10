@@ -82,9 +82,6 @@ func run() error {
 			return err
 		}
 	} else {
-		if _, err := c.Directory(ctx); err != nil {
-			return fmt.Errorf("entry unavailable: %w", err)
-		}
 		if len(args) > 0 && (args[0] == "run" || args[0] == "stop" || args[0] == "link" || args[0] == "reconcile") {
 			return errors.New("this entry supports permitted inventory and native attachment; run management commands at the execution home")
 		}
