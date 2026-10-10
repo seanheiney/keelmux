@@ -137,6 +137,13 @@ func (g *primaryGate) WithPrimaryLifecycle(ctx context.Context, req cc.Lifecycle
 		if req.OperationID != r.Request.OperationID || req.Agent != (cb.AgentBinding{}) {
 			return conflict("primary start operation differs from reservation")
 		}
+		claimed, err := s.store.ClaimCodexPrimaryStart(ctx, req)
+		if err != nil {
+			return err
+		}
+		if !claimed {
+			return cc.ErrUncertain // An existing claim never authorizes a second effect.
+		}
 	case cc.StopPrimary:
 		s.codexRegistration.Lock()
 		if s.codexCallbacks.Load() != 0 {
@@ -157,10 +164,17 @@ func (g *primaryGate) WithPrimaryLifecycle(ctx context.Context, req cc.Lifecycle
 func primaryStatus(v cc.View) PrimaryStatus {
 	return PrimaryStatus{Primary: v, Capabilities: PrimaryCapabilities{OwnedPrimaryVerified: v.State == cc.Ready, Explanation: "Host-internal primary lifecycle only. Product launcher, native projection, semantic delivery, remote approval and account identity are unqualified."}}
 }
+func primaryResult(v cc.View, err error) (PrimaryStatus, error) {
+	out := primaryStatus(v)
+	if err != nil {
+		out.Capabilities.OwnedPrimaryVerified = false
+	}
+	return out, err
+}
 func (p *CodexPrimary) Start(ctx context.Context, request cc.StartRequest) (PrimaryStatus, error) {
 	v, err := p.controller.Start(ctx, request)
 	if err != nil || v.State != cc.Ready {
-		return primaryStatus(v), err
+		return primaryResult(v, err)
 	}
 	// Re-enter the common authority before verifying and publishing. Never hold
 	// the controller journal while waiting for Service.mu.
@@ -170,12 +184,7 @@ func (p *CodexPrimary) Start(ctx context.Context, request cc.StartRequest) (Prim
 	if err == nil {
 		err = p.service.store.PublishCodexPrimary(ctx, a)
 	}
-	if err != nil {
-		out := primaryStatus(v)
-		out.Capabilities.OwnedPrimaryVerified = false
-		return out, err
-	}
-	return primaryStatus(v), nil
+	return primaryResult(v, err)
 }
 func (p *CodexPrimary) Reconcile(ctx context.Context, target cc.Target) (PrimaryStatus, error) {
 	p.service.mu.Lock()
@@ -196,11 +205,7 @@ func (p *CodexPrimary) Reconcile(ctx context.Context, target cc.Target) (Primary
 	if err == nil && v.State == cc.Stopped {
 		err = p.service.store.CompleteCodexPrimaryStop(ctx, cc.StopRequest{OperationID: v.StopOperationID, Target: v.Target, Incarnation: v.Incarnation})
 	}
-	out := primaryStatus(v)
-	if err != nil {
-		out.Capabilities.OwnedPrimaryVerified = false
-	}
-	return out, err
+	return primaryResult(v, err)
 }
 func (p *CodexPrimary) Stop(ctx context.Context, request cc.StopRequest) (PrimaryStatus, error) {
 	v, err := p.controller.Stop(ctx, request)
@@ -210,7 +215,7 @@ func (p *CodexPrimary) Stop(ctx context.Context, request cc.StopRequest) (Primar
 		p.service.mu.Unlock()
 	}
 
-	return primaryStatus(v), err
+	return primaryResult(v, err)
 }
 
 // The Service mutex excludes new admitted work; this final reader barrier

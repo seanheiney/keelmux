@@ -20,6 +20,7 @@ const primaryReserveKind = "codex.primary.reserve"
 type PrimaryReservation struct {
 	Name    string
 	Request cc.StartRequest
+	Start   *PrimaryStartAttempt `json:",omitempty"`
 }
 
 func primaryReservation(ctx context.Context, q queryer, sessionID, executionID domain.ID) (PrimaryReservation, error) {
@@ -48,7 +49,7 @@ func primaryReservation(ctx context.Context, q queryer, sessionID, executionID d
 			continue
 		}
 		var r PrimaryReservation
-		if json.Unmarshal(data, &r) != nil || !bytes.Equal(encoded(r), data) || r.Request.OperationID != op.ID || r.Request.Target.SessionID != sessionID || r.Request.Target.ExecutionID != executionID || found != nil {
+		if json.Unmarshal(data, &r) != nil || !bytes.Equal(encoded(r), data) || r.Request.OperationID != op.ID || r.Request.Target.SessionID != sessionID || r.Request.Target.ExecutionID != executionID || !validPrimaryStartAttempt(r.Start) || found != nil {
 			return PrimaryReservation{}, repair("invalid or duplicate primary reservation")
 		}
 		found = &r
@@ -97,7 +98,7 @@ func (s *Store) PublishCodexPrimary(ctx context.Context, a cb.AgentBinding) erro
 	if err != nil {
 		return err
 	}
-	if a.HostID != v.HostID || a.Generation != v.Execution.Generation || a.ExecutionID != v.Execution.ID || a.NativeThreadID != r.Request.NativeThreadID || a.ProtocolVersion != cc.ProtocolVersion || v.Execution.State == "primary_stopping" || v.Execution.State == "primary_stopped" {
+	if r.Start == nil || r.Start.Incarnation != a.AppServerIncarnation || a.HostID != v.HostID || a.Generation != v.Execution.Generation || a.ExecutionID != v.Execution.ID || a.NativeThreadID != r.Request.NativeThreadID || a.ProtocolVersion != cc.ProtocolVersion || v.Execution.State == "primary_stopping" || v.Execution.State == "primary_stopped" {
 		return conflict("primary binding differs from current reservation or is fenced")
 	}
 	var prior []byte
