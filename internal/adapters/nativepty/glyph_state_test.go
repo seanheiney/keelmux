@@ -143,3 +143,48 @@ func TestResizeResetsDelayedWrap(t *testing.T) {
 		})
 	}
 }
+
+// A rejected margin command must leave both the emulator and origin-relative
+// grapheme rewrite on the original rows. Defaults must resolve to screen bounds.
+func TestOriginMarginsAfterRejectedAndDefaultedCommands(t *testing.T) {
+	cases := []struct {
+		name, command    string
+		top, bottom      int
+		accentY, digitsY int
+	}{
+		{"inverted", "\x1b[3;1r", 2, 3, 2, 1},
+		{"equal", "\x1b[2;2r", 2, 3, 2, 1},
+		{"zero-top", "\x1b[0;3r", 1, 3, 0, 2},
+		{"zero-bottom", "\x1b[2;0r", 2, 4, 1, 2},
+		{"zero-both", "\x1b[0;0r", 1, 4, 0, 2},
+	}
+	for _, test := range cases {
+		for _, chunk := range []int{1, 2, 5, 128} {
+			t.Run(fmt.Sprintf("%s/chunk%d", test.name, chunk), func(t *testing.T) {
+				s := newTerminalScreen(7, 4)
+				defer s.close()
+				input := []byte("\x1b[2;3r\x1b[?6h\x1b[2;1H1234567" + test.command + "A\u0301")
+				for offset := 0; offset < len(input); offset += chunk {
+					s.process(input[offset:min(offset+chunk, len(input))])
+				}
+				for y := 0; y < 4; y++ {
+					for x := 0; x < 7; x++ {
+						want := " "
+						if y == test.digitsY {
+							want = string(rune('1' + x))
+						} else if y == test.accentY && x == 0 {
+							want = "A\u0301"
+						}
+						cell := s.emulator.CellAt(x, y)
+						if cell == nil || cell.Content != want || cell.Width != 1 {
+							t.Fatalf("cell(%d,%d)=%+v want %q width1; screen=%q", x, y, cell, want, s.emulator.String())
+						}
+					}
+				}
+				if got := s.emulator.CursorPosition(); got != uv.Pos(1, test.accentY) || s.pendingWrap || s.top != test.top || s.bottom != test.bottom {
+					t.Fatalf("cursor=%v wrap=%v margins=%d;%d, want (1,%d) false %d;%d", got, s.pendingWrap, s.top, s.bottom, test.accentY, test.top, test.bottom)
+				}
+			})
+		}
+	}
+}
