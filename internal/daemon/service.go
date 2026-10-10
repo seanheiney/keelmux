@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/seanheiney/agent-backplane/internal/domain"
@@ -27,6 +28,9 @@ type Service struct {
 	store   *store.Store
 	backend runtime.Backend
 	hostID  domain.ID
+	// Reader registration announces callbacks before waiting for the actor
+	// gate. Admission cannot overtake a callback already awaiting persistence.
+	codexCallbacks atomic.Int64
 }
 
 func New(st *store.Store, backend runtime.Backend, hostID domain.ID) (*Service, error) {
@@ -41,6 +45,9 @@ func New(st *store.Store, backend runtime.Backend, hostID domain.ID) (*Service, 
 		if v.HostID != hostID {
 			return nil, errors.New("registry belongs to a different host authority")
 		}
+	}
+	if err = st.RecoverCodex(context.Background()); err != nil {
+		return nil, err
 	}
 	return &Service{store: st, backend: backend, hostID: hostID}, nil
 }
@@ -371,6 +378,11 @@ func (s *Service) Attach(ctx context.Context, in protocol.LeaseRequest) (domain.
 	if err != nil {
 		return out, err
 	}
+	if broker, e := s.store.CodexBound(ctx, v.ID, v.Execution.ID); e != nil {
+		return out, e
+	} else if broker {
+		return out, conflict("broker projection requires a verified home controller")
+	}
 	if v.Mode != domain.Managed || !v.Capabilities.NativeAttach || v.Execution.State != "running" {
 		return out, conflict("native attachment unavailable for this session state and mode")
 	}
@@ -430,6 +442,11 @@ func (s *Service) Release(ctx context.Context, in protocol.LeaseRequest) error {
 	if !g.Active {
 		return nil
 	}
+	if _, _, e := s.store.CodexGrant(ctx, in.OperationID); e == nil {
+		return conflict("native projection detach cannot release the broker primary writer")
+	} else if !errors.Is(e, store.ErrNotFound) {
+		return e
+	}
 	if !g.ReadOnly {
 		obs, err := s.backend.Inspect(ctx, v.Execution.Runtime)
 		if err != nil {
@@ -450,6 +467,11 @@ func (s *Service) Stop(ctx context.Context, in protocol.SessionRequest) error {
 	defer s.mu.Unlock()
 	if in.OperationID == "" {
 		return invalid("stop requires a durable operation ID")
+	}
+	if broker, e := s.store.CodexBound(ctx, in.SessionID, in.ExecutionID); e != nil {
+		return e
+	} else if broker {
+		return conflict("broker primary stop requires trusted primary lifecycle evidence")
 	}
 	op, p, err := s.store.Operation(ctx, in.OperationID)
 	if err == nil {
@@ -534,6 +556,9 @@ func (s *Service) Stop(ctx context.Context, in protocol.SessionRequest) error {
 func (s *Service) Reconcile(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := s.store.RecoverCodex(ctx); err != nil {
+		return err
+	}
 	ops, err := s.store.Operations(ctx)
 	if err != nil {
 		return err
@@ -541,6 +566,12 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	var failures []error
 	for _, op := range ops {
 		if op.Kind != "launch" && op.Kind != "stop" {
+			continue
+		}
+		if broker, e := s.store.CodexBound(ctx, op.SessionID, op.ExecutionID); e != nil {
+			failures = append(failures, e)
+			continue
+		} else if broker {
 			continue
 		}
 		if op.Outcome == domain.Recorded {
@@ -576,6 +607,15 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return err
 	}
 	for _, v := range vs {
+		if broker, e := s.store.CodexBound(ctx, v.ID, v.Execution.ID); e != nil {
+			failures = append(failures, e)
+			continue
+		} else if broker {
+			if _, e = s.store.SetRecovery(ctx, v.ID, v.Execution.ID, "recovery_required", "owned app-server primary verification required; native projection survival or exit does not establish primary lifecycle"); e != nil {
+				failures = append(failures, e)
+			}
+			continue
+		}
 		if v.Execution.Runtime.ExecutionID == "" || v.Execution.State == "stopped" {
 			continue
 		}
@@ -605,6 +645,11 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	return errors.Join(failures...)
 }
 func (s *Service) reconcileOperation(ctx context.Context, op domain.Operation) error {
+	if broker, e := s.store.CodexBound(ctx, op.SessionID, op.ExecutionID); e != nil {
+		return e
+	} else if broker {
+		return runtimeIssue{"recovery_required", "native runtime cannot establish broker primary lifecycle"}
+	}
 	v, err := s.store.Session(ctx, op.SessionID)
 	if err != nil {
 		return err

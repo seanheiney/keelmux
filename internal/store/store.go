@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/seanheiney/agent-backplane/internal/config"
 	"github.com/seanheiney/agent-backplane/internal/domain"
 	_ "modernc.org/sqlite"
 )
@@ -29,19 +30,12 @@ type Store struct {
 // Open requires a private state directory. An advisory lock excludes another
 // cooperating host authority; SQLite files must never be shared across hosts.
 func Open(path string) (*Store, error) {
-	if !filepath.IsAbs(path) {
-		return nil, errors.New("store path must be absolute")
+	if !filepath.IsAbs(path) || filepath.Clean(path) != path {
+		return nil, errors.New("store path must be clean and absolute")
 	}
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := config.EnsurePrivateDirectory(dir); err != nil {
 		return nil, err
-	}
-	info, err := os.Stat(dir)
-	if err != nil {
-		return nil, err
-	}
-	if info.Mode().Perm()&0077 != 0 {
-		return nil, errors.New("store directory must be private (0700)")
 	}
 	lock, err := privateFile(path + ".lock")
 	if err != nil {
@@ -65,7 +59,7 @@ func Open(path string) (*Store, error) {
 	db.SetMaxOpenConns(1)
 	s := &Store{db: db, lock: lock}
 	var schemaVersion int
-	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 1 {
+	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 2 {
 		s.Close()
 		if err != nil {
 			return nil, err
@@ -74,13 +68,24 @@ func Open(path string) (*Store, error) {
 	}
 	// DELETE avoids sensitive WAL sidecars; FULL makes committed intent durable
 	// before the caller may invoke the external runtime.
-	_, err = db.Exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
-CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, data BLOB NOT NULL);
-CREATE TABLE IF NOT EXISTS operations (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id), generation INTEGER NOT NULL, data BLOB NOT NULL, payload BLOB NOT NULL);
-CREATE TABLE IF NOT EXISTS events (thread_id TEXT NOT NULL, sequence INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY(thread_id, sequence));
-CREATE TABLE IF NOT EXISTS grants (operation_id TEXT PRIMARY KEY REFERENCES operations(id), session_id TEXT NOT NULL REFERENCES sessions(id), execution_id TEXT NOT NULL, read_only INTEGER NOT NULL, active INTEGER NOT NULL, data BLOB NOT NULL);
-CREATE UNIQUE INDEX IF NOT EXISTS one_writer ON grants(session_id,execution_id) WHERE active=1 AND read_only=0;
-PRAGMA user_version=1;`)
+	_, err = db.Exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;`)
+	if err == nil && schemaVersion < 2 {
+		err = migrate(context.Background(), db)
+	}
+	if err == nil {
+		err = validateCodexSchema(context.Background(), db)
+	}
+	if err != nil {
+		s.Close()
+		return nil, err
+	}
+	// Confirm the database/authority-lock directory entries as well as every
+	// created parent. SQLite FULL sync covers committed transactional contents.
+	parent, err := os.Open(dir)
+	if err == nil {
+		err = parent.Sync()
+		_ = parent.Close()
+	}
 	if err != nil {
 		s.Close()
 		return nil, err
@@ -88,12 +93,49 @@ PRAGMA user_version=1;`)
 	return s, nil
 }
 
+// Migration only adds metadata. Legacy lease, operation and payload bytes are
+// untouched, and no principal or broker authority is invented for old grants.
+func migrate(ctx context.Context, db *sql.DB) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, data BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS operations (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id), generation INTEGER NOT NULL, data BLOB NOT NULL, payload BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS events (thread_id TEXT NOT NULL, sequence INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY(thread_id, sequence));
+CREATE TABLE IF NOT EXISTS grants (operation_id TEXT PRIMARY KEY REFERENCES operations(id), session_id TEXT NOT NULL REFERENCES sessions(id), execution_id TEXT NOT NULL, read_only INTEGER NOT NULL, active INTEGER NOT NULL, data BLOB NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS one_writer ON grants(session_id,execution_id) WHERE active=1 AND read_only=0;
+CREATE TABLE IF NOT EXISTS codex_agents (session_id TEXT NOT NULL REFERENCES sessions(id), execution_id TEXT NOT NULL, data BLOB NOT NULL, PRIMARY KEY(session_id,execution_id));
+CREATE TABLE IF NOT EXISTS codex_epochs (session_id TEXT PRIMARY KEY REFERENCES sessions(id), value INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS codex_grants (operation_id TEXT PRIMARY KEY REFERENCES grants(operation_id), data BLOB NOT NULL, agent BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS codex_connections (id TEXT PRIMARY KEY, data BLOB NOT NULL, retired INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS codex_receipts (operation_id TEXT PRIMARY KEY REFERENCES operations(id), effect_class TEXT NOT NULL, data BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS codex_callbacks (id TEXT PRIMARY KEY, data BLOB NOT NULL);
+PRAGMA user_version=2;`)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func privateFile(path string) (*os.File, error) {
-	fd, err := syscall.Open(path, syscall.O_CREAT|syscall.O_RDWR|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0600)
+	fd, err := syscall.Open(path, syscall.O_CREAT|syscall.O_RDWR|syscall.O_NOFOLLOW|syscall.O_CLOEXEC|syscall.O_NONBLOCK, 0600)
 	if err != nil {
 		return nil, err
 	}
 	f := os.NewFile(uintptr(fd), path)
+	info, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !info.Mode().IsRegular() || !ok || stat.Uid != uint32(os.Geteuid()) {
+		f.Close()
+		return nil, errors.New("store and authority lock require owned regular files")
+	}
 	if err := f.Chmod(0600); err != nil {
 		f.Close()
 		return nil, err
@@ -349,6 +391,13 @@ func (s *Store) Resolve(ctx context.Context, id domain.ID, outcome domain.Outcom
 	if v.Execution.ID != op.ExecutionID || v.Execution.Generation != generation {
 		return op, conflict("stale execution outcome")
 	}
+	broker, err := codexBound(ctx, tx, v.ID, v.Execution.ID)
+	if err != nil {
+		return op, err
+	}
+	if broker && (projection != nil || op.Kind == "stop" && outcome == domain.Completed) {
+		return op, conflict("native projection cannot settle or stop the broker primary")
+	}
 	if projection != nil {
 		if projection.ID != v.ID || projection.Execution.ID != v.Execution.ID || projection.Execution.Generation != v.Execution.Generation || projection.ThreadID != v.ThreadID || projection.WorkID != v.WorkID || projection.LaneID != v.LaneID || projection.HostID != v.HostID {
 			return op, conflict("outcome cannot replace stable identities or execution")
@@ -464,6 +513,13 @@ func (s *Store) Acquire(ctx context.Context, l domain.Lease, readOnly bool, payl
 	if v.Execution.ID != l.ExecutionID || v.Execution.Generation != l.Generation {
 		return l, conflict("stale execution generation")
 	}
+	broker, err := codexBound(ctx, tx, v.ID, v.Execution.ID)
+	if err != nil {
+		return l, err
+	}
+	if broker {
+		return l, conflict("broker execution requires the verified common authority")
+	}
 	op, p, err := operation(ctx, tx, l.OperationID)
 	if err == nil {
 		if op.Kind != "attach" || !bytes.Equal(p, payload) {
@@ -533,6 +589,20 @@ func (s *Store) Release(ctx context.Context, l domain.Lease) error {
 	}
 	if !g.Active {
 		return nil
+	}
+	var broker int
+	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM codex_grants WHERE operation_id=?`, l.OperationID).Scan(&broker); err != nil {
+		return err
+	}
+	if broker != 0 {
+		return conflict("native projection detach cannot release a broker grant")
+	}
+	op, _, err := operation(ctx, tx, l.OperationID)
+	if err != nil {
+		return err
+	}
+	if op.Kind == "codex.acquire" || op.Kind == "codex.handover" {
+		return conflict("broker metadata missing; repair required, reservation retained")
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE grants SET active=0 WHERE operation_id=?`, l.OperationID); err != nil {
 		return err
