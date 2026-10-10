@@ -1,0 +1,541 @@
+{
+  "source": "3d841ba48112724a2f27776727e15b04bf253de8",
+  "mobile": [
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/quickstart/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/quickstart.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/install/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/install.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/daily-use/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/daily-use.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/channels/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/channels.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/managed-irc/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/roadmap.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/skills/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/skills.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/operations/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/operations.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/configuration/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/configuration.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/private-entry/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/private-entry.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/troubleshooting/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/troubleshooting.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/cli/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/cli.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/architecture/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/architecture.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/support-matrix/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/support-matrix.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/roadmap/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/roadmap.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/security/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/SECURITY.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/support/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/SUPPORT.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/contributing/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/CONTRIBUTING.md",
+      "width": 390
+    },
+    {
+      "h1s": 1,
+      "images": true,
+      "path": "/keelmux/changelog/",
+      "scrollWidth": 390,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/CHANGELOG.md",
+      "width": 390
+    }
+  ],
+  "desktop": [
+    {
+      "h1s": 1,
+      "path": "/keelmux/quickstart/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/quickstart.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/install/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/install.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/daily-use/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/daily-use.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/channels/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/channels.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/managed-irc/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/roadmap.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/skills/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/skills.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/operations/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/operations.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/configuration/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/configuration.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/private-entry/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/private-entry.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/troubleshooting/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/troubleshooting.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/cli/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/cli.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/architecture/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/architecture.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/support-matrix/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/support-matrix.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/roadmap/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/docs/user/roadmap.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/security/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/SECURITY.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/support/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/SUPPORT.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/contributing/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/CONTRIBUTING.md",
+      "width": 1440
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/changelog/",
+      "scrollWidth": 1440,
+      "source": "https://github.com/seanheiney/keelmux/blob/3d841ba48112724a2f27776727e15b04bf253de8/CHANGELOG.md",
+      "width": 1440
+    }
+  ],
+  "narrow": [
+    {
+      "h1s": 1,
+      "path": "/keelmux/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/quickstart/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/install/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/daily-use/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/channels/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/managed-irc/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/skills/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/operations/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/configuration/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/private-entry/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/troubleshooting/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/cli/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/architecture/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/support-matrix/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/roadmap/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/security/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/support/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/contributing/",
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "h1s": 1,
+      "path": "/keelmux/changelog/",
+      "scrollWidth": 320,
+      "width": 320
+    }
+  ],
+  "interactions": {
+    "menuTabWrap": true,
+    "menuReverseTabWrap": true,
+    "menuEscapeFocus": {
+      "backgroundInert": false,
+      "closed": true,
+      "focusedMenu": true
+    },
+    "copyLabel": "Copied",
+    "copiedTextPasted": "curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/main/install.sh | sh",
+    "searchResults": 8,
+    "searchArrowDown": true,
+    "searchEscapeClosed": true,
+    "hostileQuery": {
+      "createdImages": 0,
+      "resultCount": 0,
+      "status": "No matching guides. Try fewer words."
+    }
+  },
+  "toolLimits": [
+    "Terminal CUA denied in prior capture; terminal art is interpreted PTY cells",
+    "Browser clipboard cache read returned empty; successful copy verified with actual paste",
+    "Initial direct navigation lacked observed destination; explicit expectNavigation passed",
+    "Generic nav.press unsupported; Escape on focused link passed",
+    "Read-only browser evaluation does not expose navigator; browser version will be read from installed application metadata"
+  ],
+  "mobileHome": {
+    "headerHeight": 64,
+    "heroHeight": 755.8515625,
+    "scrollWidth": 390,
+    "settledOpacity": "1",
+    "width": 390
+  },
+  "computedTextColors": [
+    {
+      "background": "rgb(247, 248, 244)",
+      "foreground": "rgb(23, 36, 32)",
+      "selector": ".article>p",
+      "contrast_ratio": 15.033
+    },
+    {
+      "background": "rgb(247, 248, 244)",
+      "foreground": "rgb(8, 125, 100)",
+      "selector": ".article-heading .eyebrow",
+      "contrast_ratio": 4.77
+    },
+    {
+      "background": "rgb(247, 248, 244)",
+      "foreground": "rgb(86, 99, 93)",
+      "selector": ".source-link",
+      "contrast_ratio": 5.897
+    },
+    {
+      "background": "rgb(247, 248, 244)",
+      "foreground": "rgb(8, 125, 100)",
+      "selector": ".guide-nav a",
+      "contrast_ratio": 4.77
+    },
+    {
+      "background": "rgb(247, 248, 244)",
+      "foreground": "rgb(8, 125, 100)",
+      "selector": ".toc>a",
+      "contrast_ratio": 4.77
+    }
+  ],
+  "consoleErrors": [],
+  "desktopHome": {
+    "headerHeight": 76,
+    "heroHeight": 712.8359375,
+    "scrollWidth": 1440,
+    "settledOpacity": "1",
+    "width": 1440
+  },
+  "browser_version": "154.0.8037.98",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "screenshots": {
+    "guide-narrow.jpg": "498d9561aa557573254aeafac32528427a2c870c5b58b09f631c3627ff4c454a",
+    "guide-desktop.jpg": "b1f4bc1fb3a8367be27fa0a3469f8d8b9b14bbdda77b75f95812a2e55edb18e2",
+    "menu-mobile.jpg": "43568b166cd70b1b0281f2be238103da3540b61edce8ebefa42e5440613ee54f",
+    "home-mobile.jpg": "ae8586124ac0367966c77c7b71b966551f210d33e6801d3c8121906e26b6139a",
+    "channels-mobile.jpg": "5005b62b3885fbd5bcd2844e29256fb33c1a377012d15bb386c6ef2aebf6513a",
+    "guide-mobile.jpg": "4b5ce8409a1c97a0fa4a7937ced30d942ddda7b0d84497bc03f29d918f575dc6",
+    "home-full-desktop.jpg": "9ae9521457c8d0713444120a0a5d47caa88674ecd3c049af3c224e5ce1f18c73",
+    "home-desktop.jpg": "c5ea8def16349300c8f4ca62419bc18eafa8e3598e6a170b65e8868646f2d490",
+    "search-desktop.jpg": "004293fee4d760cefea0e4e80ae766c482376e84016e3ea7252a6cd3dbb29260"
+  },
+  "build_manifest": {
+    "source_commit": "3d841ba48112724a2f27776727e15b04bf253de8",
+    "base_path": "/keelmux/",
+    "canonical_sources": {
+      "docs/user/quickstart.md": "e297deda0a1f34f1b6352c2c3c066391ba8af533994e28c813cd864ea75a2b86",
+      "docs/user/install.md": "6c441f1c3581cc000dda77ac41084fa3ceb17ee5632dad6e4cfe893d94f51e43",
+      "docs/user/daily-use.md": "d2b63b1db18ed8893f10eeb4cdfbe71a396da246bbfc72b5d8185e9aaaab846f",
+      "docs/user/channels.md": "c06ce637da163fa22e632b9ae57c9a211bc69e748e6a0819187273417498e467",
+      "docs/user/roadmap.md": "caf6891425e28c88f2d3659794fbd6512ff194949d59f89354854ad771311ed8",
+      "docs/user/skills.md": "32c3acc75d192fd1e6b177b5662e300c267f610508932b851b369ac6c0388b67",
+      "docs/user/operations.md": "8a3a747d9338691a24e45d6bef483ca196310421c4e6d9b6d36d1619ca1049fb",
+      "docs/user/configuration.md": "356d0192998ffb78feeff85af50764cf6c9557f8842d5ad4cac0b420d2865f32",
+      "docs/user/private-entry.md": "8a0c99e12a6a2a9bee0a68cc41713a8e49ce1a38197b84353e62b2bf489fc1b7",
+      "docs/user/troubleshooting.md": "74366536c468ab46542d16a181343586b602d99b55895a7feccea551558794ae",
+      "docs/user/cli.md": "61efcb432743f3ee2a1cb92c4b8bdf90fd9e176bdd3a79aea2d55ad08a3a844f",
+      "docs/user/architecture.md": "4afd09dcba0be52b3702964301d07654465ed680a18b85a5353bb669b7cb18d3",
+      "docs/user/support-matrix.md": "8af98a78b04dfc3b0afd0a5c57c95adc29a82f70eab6012b30c6bb7acb2fa30a",
+      "SECURITY.md": "ba363c5da5152af2b77d3994bfc4fb80f9b2f20407b5153f1c04c90483ad6034",
+      "SUPPORT.md": "3fa0eab6101602e76a89398415883363eaed1e69fd6216194de485a493d4e7c8",
+      "CONTRIBUTING.md": "c6da121a3f1a4999ba82a1395fe9137156f2bb79b339e38d03539194e99875d4",
+      "CHANGELOG.md": "ddfa8ce7810d684c3e57c087a06e3fcfaade9f9a7a03234e075f47dc269af13f"
+    },
+    "image_hashes": {
+      "switcher.png": "e2e79acd17cfb50b54568cb8686c5af01e140851d94625f48c5f45863dcd4838",
+      "switcher.txt": "6de03d34eea029df1bf5a26abdc8105ef913bb0e16b9b232723296c11e0344d2",
+      "channel-inbox.png": "c12d1f79b9db1f1be6e78de36c400eb186ae483661c208412cf41f282b744942",
+      "channel-inbox.txt": "4e1cc0314b2b15177a14e9ddff4c69a10ac8c817b468005f4f5269e9a0eba4df",
+      "channel-reply.png": "d5d9f2e7402ad492ea410e5fcd69784c3a2c0c19fda244d2b9a8dfaebad3a52a",
+      "channel-reply.txt": "0769d03e36ce7d91b93af08cf84118674d7d765ebf01d42f6eac53b4c01eb25b"
+    },
+    "image_sources": {
+      "switcher": "f15340ad156c4985af78003d3c89b63aa7c0fd78",
+      "channel-inbox": "d73c3fbb3b45793c5d0b0cc304b19bedf5aaab1f",
+      "channel-reply": "d73c3fbb3b45793c5d0b0cc304b19bedf5aaab1f"
+    },
+    "pages": 19,
+    "runtime": "static; local search; no analytics/CDN"
+  },
+  "tested_tracked_site_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "qualification": "Actual local Chrome browser only. No hosted deployment, Safari/Firefox, physical mobile, assistive-technology certification, external chat, native/model activity or installer execution.",
+  "passed": true,
+  "cleanup": {
+    "browser_tab_closed": true,
+    "viewport_override_reset": true,
+    "owned_preview_listener_stopped": true
+  },
+  "site_source_hashes": {
+    "docs/site/build.py": "a0055a18898fa9b2b522566ef9a04d414aa24bb760af2e4d802ee52af06ce2e9",
+    "docs/site/assets/favicon.svg": "6543b4f0fee1b0b32f8187fe6231b57f2dd378d55b9d5a484a0ed6f5bf85377c",
+    "docs/site/assets/site.css": "ecdfdc499ca3b98431d177bd59659738f7e90c60e586ee37bd2cd2892687e000",
+    "docs/site/assets/site.js": "92eaf41698d5c997a94cbe20944a55e0f2564d9be39c69bbda62342f0b232b4d",
+    "docs/site/tests/test_site.py": "781179e67611bf8b39c4e1c6babce3532d43b42cf7604aca97c059cced80698a"
+  },
+  "static_tests": {
+    "command": "python3 -m unittest discover -s docs/site/tests -v",
+    "passed": 10,
+    "failed": 0
+  },
+  "js_syntax": {
+    "command": "node --check docs/site/assets/site.js",
+    "passed": true
+  }
+}
