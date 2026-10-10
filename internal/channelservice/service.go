@@ -225,6 +225,11 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 		return zero, channels.ErrInvalid
 	}
 	r.Endpoint = canonical
+	channel, err := channels.CanonicalChannel(r.Provider, r.ChannelID)
+	if err != nil {
+		return zero, channels.ErrInvalid
+	}
+	r.ChannelID = channel
 	registry, err := s.gate(ctx, "channel-binding-registry")
 	if err != nil {
 		return zero, err

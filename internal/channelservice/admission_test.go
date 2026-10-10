@@ -40,6 +40,29 @@ func TestCanonicalBindingRetryAndEarlyScopeRefusal(t *testing.T) {
 	}
 }
 
+func TestIRCChannelAliasesHaveOneDurableRoute(t *testing.T) {
+	s, db, old, _ := serviceFixture(t)
+	b, _, err := db.ChannelBinding(context.Background(), old.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := protocol.ChannelBindRequest{ID: domain.NewID("binding"), SessionID: b.SessionID, Provider: channels.IRC, Endpoint: "ircs://IRC.INVALID:6697/", ChannelID: "#Agents", CredentialRef: b.CredentialRef, Allowlist: b.Allowlist}
+	bound, err := s.Bind(context.Background(), r)
+	if err != nil || bound.ChannelID != "#agents" {
+		t.Fatalf("canonical IRC route: %+v %v", bound, err)
+	}
+	r.ID = domain.NewID("binding")
+	r.ChannelID = "#AGENTS"
+	if _, err := s.Bind(context.Background(), r); err == nil {
+		t.Fatal("wire case alias obtained a second route")
+	}
+	r.ID = bound.ID
+	r.ChannelID = "#aGeNtS"
+	if retry, err := s.Bind(context.Background(), r); err != nil || retry.ID != bound.ID {
+		t.Fatalf("original alias retry: %+v %v", retry, err)
+	}
+}
+
 type refusingProbe struct {
 	fixtureAdapter
 	closes atomic.Int64

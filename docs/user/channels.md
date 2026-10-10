@@ -123,6 +123,8 @@ The private credential file uses bounded JSON:
 
 The server-authenticated account determines identity. The optional nickname is presentation. A labeled echo records server acceptance only; it is not proof every recipient received the message. Missing history and disconnected intervals remain explicit coverage limits. Reconnection does not silently establish recovered history. [SASL](https://ircv3.net/specs/extensions/sasl-3.2.html), [account tags](https://ircv3.net/specs/extensions/account-tag.html), [echo semantics](https://ircv3.net/specs/extensions/echo-message.html).
 
+This release supports IRC channel references beginning with `#` or `&`, followed by ASCII letters, digits, `-`, `_`, `.`, or `/`. Letter case normalizes to lowercase before binding so `#Agents` and `#agents` have one durable route. Unicode and characters with network-specific case equivalence require a future negotiated address contract and are refused. Services-account identities remain exact and case-sensitive.
+
 ## Operational boundaries
 
 Channel control runs at the local execution home through its private socket. The private entry does not expose channel management. Bindings are per-user authority; groups and native terminal attachment permissions do not grant remote senders command access.
