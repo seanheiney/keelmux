@@ -297,6 +297,64 @@ func TestPolicyBootstrapProjectionStaysNativeLocal(t *testing.T) {
 	}
 }
 
+func TestPolicyNativeWorkspaceTrustIsExactAuthoritativeMetadata(t *testing.T) {
+	p := NewPolicy()
+	b := policyFixture()
+	baseline := DefaultBaseline("/owned/workspace", "/private/owned/workspace")
+	for _, cwd := range []string{"/owned/workspace", "/private/owned/workspace"} {
+		requestRaw, _ := json.Marshal(map[string]any{"id": 1, "method": "config/read", "params": map[string]any{"includeLayers": true, "cwd": cwd}})
+		req := policyFrame(t, p, string(requestRaw))
+		if _, err := p.Classify(b, req, baseline); err != nil {
+			t.Fatal(err)
+		}
+		for _, level := range []string{"trusted", "untrusted"} {
+			responseRaw, _ := json.Marshal(map[string]any{"id": 1, "result": map[string]any{"config": map[string]any{"projects": map[string]any{
+				cwd:                     map[string]any{"trust_level": level, "extra": "SECRET_SELECTED_PROJECT"},
+				"/SECRET_OTHER_PROJECT": map[string]any{"trust_level": "trusted", "token": "SECRET_OTHER_VALUE"},
+			}}}})
+			response := policyFrame(t, p, string(responseRaw))
+			out, visible, err := p.NativeOutput(outputFixture(b, req), response)
+			if err != nil || !visible || strings.Contains(string(out.Payload), "SECRET_") {
+				t.Fatal("native trust record leaked other project data", err)
+			}
+			var projected struct {
+				Config struct {
+					Projects map[string]map[string]string `json:"projects"`
+				} `json:"config"`
+			}
+			if json.Unmarshal(out.Payload, &projected) != nil || len(projected.Config.Projects) != 1 || len(projected.Config.Projects[cwd]) != 1 || projected.Config.Projects[cwd]["trust_level"] != level {
+				t.Fatal("authoritative workspace trust was altered")
+			}
+			for _, role := range []Role{TypedObserver, TypedWriter} {
+				viewer := b
+				viewer.Role = role
+				if _, visible, _ := p.NativeOutput(outputFixture(viewer, req), response); visible {
+					t.Fatal("native workspace trust reached a typed viewer")
+				}
+			}
+		}
+		response := policyFrame(t, p, `{"id":1,"result":{"config":{"projects":{"/SECRET_OTHER_PROJECT":{"trust_level":"trusted"}}}}}`)
+		out, visible, err := p.NativeOutput(outputFixture(b, req), response)
+		if err != nil || !visible || strings.Contains(string(out.Payload), "SECRET_") || strings.Contains(string(out.Payload), `"trust_level"`) {
+			t.Fatal("missing exact trust record was invented or another project disclosed", err)
+		}
+		for _, value := range []string{`null`, `true`, `"trusted"`, `{}`, `{"trust_level":null}`, `{"trust_level":"future"}`, `{"trust_level":true}`} {
+			raw := `{"id":1,"result":{"config":{"projects":{` + string(mustJSON(cwd)) + `:` + value + `}}}}`
+			if _, visible, _ := p.NativeOutput(outputFixture(b, req), policyFrame(t, p, raw)); visible {
+				t.Fatal("invalid authoritative trust variant was projected")
+			}
+		}
+	}
+}
+
+func mustJSON(v any) []byte {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 func TestPolicyHistoryMembershipAndTypedMetadata(t *testing.T) {
 	p := NewPolicy()
 	b := policyFixture()

@@ -18,7 +18,7 @@ func (p *nativePolicy) projectBootstrap(b ConnectionBinding, method string, para
 	case "account/read":
 		return projectAccount(m)
 	case "config/read":
-		return projectConfig(m)
+		return p.projectConfig(b, params, m)
 	case "configRequirements/read":
 		if !onlyKeys(m, "requirements") || !mHas(m, "requirements") || m["requirements"] != nil {
 			return nil, errProjection
@@ -99,7 +99,7 @@ func approvalPolicy(v any) bool {
 	return true
 }
 
-func projectConfig(m map[string]any) (any, error) {
+func (p *nativePolicy) projectConfig(b ConnectionBinding, params, m map[string]any) (any, error) {
 	c, ok := m["config"].(map[string]any)
 	if !ok {
 		return nil, errPolicy
@@ -147,6 +147,28 @@ func projectConfig(m map[string]any) (any, error) {
 			}
 		}
 		out["features"] = features
+	}
+	if c["projects"] != nil {
+		// The native renderer needs its actual authoritative workspace trust
+		// record. Keep only the exact requested, home-approved key; never copy
+		// another project, synthesize trust, or expose extensible project data.
+		projects, ok := c["projects"].(map[string]any)
+		cwd, cwdOK := params["cwd"].(string)
+		p.mu.Lock()
+		baseline, known := p.baselines[bindingKey(b)]
+		p.mu.Unlock()
+		if !ok || !cwdOK || !known || !approvedPath(cwd, baseline) {
+			return nil, errProjection
+		}
+		selected := map[string]any{}
+		if value, exists := projects[cwd]; exists {
+			project, ok := value.(map[string]any)
+			if !ok || !enumOrNull(project["trust_level"], "trusted", "untrusted") || project["trust_level"] == nil {
+				return nil, errProjection
+			}
+			selected[cwd] = map[string]any{"trust_level": project["trust_level"]}
+		}
+		out["projects"] = selected
 	}
 	return map[string]any{"config": out, "origins": map[string]any{}, "layers": nil}, nil
 }
