@@ -27,3 +27,12 @@ python3 tests/claude_discovery.py --native-workspace /path/to/trusted/repository
 ```
 
 The harness waits for Claude's native composer, types `/backplane`, and requires the native menu's skill description. It leaves the command unsubmitted. It then observes `/rc` autocomplete without submitting or opening Remote Control. Installed native code containing the `remote-control` command's `rc` alias is recorded separately from runtime eligibility and invocation. A menu row proves discovery; it does not prove that native skill instructions were loaded or executed. The exact link uses the inherited helper before native exec. Safe project-bundle removal remains a separate explicit step using the owned installation ledger.
+
+`gateway_acceptance.py` exercises the executable `bpg` entry, two separate `bpd` home processes, and real `bp` TUI/`drive` attachments. It owns all state, fixtures and sockets. Both homes and the gateway run on one computer; the raw fixture panes are not vendor model work or independent remote-host proof.
+
+```sh
+make build
+python3 tests/gateway_acceptance.py --report docs/evidence/gateway-acceptance.json
+```
+
+Checks cover scoped unified inventory, scrubbed home locators, home-only management, routed Unicode/control bytes and resize, read-only attachment, writer contention, entry SIGKILL with a saved lease, startup configuration revocation with exact receipt release, an idle unavailable home with usable surviving work, and attached-home failure followed by exact repair. Configuration changes take effect on explicit entry restart; this is not a live-reload claim. Static fixture output and continuous PTY consumption do not establish behavior under display backpressure or continuous native rendering. The initial six-group receipt is explicitly qualified because independent review found additional authority and transport failures outside those checks.
