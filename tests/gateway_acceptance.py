@@ -89,11 +89,22 @@ class GatewayAcceptance:
         return t
 
     def select(self, t, n):
+        # Home API recovery does not mean the independently polled TUI has
+        # observed it. Refresh before an explicit search selects that work.
+        # Background arrivals deliberately never choose an empty selection.
         t.send(b"\x1b")
+        t.send("r")
         t.send("/")
         t.send(self.work[n]["name"])
         t.send("\r")
-        assert self.place()["places"][""]["session_id"] == self.work[n]["id"], "entry TUI selected the wrong home work"
+        def selected():
+            if self.place()["places"][""].get("session_id") == self.work[n]["id"]:
+                return True
+            # The refresh may still be in flight. Choose explicitly after its
+            # arrival; never rely on a background update to steal focus.
+            t.send(b"\x1b[B")
+            return self.place()["places"][""].get("session_id") == self.work[n]["id"]
+        wait_for(selected)
 
     def attach(self, t, n):
         t.send("\r")

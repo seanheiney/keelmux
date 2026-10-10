@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "tested_sha": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+  "harness_sha256": "795639c5275204524d320107fecd4129b62f5337d2105f4e3301cb46072b4de6",
+  "native_core_harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "binary_sha256": {
+    "bp": "e91b4e6b73f8d0daf7e41d206f8b7c61409bd93a638a477cacdf6ed609d2a71d",
+    "bpd": "090679acb535354cfee1af42cc79b0b7071abec5b625d619feed6ed89e7e3d91",
+    "bpg": "d8319da643b121faed40a7e37273ce64316407fbaa34fc6b31bdc3a68c5440b9"
+  },
+  "utc": "2026-10-10T17:51:46Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "kind": "same_computer_executable_process_fixture",
+  "model_prompt_submitted": false,
+  "configuration": "owned600 principal+explicit home/session grants; startup reload on restart",
+  "checks": [
+    {
+      "name": "two executable homes and scoped entry directory",
+      "result": "pass",
+      "detail": {
+        "homes": 2,
+        "separate_bpd_processes": true,
+        "one_entry_cli_directory": true,
+        "runtime_locators_scrubbed": true,
+        "entry_management_refused": true,
+        "automatic_local_home_started": false
+      }
+    },
+    {
+      "name": "actual TUI routed terminal bytes and read-only ownership",
+      "result": "fail",
+      "detail": {
+        "error": "condition did not become true within deadline",
+        "terminal_status_phrases": [],
+        "saved_pending_lease_present": false,
+        "home_native_client_flags": [
+          "",
+          ""
+        ]
+      }
+    }
+  ],
+  "missing_evidence": [
+    "independent remote hosts",
+    "SSH or other remote enrollment/authentication",
+    "native provider authenticated model turns",
+    "live configuration revocation without entry restart",
+    "host reboot and network transport faults"
+  ]
+}

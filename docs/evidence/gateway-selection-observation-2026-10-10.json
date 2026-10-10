@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "tested_sha": "4b36f4d773a31388c7ec8ade146eb1929a8d2a19",
+  "harness_sha256": "09ebded8b6046468b65c94ad330a63d0a90abf2dc4b83b65f172f7bad8958780",
+  "native_core_harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "binary_sha256": {
+    "bp": "e91b4e6b73f8d0daf7e41d206f8b7c61409bd93a638a477cacdf6ed609d2a71d",
+    "bpd": "090679acb535354cfee1af42cc79b0b7071abec5b625d619feed6ed89e7e3d91",
+    "bpg": "d8319da643b121faed40a7e37273ce64316407fbaa34fc6b31bdc3a68c5440b9"
+  },
+  "utc": "2026-10-10T17:49:35Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "kind": "same_computer_executable_process_fixture",
+  "model_prompt_submitted": false,
+  "configuration": "owned600 principal+explicit home/session grants; startup reload on restart",
+  "checks": [
+    {
+      "name": "two executable homes and scoped entry directory",
+      "result": "pass",
+      "detail": {
+        "homes": 2,
+        "separate_bpd_processes": true,
+        "one_entry_cli_directory": true,
+        "runtime_locators_scrubbed": true,
+        "entry_management_refused": true,
+        "automatic_local_home_started": false
+      }
+    },
+    {
+      "name": "actual TUI routed terminal bytes and read-only ownership",
+      "result": "pass",
+      "detail": {
+        "actual_tui_drive_attach_detach_both_homes": true,
+        "unicode_escape_ctrl_c_literal_prefix": true,
+        "resize": "83x27",
+        "read_only_input_size_preserved": true,
+        "entry_and_local_home_writer_contention_refused": true,
+        "cross_home_input_leak": false
+      }
+    },
+    {
+      "name": "entry crash and saved lease recovery",
+      "result": "pass",
+      "detail": {
+        "entry_sigkill_while_attached": true,
+        "saved_exact_lease_retained": true,
+        "restart_receipt_release_confirmed": true,
+        "home_execution_pid_pane_stable": true,
+        "fresh_stream_uses_new_intent": true
+      }
+    },
+    {
+      "name": "startup revocation and exact receipt release",
+      "result": "pass",
+      "detail": {
+        "revoke_mode": "changed_private_startup_config_then_entry_restart",
+        "fresh_navigation_and_acquisition_refused": true,
+        "loaded_receipt_exact_release_after_revoke": true,
+        "forged_release_refused": true,
+        "native_work_stayed_at_home": true,
+        "live_config_reload": "not_implemented_not_claimed"
+      }
+    },
+    {
+      "name": "partial home availability with usable surviving home",
+      "result": "fail",
+      "detail": {
+        "error": "'session_id'",
+        "terminal_status_phrases": [
+          "Returned to"
+        ],
+        "saved_pending_lease_present": false,
+        "home_native_client_flags": [
+          "",
+          ""
+        ]
+      }
+    }
+  ],
+  "missing_evidence": [
+    "independent remote hosts",
+    "SSH or other remote enrollment/authentication",
+    "native provider authenticated model turns",
+    "live configuration revocation without entry restart",
+    "host reboot and network transport faults"
+  ]
+}
