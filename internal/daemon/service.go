@@ -306,6 +306,9 @@ func (s *Service) Link(ctx context.Context, in protocol.LinkRequest) (domain.Ses
 	if err != nil {
 		return v, err
 	}
+	if in.Status && in.Off {
+		return v, invalid("status and off cannot be combined")
+	}
 	if in.ExecutionID == "" || in.OperationID == "" || v.Execution.ID != in.ExecutionID || v.Mode != domain.Managed {
 		return v, conflict("link requires exact managed launch context; arbitrary terminals cannot be adopted")
 	}
@@ -337,6 +340,9 @@ func (s *Service) Link(ctx context.Context, in protocol.LinkRequest) (domain.Ses
 	}
 	if obs.Ref != v.Execution.Runtime {
 		return v, conflict("link runtime identity changed")
+	}
+	if in.Status {
+		return v, nil
 	}
 	return s.store.SetLinked(ctx, v.ID, v.Execution.ID, !in.Off)
 }
