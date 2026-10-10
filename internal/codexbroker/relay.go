@@ -40,7 +40,6 @@ type Channel struct {
 }
 
 type relayRequest struct {
-	intent  Intent
 	ready   chan struct{}
 	receipt Receipt
 }
@@ -140,7 +139,7 @@ func (c *Channel) RunNative(ctx context.Context, client *wire.Conn) error {
 			c.usedIDs[string(frame.ID)] = true
 			upstreamID, _ := json.Marshal(string(domain.NewID("rpc")))
 			intent.Frame.ID = upstreamID
-			pending = &relayRequest{intent: intent, ready: make(chan struct{})}
+			pending = &relayRequest{ready: make(chan struct{})}
 			c.requests[string(upstreamID)] = pending
 			c.mu.Unlock()
 		}
@@ -212,9 +211,14 @@ func (c *Channel) readUpstream() {
 		if frame.Kind == Request {
 			// Initial profile has no model turns or approval routing. Preserve the
 			// callback as unattributed/non-actionable before any possible display.
+			callbackFrame, err := Encode(frame)
+			if err != nil {
+				c.finish(errors.New("upstream callback frame could not be retained"))
+				return
+			}
 			record := CallbackRecord{ID: domain.NewID("callback"), Origin: c.binding,
 				Key:     CallbackKey{UpstreamChannelID: c.id, RequestID: append(json.RawMessage(nil), frame.ID...)},
-				Payload: append(json.RawMessage(nil), frame.Payload...)}
+				Payload: callbackFrame}
 			if _, err := c.authority.RecordCallback(c.ctx, record); err != nil {
 				c.finish(errors.New("upstream callback could not be durably retained"))
 				return
