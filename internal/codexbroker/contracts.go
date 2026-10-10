@@ -222,6 +222,9 @@ type Authority interface {
 	Acquire(context.Context, WriterRequest) (Grant, error)
 	Bind(context.Context, ConnectionBinding) (ConnectionBinding, error)
 	Dispatch(context.Context, Intent) (Receipt, error)
+	// Recheck live read scope and keep projection plus bounded downstream write
+	// under the same revoke gate. The callback must honor its bounded context.
+	Deliver(context.Context, ConnectionBinding, func(context.Context) error) error
 	RecordCallback(context.Context, CallbackRecord) (CallbackRecord, error)
 	Decide(context.Context, Decision) (Receipt, error)
 	Settle(context.Context, Receipt) (Receipt, error)
