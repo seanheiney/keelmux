@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "tested_sha": "4bf01620db4fad2994d245212a4fab9c05571c8f",
+  "harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "utc": "2026-10-10T17:26:25Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "auth_mode": "existing native realm; effective account/model unknown; no model prompt submitted",
+  "socket": "private owned /tmp/bp-a-*/s/tmux.sock",
+  "checks": [
+    {
+      "name": "codex native launch/link/TUI/reconnect/restart",
+      "kind": "native_program",
+      "result": "pass",
+      "detail": {
+        "provider": "codex",
+        "native_workspace": "/Volumes/DataSSD1/agent-backplane",
+        "exact_child_workspace": true,
+        "stable_session_execution_pid_pane": true,
+        "exact_inherited_link": true,
+        "link_nonce_forgery_refused": true,
+        "lost_launch_ack_retry": true,
+        "tui_detach_reconnect": true,
+        "tui_crash_recovery": true,
+        "daemon_restart_while_attached": true,
+        "native_resize": true,
+        "unicode_draft_visible": true,
+        "ctrl_c_unsubmitted_draft": "separate_interrupt_probe",
+        "workspace_trust": "existing_native_trust",
+        "authenticated_turn": "not_run"
+      }
+    },
+    {
+      "name": "claude native launch/link/TUI/reconnect/restart",
+      "kind": "native_program",
+      "result": "pass",
+      "detail": {
+        "provider": "claude",
+        "native_workspace": "/Volumes/DataSSD1/agent-backplane",
+        "exact_child_workspace": true,
+        "stable_session_execution_pid_pane": true,
+        "exact_inherited_link": true,
+        "link_nonce_forgery_refused": true,
+        "lost_launch_ack_retry": true,
+        "tui_detach_reconnect": true,
+        "tui_crash_recovery": true,
+        "daemon_restart_while_attached": true,
+        "native_resize": true,
+        "unicode_draft_visible": true,
+        "ctrl_c_unsubmitted_draft": "separate_interrupt_probe",
+        "workspace_trust": "existing_native_trust",
+        "authenticated_turn": "not_run"
+      }
+    },
+    {
+      "name": "lost attach acknowledgement and writer arbitration",
+      "kind": "integrated",
+      "result": "pass",
+      "detail": "same durable grant after dropped response/restart; collision/forged release refused; exactly one writer grant in concurrent two-client race"
+    },
+    {
+      "name": "raw terminal keys and ten-session grouped place/drafts",
+      "kind": "fixture",
+      "result": "pass",
+      "detail": {
+        "sessions": 10,
+        "native_providers": 2,
+        "fixture_processes": 8,
+        "raw_unicode_escape_ctrl_c_literal_prefix_resize": true,
+        "read_only_input_and_size_preserved": true,
+        "company_product_selection_draft_restore": true,
+        "human_speed_pilot": "not_run"
+      }
+    },
+    {
+      "name": "lost stop acknowledgement and stale generation",
+      "kind": "integrated",
+      "result": "pass",
+      "detail": "stale generation refused; same lost-response stop idempotent across restart; conflicting reused operation refused"
+    },
+    {
+      "name": "native Ctrl-C behavior separate from uninterrupted recovery",
+      "kind": "native_program",
+      "result": "pass",
+      "detail": [
+        {
+          "provider": "codex",
+          "ctrl_c_sent_via_native_attach": true,
+          "native_screen_changed": true,
+          "native_process_exited": false,
+          "model_prompt_submitted": false
+        },
+        {
+          "provider": "claude",
+          "ctrl_c_sent_via_native_attach": true,
+          "native_screen_changed": true,
+          "native_process_exited": false,
+          "model_prompt_submitted": false
+        }
+      ]
+    },
+    {
+      "name": "durable registry/journal",
+      "kind": "integrated",
+      "result": "pass",
+      "detail": {
+        "events": 59,
+        "threads": 10,
+        "contiguous_per_thread": true,
+        "durable_intents_outcomes": true
+      }
+    },
+    {
+      "name": "tmux loss",
+      "kind": "integrated",
+      "result": "pass",
+      "detail": "owned tmux server loss reports missing execution; no replacement is launched"
+    }
+  ],
+  "missing_evidence": [
+    "authenticated model turn and verified effective account/model",
+    "native skill invocation and preload",
+    "real independent remote servers",
+    "host reboot/native resume",
+    "cross-provider continuity/model change",
+    "Mattermost/IRC delivery",
+    "independent-user speed/accessibility pilot"
+  ]
+}
