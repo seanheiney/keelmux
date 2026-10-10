@@ -63,3 +63,13 @@ invalid UTF-8 and case-aliased JSON fields that Go would otherwise decode into
 the same identity member. Closing adapters stops subsequent HTTP requests and
 closes owned idle resources. These controls passed the same focused race/vet
 commands.
+
+IRC requires negotiated `server-time` and accepts authored input only with a
+valid nonempty original server timestamp. Repeated source IDs therefore retain
+their original timestamp instead of generating a new intake identity. Buffer
+overflow and connection epoch mismatches return shared `channels.ErrHistoryGap`
+for explicit coverage reporting. `InitialCoverage` labels REST adapters
+`since_activation_snapshots` and IRC `live_connection_only`; an observed gap
+can be surfaced as `history_gap`. No-history IRC reconciliation performs no
+fresh login/JOIN after disconnection, and a pending stable local delivery ID
+cannot cause another PRIVMSG with a mutated payload hash.

@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"io"
 	"net"
 	"net/url"
@@ -24,8 +23,6 @@ import (
 )
 
 const ircBufferSize = 256
-
-var errIRCLiveGap = errors.New("IRC live buffer cannot replay this cursor; external history is unsupported")
 
 // IRCDialer is injectable for isolated protocol fixtures. Production always
 // uses the default verified TLS dialer; bindings still require an ircs endpoint.
@@ -351,7 +348,7 @@ func ircUnescape(s string) string {
 	return b.String()
 }
 
-var ircCaps = []string{"sasl", "account-tag", "message-tags", "echo-message", "labeled-response", "batch"}
+var ircCaps = []string{"sasl", "account-tag", "message-tags", "echo-message", "labeled-response", "batch", "server-time"}
 
 func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority string) error {
 	for _, line := range []string{"CAP LS 302", "NICK " + s.nick, "USER keelmux 0 * :Keelmux channel adapter"} {
@@ -410,9 +407,6 @@ func (s *ircSession) handshake(ctx context.Context, secret ircSecret, authority 
 					}
 				}
 				request := append([]string{}, ircCaps...)
-				if _, ok := available["server-time"]; ok {
-					request = append(request, "server-time")
-				}
 				if _, ok := available["account-notify"]; ok {
 					request = append(request, "account-notify")
 				}
@@ -647,14 +641,11 @@ func (s *ircSession) receive(m ircMessage) bool {
 	if !channels.ValidID(account) || account == "*" || !channels.ValidID(id) || !channels.ValidText(m.Params[1]) {
 		return true
 	}
-	at := time.Now().UTC()
-	if stamp := m.Tags["time"]; stamp != "" {
-		parsed, err := time.Parse(time.RFC3339Nano, stamp)
-		if err != nil {
-			return true
-		}
-		at = parsed.UTC()
+	at, err := time.Parse(time.RFC3339Nano, m.Tags["time"])
+	if err != nil || at.IsZero() || at.UnixMilli() <= 0 {
+		return true
 	}
+	at = at.UTC()
 	s.sequence++
 	s.buffer = append(s.buffer, ircBuffered{Sequence: s.sequence, Message: channels.RemoteMessage{ID: id, ActorID: account, RealmID: s.proof.RealmID, ChannelID: s.binding.ChannelID, Text: m.Params[1], CreatedAt: at, Historical: !at.After(s.binding.ActivationCutoff)}})
 	if len(s.buffer) > ircBufferSize {
@@ -694,7 +685,7 @@ func (a *IRC) Fetch(ctx context.Context, b channels.Binding, cursor string, limi
 		}
 	}
 	if position.Generation != s.generation || position.Sequence > s.sequence || len(s.buffer) > 0 && position.Sequence+1 < s.buffer[0].Sequence {
-		return channels.FetchResult{}, errIRCLiveGap
+		return channels.FetchResult{}, channels.ErrHistoryGap
 	}
 	result := channels.FetchResult{Evidence: s.proof, Messages: []channels.RemoteMessage{}}
 	for _, entry := range s.buffer {
@@ -735,6 +726,12 @@ func (a *IRC) Send(ctx context.Context, b channels.Binding, d channels.Delivery,
 	if _, ok := s.pending[label]; ok {
 		s.mu.Unlock()
 		return unconfirmed(s.proof), nil
+	}
+	for _, admitted := range s.pending {
+		if admitted.ID == p.ID {
+			s.mu.Unlock()
+			return unconfirmed(s.proof), nil
+		}
 	}
 	if !s.alive || len(s.pending) >= 64 {
 		s.mu.Unlock()
@@ -788,12 +785,26 @@ func (a *IRC) Reconcile(ctx context.Context, b channels.Binding, d channels.Deli
 	if !receiptInput(b, d, m) {
 		return unconfirmed(channels.Evidence{}), nil
 	}
-	s, err := a.session(ctx, b)
-	if err != nil {
+	if _, err := ircEndpoint(b); err != nil {
 		return unconfirmed(channels.Evidence{}), nil
+	}
+	_, hash, err := loadIRC(b.CredentialRef)
+	if err != nil || ctx.Err() != nil {
+		return unconfirmed(channels.Evidence{}), nil
+	}
+	// IRC has no external history here. Reconciliation does not create a fresh
+	// login/JOIN merely to rediscover that a disconnected echo is unrecoverable.
+	a.mu.Lock()
+	s := a.states[string(b.ID)]
+	a.mu.Unlock()
+	if s == nil {
+		return channels.SendResult{State: channels.Uncertain, Code: "unsupported"}, nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !s.alive || s.secretHash != hash || !s.proof.Matches(b) || s.binding.CredentialRef != b.CredentialRef {
+		return channels.SendResult{State: channels.Uncertain, Code: "unsupported"}, nil
+	}
 	if receipt, ok := s.receipts[string(d.ID)]; ok && receipt.Hash == d.PayloadHash && receipt.Text == m.Text && (d.RemoteID == "" || d.RemoteID == receipt.Result.RemoteID) {
 		return receipt.Result, nil
 	}

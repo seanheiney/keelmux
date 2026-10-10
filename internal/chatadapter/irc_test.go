@@ -127,7 +127,7 @@ func (f *ircFixture) serve(conn net.Conn) {
 					caps = append(caps, cap)
 				}
 			}
-			caps = append(caps, "server-time", "account-notify")
+			caps = append(caps, "account-notify")
 			if !f.write(conn, ":server CAP * LS :"+strings.Join(caps, " ")) {
 				return
 			}
@@ -264,6 +264,8 @@ func TestIRCPersistentAuthLiveInboxUsesAccountNotNick(t *testing.T) {
 		"@msgid=missing-account :alice!u@h PRIVMSG #room :No account authority",
 		"@+account=alice;msgid=client-tag :alice!u@h PRIVMSG #room :Client tag is not authority",
 		"@account=alice :alice!u@h PRIVMSG #room :No stable source ID",
+		"@account=alice;msgid=missing-time :alice!u@h PRIVMSG #room :No authoritative timestamp",
+		"@account=alice;msgid=bad-time;time=invalid :alice!u@h PRIVMSG #room :Invalid authoritative timestamp",
 		"@account=alice;msgid=foreign :alice!u@h PRIVMSG #foreign :Wrong channel")
 	var result channels.FetchResult
 	eventually(t, func() bool {
@@ -297,7 +299,7 @@ func TestIRCSASLFramingAndPreflightIdentityFailures(t *testing.T) {
 			t.Fatal("SASL 400-byte terminal chunk", err)
 		}
 	})
-	for _, name := range []string{"account-tag", "sasl", "wrong-account", "sasl-failed"} {
+	for _, name := range []string{"account-tag", "sasl", "server-time", "wrong-account", "sasl-failed"} {
 		t.Run(name, func(t *testing.T) {
 			f, a, b := newIRCFixture(t)
 			if name == "wrong-account" {
@@ -398,11 +400,11 @@ func TestIRCBoundedBufferSignalsGapAndReconnectionEpoch(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 0; i < ircBufferSize+1; i++ {
-		f.push(fmt.Sprintf("@account=alice;msgid=live%d :alice!u@h PRIVMSG #room :authored %d", i, i))
+		f.push(fmt.Sprintf("@account=alice;msgid=live%d;time=2023-11-14T22:13:21Z :alice!u@h PRIVMSG #room :authored %d", i, i))
 	}
 	eventually(t, func() bool {
 		_, err = a.Fetch(context.Background(), b, first.NextCursor, 1)
-		return errors.Is(err, errIRCLiveGap)
+		return errors.Is(err, channels.ErrHistoryGap)
 	})
 	f.mu.Lock()
 	conn := f.connections[len(f.connections)-1]
@@ -417,7 +419,7 @@ func TestIRCBoundedBufferSignalsGapAndReconnectionEpoch(t *testing.T) {
 		return !s.alive
 	})
 	_, err = a.Fetch(context.Background(), b, first.NextCursor, 1)
-	if !errors.Is(err, errIRCLiveGap) || f.dialCount() != 2 {
+	if !errors.Is(err, channels.ErrHistoryGap) || f.dialCount() != 2 {
 		t.Fatal("old cursor silently pretended replay after disconnect", err)
 	}
 }
@@ -459,6 +461,36 @@ func TestIRCDisabledHistoricalReceiptDoesNotSendOrTrustChangedText(t *testing.T)
 	r, _ = a.Reconcile(context.Background(), b, d, m)
 	if r.State != channels.Uncertain || f.postCount() != 1 {
 		t.Fatal("changed payload trusted old receipt")
+	}
+}
+
+func TestIRCDuplicateSourcePreservesTimestampAndPendingIDNeverRepeats(t *testing.T) {
+	f, a, b := newIRCFixture(t)
+	if _, err := a.Probe(context.Background(), b); err != nil {
+		t.Fatal(err)
+	}
+	line := "@account=alice;msgid=stable-source;time=2023-11-14T22:13:21.123456Z :alice!u@h PRIVMSG #room :authored content"
+	f.push(line, line)
+	var page channels.FetchResult
+	eventually(t, func() bool { page, _ = a.Fetch(context.Background(), b, "", 10); return len(page.Messages) == 2 })
+	if page.Messages[0] != page.Messages[1] {
+		t.Fatal("same source got different identity/timestamp")
+	}
+	f.mu.Lock()
+	f.mode = "late"
+	f.mu.Unlock()
+	d, m := testDelivery(b)
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	r, _ := a.Send(ctx, b, d, m)
+	if r.State != channels.Uncertain || f.postCount() != 1 {
+		t.Fatal("first attempted send")
+	}
+	m.Text = "changed payload under same stable ID"
+	d.PayloadHash[0] ^= 1
+	r, _ = a.Send(context.Background(), b, d, m)
+	if r.State != channels.Uncertain || f.postCount() != 1 {
+		t.Fatal("pending stable delivery ID repeated a PRIVMSG")
 	}
 }
 
