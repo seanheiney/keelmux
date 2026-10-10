@@ -921,3 +921,114 @@ func TestPolicyAcceptanceNotificationTimestampCannotAuthorizeOrDisclose(t *testi
 		})
 	}
 }
+
+func TestPolicyAcceptanceProjectTrustUsesExactClassifiedHomeCwd(t *testing.T) {
+	fixture := func(projects any) cb.Frame {
+		return acceptanceResult(t, map[string]any{
+			"config":  map[string]any{"model": "fixture-model", "projects": projects},
+			"origins": map[string]any{"projects": map[string]any{"path": "PRIVATE_TRUST_ORIGIN"}},
+			"layers":  []any{map[string]any{"config": map[string]any{"projects": map[string]any{"PRIVATE_TRUST_LAYER": map[string]any{"trust_level": "trusted"}}}}},
+		})
+	}
+	noInventedTrust := func(t *testing.T, out cb.Frame) {
+		t.Helper()
+		config, ok := acceptanceObject(t, out.Payload)["config"].(map[string]any)
+		if !ok {
+			t.Fatal("native config control lost public config container")
+		}
+		if projects, present := config["projects"]; present {
+			m, ok := projects.(map[string]any)
+			if !ok || len(m) != 0 {
+				t.Fatal("source-absent trust or unclassified realm was invented")
+			}
+		}
+	}
+	for _, cwd := range []string{"/owned/workspace", "/private/owned/workspace"} {
+		other := "/private/owned/workspace"
+		if cwd == other {
+			other = "/owned/workspace"
+		}
+		for _, level := range []string{"trusted", "untrusted"} {
+			t.Run("exact/"+cwd+"/"+level, func(t *testing.T) {
+				projects := map[string]any{
+					cwd:                         map[string]any{"trust_level": level, "model_provider": "PRIVATE_SELECTED_PROVIDER", "futureField": map[string]any{"path": "PRIVATE_SELECTED_PATH"}},
+					other:                       map[string]any{"trust_level": "trusted", "privateField": "PRIVATE_ALIAS_RECORD"},
+					"PRIVATE_OTHER_PROJECT_KEY": map[string]any{"trust_level": "unrecognized", "privateField": "PRIVATE_OTHER_PROJECT_VALUE"},
+				}
+				p := cb.NewPolicy()
+				c := acceptanceContext(t, cb.NativeLocal, "config/read", map[string]any{"cwd": cwd, "includeLayers": true})
+				f := fixture(projects)
+				out := acceptanceOutput(t, p, c, f)
+				acceptanceNoStrings(t, out.Payload, "PRIVATE_")
+				cfg, ok := acceptanceObject(t, out.Payload)["config"].(map[string]any)
+				if !ok || cfg["model"] != "fixture-model" {
+					t.Fatal("bounded project trust lost known public config control")
+				}
+				selected, ok := cfg["projects"].(map[string]any)
+				if !ok || len(selected) != 1 {
+					t.Fatal("project trust exposed other workspace or alias keys")
+				}
+				record, ok := selected[cwd].(map[string]any)
+				if !ok || len(record) != 1 || record["trust_level"] != level {
+					t.Fatal("exact requested trust was lost, changed, or expanded")
+				}
+				for _, role := range []cb.Role{cb.TypedObserver, cb.TypedWriter} {
+					c.Recipient.Role = role
+					acceptanceWithheld(t, p, c, f)
+				}
+			})
+		}
+		for _, projects := range []any{
+			map[string]any{},
+			map[string]any{"/other/workspace": map[string]any{"trust_level": "trusted"}},
+			map[string]any{other: map[string]any{"trust_level": "trusted"}},
+		} {
+			t.Run("selected_absent/"+cwd, func(t *testing.T) {
+				c := acceptanceContext(t, cb.NativeLocal, "config/read", map[string]any{"cwd": cwd, "includeLayers": true})
+				out := acceptanceOutput(t, cb.NewPolicy(), c, fixture(projects))
+				noInventedTrust(t, out)
+			})
+		}
+	}
+	for _, selected := range []any{nil, true, 1, "trusted", []any{}, map[string]any{"trust_level": "TRUSTED"}, map[string]any{"trust_level": "unknown"}, map[string]any{"trust_level": " trusted"}, map[string]any{"trust_level": ""}, map[string]any{"trust_level": nil}, map[string]any{"trust_level": true}, map[string]any{"trust_level": []any{}}, map[string]any{"trust_level": map[string]any{}}} {
+		t.Run("invalid_selected/"+fmt.Sprintf("%T_%v", selected, selected), func(t *testing.T) {
+			p := cb.NewPolicy()
+			c := acceptanceContext(t, cb.NativeLocal, "config/read", map[string]any{"cwd": "/owned/workspace", "includeLayers": true})
+			acceptanceAllowed(t, p, c.Recipient, *c.OriginalRequest, acceptanceBaseline())
+			acceptanceWithheld(t, p, c, fixture(map[string]any{"/owned/workspace": selected}))
+		})
+	}
+	for _, record := range []any{map[string]any{}, map[string]any{"futureField": "PRIVATE_ABSENT_TRUST"}} {
+		t.Run("selected_level_absent", func(t *testing.T) {
+			p := cb.NewPolicy()
+			c := acceptanceContext(t, cb.NativeLocal, "config/read", map[string]any{"cwd": "/owned/workspace", "includeLayers": true})
+			acceptanceAllowed(t, p, c.Recipient, *c.OriginalRequest, acceptanceBaseline())
+			out, visible, _ := p.NativeOutput(c, fixture(map[string]any{"/owned/workspace": record}))
+			if visible {
+				noInventedTrust(t, out)
+			}
+		})
+	}
+	for _, mode := range []string{"no_classification", "other_connection_cache", "forged_cwd_after_classification"} {
+		t.Run("baseline_required/"+mode, func(t *testing.T) {
+			p := cb.NewPolicy()
+			c := acceptanceContext(t, cb.NativeLocal, "config/read", map[string]any{"cwd": "/owned/workspace", "includeLayers": true})
+			cwd := "/owned/workspace"
+			if mode != "no_classification" {
+				acceptanceAllowed(t, p, c.Recipient, *c.OriginalRequest, acceptanceBaseline())
+			}
+			if mode == "other_connection_cache" {
+				c.Recipient.ID = "other_native_connection"
+			}
+			if mode == "forged_cwd_after_classification" {
+				cwd = "/ungranted/workspace"
+				f := acceptanceRequest(t, "config/read", map[string]any{"cwd": cwd, "includeLayers": true})
+				c.OriginalRequest = &f
+			}
+			out, visible, _ := p.NativeOutput(c, fixture(map[string]any{cwd: map[string]any{"trust_level": "trusted"}}))
+			if visible {
+				noInventedTrust(t, out)
+			}
+		})
+	}
+}
