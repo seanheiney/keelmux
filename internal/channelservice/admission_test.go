@@ -109,6 +109,17 @@ func TestIntakeStatusPreservesSuccessAndSuppressesPrivateFailures(t *testing.T) 
 	if w.Code != 200 || strings.Contains(w.Body.String(), "private token") || !strings.Contains(w.Body.String(), `"intake":"unavailable"`) {
 		t.Fatalf("unsafe intake diagnostics: %d %s", w.Code, w.Body.String())
 	}
+	f.fetchErr = channels.ErrHistoryGap
+	s.mu.Lock()
+	delete(s.lastFetch, b.ID)
+	s.mu.Unlock()
+	if _, err := s.Sync(ctx, b.ID); err == nil {
+		t.Fatal("missing history reported as complete")
+	}
+	gap := s.status(bound)
+	if gap.Intake != "gap" || !gap.HistoryGap || gap.Coverage != string(channels.CoverageHistoryGap) {
+		t.Fatalf("coverage gap hidden: %+v", gap)
+	}
 	if err := s.Disable(ctx, b.ID); err != nil {
 		t.Fatal(err)
 	}

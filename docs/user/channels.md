@@ -43,6 +43,8 @@ keelmux channels history --after 0 --limit 50 thread_EXACT
 
 History uses an authored sequence cursor. To read the next page, pass the last returned sequence as `--after`. It does not mix terminal output into chat history.
 
+Channel status separates `active` configuration from observed intake. `intake` reports `idle`, `healthy`, `unavailable`, `gap` or `disabled`; `last_check` and `last_success` qualify freshness. `more_history` describes the last committed page. A failed poll preserves the last successful observation. Mattermost/Slack coverage is scoped snapshots since activation; IRC coverage is the current live connection only. `history_gap` means complete replay is unavailable, even when a binding remains active.
+
 Every reply names one destination. Multiple bindings on one thread do not broadcast to one another:
 
 ```sh
@@ -104,7 +106,7 @@ The endpoint is fixed to `https://slack.com/api`. Preserve the exact string root
 
 ## IRC
 
-IRC uses one persistent TLS connection to an explicit server and channel. The server must support SASL, authenticated account tags, opaque message IDs and the capabilities required for correlated echo. Allowed senders are exact services accounts, never nicknames. IRC has no native root-thread equivalent in this mode.
+IRC uses one persistent TLS connection to an explicit server and channel. The server must support SASL, authenticated account tags, original server timestamps, opaque message IDs and the capabilities required for correlated echo. Allowed senders are exact services accounts, never nicknames. IRC has no native root-thread equivalent in this mode.
 
 ```sh
 keelmux channels bind --provider irc --session session_EXACT \

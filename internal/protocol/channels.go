@@ -46,10 +46,7 @@ type ChannelStatus struct {
 }
 
 func ProjectChannel(b channels.Binding) ChannelStatus {
-	coverage := "since_activation_snapshots"
-	if b.Provider == channels.IRC {
-		coverage = "live_connection_only"
-	}
+	coverage := string(channels.InitialCoverage(b.Provider))
 	intake := "idle"
 	if !b.Active {
 		intake = "disabled"

@@ -61,6 +61,9 @@ func (s *Service) status(b channels.Binding) protocol.ChannelStatus {
 		out.LastSuccess = &h.success
 	}
 	out.MoreHistory, out.HistoryGap = h.more, h.gap
+	if h.gap {
+		out.Coverage = string(channels.CoverageHistoryGap)
+	}
 	return out
 }
 
@@ -70,10 +73,11 @@ func (s *Service) markIntake(id domain.ID, state string, more, gap bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	h := s.health[id]
-	h.state, h.checked, h.more = state, time.Now().UTC(), more
+	h.state, h.checked = state, time.Now().UTC()
 	h.gap = h.gap || gap
 	if state == "healthy" {
 		h.success = h.checked
+		h.more = more
 	}
 	s.health[id] = h
 }
@@ -404,6 +408,10 @@ func (s *Service) Sync(ctx context.Context, id domain.ID) (protocol.ChannelSyncR
 	s.mu.Unlock()
 	result, err := a.Fetch(ctx, b, cursor, 15)
 	if err != nil {
+		if errors.Is(err, channels.ErrHistoryGap) {
+			s.markIntake(id, "gap", false, true)
+			return out, errors.New("channel intake has a history gap; complete replay is unavailable")
+		}
 		s.markIntake(id, "unavailable", false, false)
 		return out, errors.New("channel intake unavailable; delivery records remain intact")
 	}
