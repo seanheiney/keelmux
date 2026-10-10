@@ -135,6 +135,8 @@ class PackageHome(Acceptance):
 
     def cleanup(self, embedded=False):
         issues = []
+        if self.tmux_receipt is None and (self.state / "tmux.sock").exists():
+            issues.append("tmux_cleanup_identity_not_recorded")
         for n, terminal in enumerate(self.terminals):
             path = self.temp / ("terminal-%d.bin" % n)
             path.write_bytes(terminal.output)
