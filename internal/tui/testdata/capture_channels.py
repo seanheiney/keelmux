@@ -35,9 +35,11 @@ def capture(binary, output, width, height):
     place.write_text(json.dumps({'version':1,'client_id':'owned_inbox_capture','places':{},'drafts':[native]}))
     place.chmod(0o600)
     thread = 'thread_session_00'
-    binding = {'binding_id':'binding_owned','thread_id':thread,'provider':'mattermost','endpoint':'https://chat.example.test','realm_id':'realm_owned','bot_identity':'bot_owned','channel_id':'channel_owned','root_id':'root_owned','active':True,'semantic_dispatch':False}
+    binding = {'binding_id':'binding_owned','thread_id':thread,'provider':'mattermost','endpoint':'https://chat.example.test','realm_id':'realm_owned','bot_identity':'bot_owned','channel_id':'channel_owned','root_id':'root_owned','active':True,'semantic_dispatch':False,'intake':'unavailable','coverage':'since_activation_snapshots','history_gap':True,'last_check':'2026-10-10T20:00:00Z'}
     unrelated = dict(binding, binding_id='binding_other', thread_id='thread_other', channel_id='other_channel')
     notes = [{'ID':'note_incoming','ThreadID':thread,'BindingID':binding['binding_id'],'Sequence':1,'AuthorID':'author_owned','Text':'Received note: /run $(touch never)\nInert authored text; no model work.','CreatedAt':'2026-10-10T20:00:00Z','RemoteID':'remote_owned','Historical':False}]
+    for seq in range(2,102):
+        notes.append({'ID':'note_%d'%seq,'ThreadID':thread,'BindingID':binding['binding_id'],'Sequence':seq,'AuthorID':'author_owned','Text':'Later authored note reached by paging' if seq==101 else 'Owned earlier note %d'%seq,'CreatedAt':'2026-10-10T20:00:00Z','RemoteID':'remote_%d'%seq,'Historical':False})
     calls, posts, receipts = [], [], {}
     observed = {'durable_before_post':False, 'enter_never_sent':False}
     guard = threading.Lock()
@@ -52,7 +54,10 @@ def capture(binary, output, width, height):
                 calls.append(('GET',self.path))
                 if self.path == '/v1/sessions': self.reply({'version':'bp/1','sessions':sessions()})
                 elif self.path == '/v1/channels': self.reply([binding, unrelated])
-                elif self.path.startswith('/v1/channels/history?'): self.reply({'thread_id':thread,'messages':notes,'snapshot_only':True,'semantic_dispatch':False})
+                elif self.path.startswith('/v1/channels/history?'):
+                    from urllib.parse import parse_qs,urlparse
+                    after=int(parse_qs(urlparse(self.path).query)['after'][0])
+                    self.reply({'thread_id':thread,'messages':[n for n in notes if n['Sequence']>after][:100],'snapshot_only':True,'semantic_dispatch':False})
                 elif self.path.startswith('/v1/channels/delivery?'):
                     from urllib.parse import parse_qs, urlparse
                     ident = parse_qs(urlparse(self.path).query)['id'][0]
@@ -74,7 +79,7 @@ def capture(binary, output, width, height):
                 data = {'BindingID':request['binding_id'],'MessageID':request['message_id'],'ThreadID':thread,'Provider':'mattermost','Endpoint':binding['endpoint'],'Realm':binding['realm_id'],'Self':binding['bot_identity'],'Channel':binding['channel_id'],'Root':binding['root_id'],'Author':'local-operator','Text':request['text']}
                 digest = hashlib.sha256(json.dumps(data,ensure_ascii=False,separators=(',',':')).encode()).digest()
                 receipts[request['message_id']] = {'ID':request['message_id'],'MessageID':request['message_id'],'BindingID':request['binding_id'],'State':'queued','PayloadHash':list(digest),'UpdatedAt':'2026-10-10T20:00:00Z'}
-                notes.append({'ID':request['message_id'],'ThreadID':thread,'BindingID':request['binding_id'],'Sequence':2,'AuthorID':'local-operator','Text':request['text'],'CreatedAt':'2026-10-10T20:00:00Z','RemoteID':'','Historical':False})
+                notes.append({'ID':request['message_id'],'ThreadID':thread,'BindingID':request['binding_id'],'Sequence':len(notes)+1,'AuthorID':'local-operator','Text':request['text'],'CreatedAt':'2026-10-10T20:00:00Z','RemoteID':'','Historical':False})
                 # Lose the acknowledgement after the owned durable fixture
                 # accepted it. Actual reconnect must query, never post again.
                 self.close_connection = True
@@ -111,10 +116,14 @@ def capture(binary, output, width, height):
         record('inbox',wait(lambda s:'Received note' in s))
         with guard:
             if posts: raise AssertionError('opening authored inbox caused effect')
+        os.write(fd,b']')
+        record('next-page',wait(lambda s:'Later authored note reached' in s))
+        os.write(fd,b'[')
+        record('previous-page',wait(lambda s:'Received note' in s))
         os.write(fd,b'b')
         record('destination',wait(lambda s:'choose destination' in s and 'binding_owned' in s))
         os.write(fd,b'\r')
-        wait(lambda s:'authored inbox' in s and 'unchosen' not in s)
+        record('chosen-inbox',wait(lambda s:'authored inbox' in s and 'unchosen' not in s and 'history gap' in s))
         os.write(fd,b'p')
         wait(lambda s:'channel reply' in s)
         os.write(fd,b'first line\rsecond line')
@@ -165,7 +174,7 @@ def capture(binary, output, width, height):
         if fd is not None: os.close(fd)
         server.shutdown();server.server_close()
         if clean: shutil.rmtree(root)
-    return {'size':[width,height],'binary_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),'captures':captures,'actual_local_queue_posts':len(posts),'actual_external_posts':0,'durable_intent_before_local_request':observed['durable_before_post'],'enter_only_newline':observed['enter_never_sent'],'restart_recovery_queried_exact_receipt_without_repost':True,'native_draft_and_selection_preserved':True,'owned_state_removed':not root.exists(),'tui_exit_zero_without_signals':clean,'capture_kind':'Actual PTY; cell rasterization, not native Terminal screenshot','calls':calls}
+    return {'size':[width,height],'binary_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),'captures':captures,'actual_local_queue_posts':len(posts),'actual_external_posts':0,'durable_intent_before_local_request':observed['durable_before_post'],'enter_only_newline':observed['enter_never_sent'],'restart_recovery_queried_exact_receipt_without_repost':True,'later_note_101_and_previous_page_visible':True,'native_draft_and_selection_preserved':True,'owned_state_removed':not root.exists(),'tui_exit_zero_without_signals':clean,'capture_kind':'Actual PTY; cell rasterization, not native Terminal screenshot','calls':calls}
 
 
 if __name__=='__main__':

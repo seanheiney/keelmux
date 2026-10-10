@@ -3,11 +3,13 @@ package tui
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -25,7 +27,7 @@ func channelBinding(id, thread string) protocol.ChannelStatus {
 	return protocol.ChannelStatus{ID: domain.ID(id), ThreadID: domain.ID(thread), Provider: channels.Mattermost, Endpoint: "https://chat.example.test", RealmID: "realm", SelfID: "bot", ChannelID: "channel", RootID: "root", Active: true}
 }
 func channelSnapshot(m *model, bindings ...protocol.ChannelStatus) channelSnapshotMsg {
-	return channelSnapshotMsg{thread: m.channelThread, epoch: m.channelEpoch, bindings: bindings, history: protocol.ChannelHistory{ThreadID: m.channelThread, SnapshotOnly: true}}
+	return channelSnapshotMsg{thread: m.channelThread, epoch: m.channelEpoch, after: m.channelAfter, bindings: bindings, history: protocol.ChannelHistory{ThreadID: m.channelThread, SnapshotOnly: true}}
 }
 func readyChannelModel(t *testing.T) (*model, protocol.ChannelStatus) {
 	m := testModel(t, clientstate.New())
@@ -53,6 +55,8 @@ type channelHTTPFixture struct {
 	bindings             []protocol.ChannelStatus
 	posts                []protocol.ChannelSendRequest
 	deliveries           map[domain.ID]channels.Delivery
+	messages             []channels.Message
+	afterRequests        []int64
 	lost                 bool
 	durableBeforeRequest bool
 	reconciles           int
@@ -69,7 +73,18 @@ func newChannelHTTPFixture(t *testing.T, m *model, b protocol.ChannelStatus) *ch
 		case "/v1/channels":
 			json.NewEncoder(w).Encode(f.bindings)
 		case "/v1/channels/history":
-			json.NewEncoder(w).Encode(protocol.ChannelHistory{ThreadID: domain.ID(r.URL.Query().Get("thread")), SnapshotOnly: true})
+			after, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
+			f.afterRequests = append(f.afterRequests, after)
+			var notes []channels.Message
+			for _, note := range f.messages {
+				if note.Sequence > after {
+					notes = append(notes, note)
+					if len(notes) == channels.MaxPageSize {
+						break
+					}
+				}
+			}
+			json.NewEncoder(w).Encode(protocol.ChannelHistory{ThreadID: domain.ID(r.URL.Query().Get("thread")), SnapshotOnly: true, Messages: notes})
 		case "/v1/channels/send":
 			var p protocol.ChannelSendRequest
 			if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
@@ -437,5 +452,81 @@ func TestChannelIntakeIsDiagnosticAndLongNotesRemainReadable(t *testing.T) {
 	m.Update(key("?"))
 	if !strings.Contains(m.View(), "u  Reconcile") || !strings.Contains(m.View(), "Ctrl-S") {
 		t.Fatal("narrow viewport lost explicit receipt/send guidance")
+	}
+}
+
+func TestChannelHistoryPagesReachLaterNotesAndFenceCursorResponses(t *testing.T) {
+	m, b := readyChannelModel(t)
+	f := newChannelHTTPFixture(t, m, b)
+	for seq := int64(1); seq <= 102; seq++ {
+		note := channels.Message{ID: domain.ID(fmt.Sprintf("note_%d", seq)), ThreadID: b.ThreadID, BindingID: b.ID, AuthorID: "external", Sequence: seq, Text: fmt.Sprintf("authored note %d", seq), RemoteID: fmt.Sprintf("remote_%d", seq)}
+		if seq == 102 {
+			note.AuthorID = "local-operator"
+			note.RemoteID = ""
+			note.Text = "later outgoing reply"
+		}
+		f.messages = append(f.messages, note)
+	}
+	last := f.messages[101]
+	p := clientstate.ChannelIntent{MessageID: last.ID, BindingID: last.BindingID, ThreadID: last.ThreadID, Text: last.Text}
+	f.deliveries[last.ID] = receipt(p, b, channels.Delivered)
+	chosen := *m.channelBinding
+	draft := m.channelDraft
+	m.screen = "channels"
+	m.Update(m.fetchChannels()())
+	if len(m.channelMessages) != 100 || m.channelMessages[99].Sequence != 100 {
+		t.Fatal("first bounded page not exact")
+	}
+	old := channelSnapshot(m, b)
+	old.history.Messages = append([]channels.Message{}, m.channelMessages...)
+	cmd := m.nextChannelPage()
+	if cmd == nil || m.channelAfter != 100 || len(m.channelBack) != 1 {
+		t.Fatal("explicit next page did not preserve cursor")
+	}
+	m.Update(cmd())
+	if len(m.channelMessages) != 2 || m.channelMessages[0].Sequence != 101 || m.channelMessages[1].Text != "later outgoing reply" {
+		t.Fatal("later incoming/outgoing authored notes inaccessible")
+	}
+	if !sameBinding(chosen, *m.channelBinding) || m.channelDraft != draft {
+		t.Fatal("page change redirected chosen destination/draft")
+	}
+	m.acceptChannelSnapshot(old)
+	if m.channelAfter != 100 || m.channelMessages[0].Sequence != 101 {
+		t.Fatal("old page response overwrote later page")
+	}
+	m.channelScroll = 1
+	_, cmd = m.Update(key("d"))
+	if cmd == nil {
+		t.Fatal("later outgoing receipt inaccessible")
+	}
+	m.Update(cmd())
+	if m.channelReceipts[last.ID].State != channels.Delivered || len(f.posts) != 0 {
+		t.Fatal("later receipt query missing or sent new effect")
+	}
+	m.Update(m.previousChannelPage()())
+	if m.channelAfter != 0 || len(m.channelMessages) != 100 || len(m.channelBack) != 0 || !reflect.DeepEqual(f.afterRequests, []int64{0, 100, 0}) {
+		t.Fatal("previous page did not restore exact cursor")
+	}
+	// Same thread/epoch with a wrong cursor cannot pass, and a response whose
+	// first sequence precedes the requested after is not a valid local page.
+	wrong := channelSnapshot(m, b)
+	wrong.after = 100
+	wrong.history.Messages = f.messages[100:]
+	m.acceptChannelSnapshot(wrong)
+	if m.channelMessages[0].Sequence != 1 {
+		t.Fatal("wrong requested cursor accepted")
+	}
+	m.channelAfter = 100
+	m.channelEpoch++
+	wrong = channelSnapshot(m, b)
+	wrong.history.Messages = f.messages[99:]
+	m.acceptChannelSnapshot(wrong)
+	if m.channelError == "" {
+		t.Fatal("page accepted sequence <= requested after")
+	}
+	m.selectSession(m.sessions[1])
+	m.openChannels()
+	if m.channelAfter != 0 || len(m.channelBack) != 0 || m.channelThread != "thread_b" || m.channelBinding != nil {
+		t.Fatal("thread switch retained old page or destination")
 	}
 }

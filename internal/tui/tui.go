@@ -97,6 +97,8 @@ type model struct {
 	color                bool
 	channelThread        domain.ID
 	channelEpoch         uint64
+	channelAfter         int64
+	channelBack          []int64
 	channelBindings      []protocol.ChannelStatus
 	channelMessages      []channels.Message
 	channelBinding       *protocol.ChannelStatus

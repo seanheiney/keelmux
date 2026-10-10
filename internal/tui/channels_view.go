@@ -62,7 +62,7 @@ func (m *model) channelView() string {
 	switch m.screen {
 	case "channelhelp":
 		body[0] = line("Keelmux / inbox keys", accent)
-		for _, text := range []string{"b  Choose one active destination", "p  Compose local channel reply", "Ctrl-S  Queue the exact saved reply", "Enter  Add a newline while composing", "↑/↓  Select authored note", "PgUp/PgDn  Scroll selected note text", "d  Query exact local delivery receipt", "u  Reconcile uncertain receipt read-only", "r  Refresh snapshot / pending receipt", "Incoming text never becomes model work"} {
+		for _, text := range []string{"b  Choose one active destination", "p  Compose local channel reply", "Ctrl-S  Queue the exact saved reply", "Enter  Add a newline while composing", "↑/↓  Select authored note", "PgUp/PgDn  Scroll selected note text", "[ / ]  Previous / next history page", "d  Query exact local delivery receipt", "u  Reconcile uncertain receipt read-only", "r  Refresh snapshot / pending receipt", "Incoming text never becomes model work"} {
 			body = append(body, line(text, normal))
 		}
 		footer = append(footer, line("Esc inbox", accent))
@@ -127,13 +127,17 @@ func (m *model) channelView() string {
 			action = "b destination  p reply  r  Esc work"
 		}
 		footer = append(footer, m.footerText(action, accent)...)
-		footer = append(footer, line("↑/↓ notes  PgUp/PgDn text  ? keys", muted))
+		pages := "↑/↓ notes  [ prev  ] next  PgUp/PgDn text"
+		if m.width < 52 {
+			pages = "↑/↓ notes  [ prev  ] next  ? keys"
+		}
+		footer = append(footer, line(pages, muted))
 		if m.channelLoading {
 			body = append(body, line("Loading authored notes…", muted))
 		} else if len(m.channelMessages) == 0 {
 			body = append(body, line("No authored notes in this snapshot.", normal))
 		} else {
-			body = append(body, line(fmt.Sprintf("Note %d / %d · snapshot up to 100", m.channelScroll+1, len(m.channelMessages)), muted))
+			body = append(body, line(fmt.Sprintf("Page %d · note %d / %d · up to 100", len(m.channelBack)+1, m.channelScroll+1, len(m.channelMessages)), muted))
 			note := m.channelMessages[m.channelScroll]
 			body = append(body, line(note.AuthorID+" / "+string(note.BindingID), accent))
 			if d, ok := m.channelReceipts[note.ID]; ok {

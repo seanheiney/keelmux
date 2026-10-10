@@ -17,6 +17,7 @@ import (
 type channelSnapshotMsg struct {
 	thread   domain.ID
 	epoch    uint64
+	after    int64
 	bindings []protocol.ChannelStatus
 	history  protocol.ChannelHistory
 	err      error
@@ -96,6 +97,8 @@ func (m *model) openChannels() tea.Cmd {
 	}
 	m.channelEpoch++
 	m.channelThread = thread
+	m.channelAfter = 0
+	m.channelBack = nil
 	m.channelBindings = nil
 	m.channelMessages = nil
 	m.channelBinding = nil
@@ -111,18 +114,48 @@ func (m *model) openChannels() tea.Cmd {
 func (m *model) fetchChannels() tea.Cmd {
 	m.channelEpoch++
 	m.channelLoading = true
-	thread, epoch := m.channelThread, m.channelEpoch
+	thread, epoch, after := m.channelThread, m.channelEpoch, m.channelAfter
 	return func() tea.Msg {
 		bindings, err := m.client.Channels(m.ctx)
 		var history protocol.ChannelHistory
 		if err == nil {
-			history, err = m.client.ChannelHistory(m.ctx, thread, 0, channels.MaxPageSize)
+			history, err = m.client.ChannelHistory(m.ctx, thread, after, channels.MaxPageSize)
 		}
-		return channelSnapshotMsg{thread, epoch, bindings, history, err}
+		return channelSnapshotMsg{thread: thread, epoch: epoch, after: after, bindings: bindings, history: history, err: err}
 	}
 }
+
+func (m *model) nextChannelPage() tea.Cmd {
+	if m.channelLoading || m.channelError != "" || len(m.channelMessages) == 0 {
+		return nil
+	}
+	after := m.channelMessages[len(m.channelMessages)-1].Sequence
+	if after <= m.channelAfter {
+		return nil
+	}
+	m.channelBack = append(m.channelBack, m.channelAfter)
+	m.channelAfter = after
+	m.channelMessages = nil
+	m.channelScroll = 0
+	m.channelNoteOffset = 0
+	m.status = ""
+	return m.fetchChannels()
+}
+
+func (m *model) previousChannelPage() tea.Cmd {
+	if m.channelLoading || len(m.channelBack) == 0 {
+		return nil
+	}
+	m.channelAfter = m.channelBack[len(m.channelBack)-1]
+	m.channelBack = m.channelBack[:len(m.channelBack)-1]
+	m.channelMessages = nil
+	m.channelScroll = 0
+	m.channelNoteOffset = 0
+	m.status = ""
+	return m.fetchChannels()
+}
 func (m *model) acceptChannelSnapshot(msg channelSnapshotMsg) tea.Cmd {
-	if msg.thread != m.channelThread || msg.epoch != m.channelEpoch || !strings.HasPrefix(m.screen, "channel") {
+	if msg.thread != m.channelThread || msg.epoch != m.channelEpoch || msg.after != m.channelAfter || !strings.HasPrefix(m.screen, "channel") {
 		return nil
 	}
 	m.channelLoading = false
@@ -149,7 +182,7 @@ func (m *model) acceptChannelSnapshot(msg channelSnapshotMsg) tea.Cmd {
 	}
 	knownBindings := seen
 	seen = map[domain.ID]bool{}
-	var sequence int64
+	sequence := msg.after
 	for _, note := range msg.history.Messages {
 		if note.ThreadID != msg.thread || !knownBindings[note.BindingID] || !channels.ValidID(string(note.ID)) || !channels.ValidID(string(note.BindingID)) || !channels.ValidID(note.AuthorID) || !channels.ValidText(note.Text) || note.Sequence <= sequence || seen[note.ID] {
 			m.channelError = "Authored message scope rejected; no reply can be sent."
@@ -264,11 +297,21 @@ func (m *model) channelKey(key tea.KeyMsg) tea.Cmd {
 		m.screen = "channelreply"
 		m.status = "Local reply · Enter adds a newline; Ctrl-S queues chat only."
 	case "up", "k":
+		if m.channelLoading {
+			return nil
+		}
 		m.channelScroll = max(0, m.channelScroll-1)
 		m.channelNoteOffset = 0
 	case "down", "j":
+		if m.channelLoading {
+			return nil
+		}
 		m.channelScroll = min(max(0, len(m.channelMessages)-1), m.channelScroll+1)
 		m.channelNoteOffset = 0
+	case "]":
+		return m.nextChannelPage()
+	case "[":
+		return m.previousChannelPage()
 	case "pgup":
 		m.channelNoteOffset = max(0, m.channelNoteOffset-max(1, m.height/2))
 	case "pgdown":
@@ -283,7 +326,7 @@ func (m *model) channelKey(key tea.KeyMsg) tea.Cmd {
 		}
 		return cmd
 	case "d", "u":
-		if len(m.channelMessages) == 0 {
+		if m.channelLoading || len(m.channelMessages) == 0 {
 			return nil
 		}
 		note := m.channelMessages[m.channelScroll]
