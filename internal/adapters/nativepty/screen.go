@@ -20,6 +20,7 @@ type terminalScreen struct {
 	glyph               string
 	glyphX, glyphY      int
 	pendingWrap         bool
+	hasLastASCII        bool
 	emulator            *vt.Emulator
 	modes               map[int]bool
 	visible             bool
@@ -55,6 +56,7 @@ func newTerminalScreen(cols, rows int) *terminalScreen {
 		}
 	}, CursorVisibility: func(visible bool) { s.visible = visible }, AltScreen: func(on bool) {
 		if on {
+			s.pendingWrap = false
 			s.mainPen = s.pen
 			s.mainTop = s.top
 			s.mainBottom = s.bottom

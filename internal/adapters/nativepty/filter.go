@@ -24,28 +24,11 @@ func (s *terminalScreen) initFilter() {
 	f.parser.SetDataSize(65536)
 	f.parser.SetParamsSize(32)
 	control := func(sequence []byte, blocked bool) {
-		before := s.emulator.CursorPosition()
 		_, _ = s.emulator.Write(sequence)
-		after := s.emulator.CursorPosition()
-		// Positioning/erasure operations terminate the streaming grapheme tail.
-		// SGR and queries preserve delayed wrap, as real terminals do.
-		preserveWrap := len(sequence) > 2 && strings.ContainsRune("mnctp", rune(sequence[len(sequence)-1]))
-		// Character-set selection/shifts, nonmoving controls, and a tab at
-		// the right edge leave delayed wrap intact. Clearing only our shadow flag
-		// makes the next ASCII batch calculate its tail one column too far.
-		if len(sequence) == 1 && strings.ContainsRune("\x00\a\t\x0e\x0f\x7f", rune(sequence[0])) {
-			preserveWrap = true
-		} else if len(sequence) == 3 && sequence[0] == 0x1b && strings.ContainsRune("()*+", rune(sequence[1])) {
-			preserveWrap = true
-		} else if len(sequence) == 2 && sequence[0] == 0x1b && strings.ContainsRune("78=><HNOno|}~", rune(sequence[1])) {
-			preserveWrap = true
-		} else if len(sequence) > 2 && sequence[0] == 0x1b && sequence[1] == ']' {
-			preserveWrap = true
-		}
+		// A control ends the streaming grapheme, but cursor movement alone
+		// does not tell us whether the emulator cleared delayed wrap. The
+		// parsed handlers below track its explicit reset operations instead.
 		s.glyph = ""
-		if before != after || !preserveWrap {
-			s.pendingWrap = false
-		}
 		answer, query := s.query(sequence)
 		if query {
 			if len(f.replies)+len(answer) <= maxInput {
@@ -60,6 +43,9 @@ func (s *terminalScreen) initFilter() {
 	f.parser.SetHandler(ansi.Handler{
 		Print: func(r rune) { s.writeGlyph(r); f.visible = utf8.AppendRune(f.visible, r) },
 		Execute: func(b byte) {
+			if b == '\b' || b == '\n' || b == '\v' || b == '\f' || b == '\r' || b == 0x84 {
+				s.pendingWrap = false
+			}
 			// Normalize supported C1 cursor controls into unambiguous seven-bit form.
 			switch b {
 			case 0x84:
@@ -75,6 +61,12 @@ func (s *terminalScreen) initFilter() {
 			}
 		},
 		HandleEsc: func(cmd ansi.Cmd) {
+			if cmd.Intermediate() == 0 && (cmd.Final() == 'D' || cmd.Final() == 'c') {
+				s.pendingWrap = false
+				if cmd.Final() == 'c' {
+					s.hasLastASCII = false
+				}
+			}
 			if cmd.Final() == '\\' && cmd.Intermediate() == 0 {
 				return
 			}
@@ -87,6 +79,7 @@ func (s *terminalScreen) initFilter() {
 			control(seq, false)
 		},
 		HandleCsi: func(cmd ansi.Cmd, params ansi.Params) {
+			s.trackCSIWrap(cmd, params)
 			var out strings.Builder
 			out.WriteString("\x1b[")
 			if c := cmd.Prefix(); c != 0 {
@@ -141,6 +134,52 @@ func (s *terminalScreen) initFilter() {
 		},
 	})
 }
+
+// trackCSIWrap mirrors the pinned emulator's wrap reset operations. ED,
+// modes, tabs, erasure variants, and even cursor restore can preserve its
+// internal phantom state. Guessing from the final byte or cursor position loses
+// the first grapheme after those controls, particularly on one-/two-column PTYs.
+func (s *terminalScreen) trackCSIWrap(cmd ansi.Cmd, params ansi.Params) {
+	if cmd.Prefix() != 0 || cmd.Intermediate() != 0 {
+		return
+	}
+	n, _, _ := params.Param(0, 1)
+	switch cmd.Final() {
+	case 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X', '`', 'a', 'd', 'e', 'f':
+		s.pendingWrap = false
+	case 'K':
+		n, _, _ = params.Param(0, 0)
+		if n == 0 {
+			s.pendingWrap = false
+		}
+	case 'r', 's':
+		if cmd.Final() == 's' && !s.modes[69] {
+			return // save cursor, rather than set horizontal margins
+		}
+		limit := s.emulator.Height()
+		if cmd.Final() == 's' {
+			limit = s.emulator.Width()
+		}
+		end, _, _ := params.Param(1, limit)
+		if end < 1 {
+			end = limit
+		}
+		if max(1, n) < end {
+			s.pendingWrap = false
+		}
+	case 'b':
+		// REP prints the last single-byte glyph; it can end at a new wrap
+		// boundary despite being dispatched as a control by our parser.
+		if s.hasLastASCII && n > 0 {
+			x := s.emulator.CursorPosition().X
+			if s.pendingWrap && s.modes[7] {
+				x = 0
+			}
+			s.pendingWrap = s.modes[7] && (x+n-1)%s.emulator.Width() == s.emulator.Width()-1
+		}
+	}
+}
+
 func (s *terminalScreen) process(data []byte) (visible, replies []byte) {
 	if s.filter.parser == nil {
 		s.initFilter()
@@ -196,6 +235,7 @@ func (s *terminalScreen) writeASCII(data []byte) {
 	_, _ = s.emulator.Write(data)
 	pos := s.emulator.CursorPosition()
 	s.glyph = string(data[len(data)-1])
+	s.hasLastASCII = true
 	s.glyphY = pos.Y // includes scrolling at the active bottom margin
 	if s.modes[7] {
 		s.glyphX = (x + len(data) - 1) % width
@@ -224,7 +264,26 @@ func (s *terminalScreen) writeGlyph(r rune) {
 				row -= s.top - 1
 			}
 			_, _ = s.emulator.Write([]byte(fmt.Sprintf("\x1b[%d;%dH", row, s.glyphX+1)))
-			_, _ = s.emulator.Write([]byte(combined))
+			payload := combined
+			// The pinned emulator flushes before ASCII even after Unicode
+			// Prepend. Send its spacing portion once, then restore the full
+			// cluster through the public cell API. Sending the zero-width
+			// prefix separately would spuriously wrap at the right edge.
+			ascii := strings.IndexFunc(combined, func(r rune) bool { return r >= 0x20 && r < 0x7f })
+			if ascii > 0 {
+				payload = combined[ascii:]
+			}
+			_, _ = s.emulator.Write([]byte(payload))
+			if ascii > 0 {
+				if cell := s.emulator.CellAt(s.glyphX, s.glyphY); cell != nil {
+					copy := *cell
+					copy.Content = combined
+					s.emulator.SetCell(s.glyphX, s.glyphY, &copy)
+				}
+				if len(payload) == 1 {
+					s.hasLastASCII = true
+				}
+			}
 			s.glyph = combined
 			s.pendingWrap = s.modes[7] && s.glyphX >= s.emulator.Width()-1
 			return
@@ -241,7 +300,21 @@ func (s *terminalScreen) writeGlyph(r rune) {
 	}
 	_, _ = s.emulator.Write([]byte(text))
 	s.glyph = text
-	s.glyphY = s.emulator.CursorPosition().Y
+	if r >= 0x20 && r < 0x7f {
+		s.hasLastASCII = true
+	}
+	after := s.emulator.CursorPosition()
+	// Use the actual post-write row (including scroll margins), and the
+	// column whenever it is not clamped at the right edge. At that edge,
+	// the tracked wrap bit disambiguates a last-column write from a wrap.
+	s.glyphY = after.Y
+	if after.X < s.emulator.Width()-1 {
+		width := 1
+		if r >= 0x7f {
+			_, width = ansi.FirstGraphemeCluster([]byte(text), ansi.GraphemeWidth)
+		}
+		s.glyphX = max(0, after.X-width)
+	}
 	s.pendingWrap = s.modes[7] && s.glyphX >= s.emulator.Width()-1
 }
 
