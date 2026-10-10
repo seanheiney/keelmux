@@ -223,6 +223,8 @@ func fields(o Observation) map[string]string {
 		}
 		if a.ToolCalls != nil {
 			f["tool_calls"] = stringJSON(*a.ToolCalls)
+		} else {
+			f["tool_calls"] = explicitUnknown
 		}
 	}
 	if m := o.Money; m != nil {
@@ -249,6 +251,8 @@ func fields(o Observation) map[string]string {
 		f["window_end"] = b.WindowEnd.Format(time.RFC3339Nano)
 		if b.ResetAt != nil {
 			f["reset_at"] = b.ResetAt.Format(time.RFC3339Nano)
+		} else {
+			f["reset_at"] = explicitUnknown
 		}
 		if b.Limit != nil {
 			f["limit"] = *b.Limit
@@ -488,6 +492,10 @@ func (l *Ledger) Project(ctx context.Context, q Query) (Projection, error) {
 	if err != nil {
 		return Projection{}, err
 	}
+	return projectObservations(observations, q)
+}
+
+func projectObservations(observations []Observation, q Query) (Projection, error) {
 	p := Projection{Start: q.Start.UTC(), End: q.End.UTC(), Timezone: q.Timezone, ActualModels: []string{}, ModelTotals: []ModelTotal{}, Attempts: []AttemptView{}, Tokens: []TokenTotal{}, Money: []MoneyView{}, MoneyTotals: []MoneyTotal{}, Quotas: []QuotaView{}, Coverage: CoverageSummary{Scope: Unknown, MissingSources: []string{}}, MoneyVisible: q.Authorization.MoneyDetails}
 	groups := map[string][]Observation{}
 	for _, o := range observations {

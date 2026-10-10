@@ -126,13 +126,9 @@ func privateFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	stat, ok := info.Sys().(*syscall.Stat_t)
-	if !info.Mode().IsRegular() || !ok || stat.Uid != uint32(os.Geteuid()) {
+	if !info.Mode().IsRegular() || !ok || stat.Uid != uint32(os.Geteuid()) || info.Mode().Perm() != 0600 {
 		f.Close()
-		return nil, errors.New("usage files require owned regular files")
-	}
-	if err = f.Chmod(0600); err != nil {
-		f.Close()
-		return nil, err
+		return nil, errors.New("usage files require owned private regular files (0600)")
 	}
 	return f, nil
 }
@@ -182,31 +178,20 @@ type IngestResult struct {
 // Ingest commits before returning. It rejects changed immutable observations;
 // a new original-source sequence can enrich an existing canonical record.
 func (l *Ledger) Ingest(ctx context.Context, o Observation) (IngestResult, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.db == nil {
-		return IngestResult{}, ErrClosed
-	}
-	if err := o.Validate(); err != nil {
-		return IngestResult{}, err
-	}
-	o = normalized(o)
-	data, err := json.Marshal(o)
+	results, err := l.IngestBatch(ctx, []Observation{o})
 	if err != nil {
 		return IngestResult{}, err
 	}
-	if len(data) > MaxObservationBytes {
-		return IngestResult{}, ErrCapacity
-	}
-	kind, key := canonical(o)
+	return results[0], nil
+}
+
+// ingestPrepared uses the caller's single transaction. Preparation and conflict
+// rules are shared by single-record ingestion and bounded atomic batch imports.
+func ingestPrepared(ctx context.Context, tx *sql.Tx, p preparedObservation) (IngestResult, error) {
+	o, data, kind, key := p.observation, p.data, p.kind, p.key
 	result := IngestResult{Kind: kind, CanonicalKey: key}
-	tx, err := l.db.BeginTx(ctx, nil)
-	if err != nil {
-		return result, err
-	}
-	defer tx.Rollback()
 	var old []byte
-	err = tx.QueryRowContext(ctx, `SELECT data FROM usage_observations WHERE source_id=? AND observation_id=?`, o.Source.ID, o.ID).Scan(&old)
+	err := tx.QueryRowContext(ctx, `SELECT data FROM usage_observations WHERE source_id=? AND observation_id=?`, o.Source.ID, o.ID).Scan(&old)
 	if err == nil {
 		if !bytes.Equal(data, old) {
 			return result, ErrConflict
@@ -255,10 +240,18 @@ func (l *Ledger) Ingest(ctx context.Context, o Observation) (IngestResult, error
 	if err != nil {
 		return result, err
 	}
-	return result, tx.Commit()
+	return result, nil
 }
+
+type observationQueryer interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
 func (l *Ledger) observations(ctx context.Context) ([]Observation, error) {
-	rows, err := l.db.QueryContext(ctx, `SELECT source_id,observation_id,kind,canonical_key,sequence,digest,data FROM usage_observations ORDER BY kind,canonical_key,source_id,observation_id`)
+	return readObservations(ctx, l.db)
+}
+func readObservations(ctx context.Context, q observationQueryer) ([]Observation, error) {
+	rows, err := q.QueryContext(ctx, `SELECT source_id,observation_id,kind,canonical_key,sequence,digest,data FROM usage_observations ORDER BY kind,canonical_key,source_id,observation_id`)
 	if err != nil {
 		return nil, err
 	}

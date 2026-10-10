@@ -11,7 +11,7 @@ servers. There are no new dependencies.
 
 `Open(cleanAbsolutePath)` creates owned mode-0600 regular database and lock files
 in an owned mode-0700 directory, following the existing private-directory pattern.
-It refuses symlink database/lock files, nonregular files, a second cooperating
+It refuses symlink database/lock files, public permissions, nonregular files, a second cooperating
 authority, unknown schemas, and malformed or changed stored observations. SQLite
 DELETE journaling and FULL synchronous commits persist before `Ingest` returns.
 The integrity digest detects accidental data changes; it is not a signature and
@@ -87,6 +87,20 @@ grant. These are projection controls, not same-user security isolation. Use
 opaque namespaces/source IDs, since they appear as evidence references even
 when account labels are redacted.
 
+`ReadProjection(ctx, path, query)` validates the query even when the ledger does
+not exist and returns an empty unknown view plus `present=false`. An existing
+ledger is opened with SQLite read-only mode and projected from one read
+transaction. No directory, writer lock, migration, chmod, journal, or other
+state is created. Unsafe directories/files and changed schemas are refused.
+
+`ValidateBatch` checks 1–128 structured observations before any state is opened,
+including conflicting identities or stream sequences within the batch.
+`IngestBatch` shares the single-record transaction helper and either commits the
+entire batch or returns no results and rolls back all inserts. A final-record
+conflict preserves the original database bytes and projection. Unavailable
+current tool counts and reset times supersede old known measurements; references
+with invalid UTF-8 are rejected rather than normalized into another identity.
+
 Filters cover federation, host, project, task, thread, lane, session, execution,
 harness/version, provider, account/subscription, and trusted actual model. Money
 supports model filtering when the source supplies `Money.ActualModel`; it does
@@ -130,3 +144,75 @@ Fixture ingestion establishes backend behavior only. Real provider observation,
 version/authentication matrices, native runtime attribution, quota freshness,
 invoice reconciliation, federation authenticity, daemon lifecycle integration,
 and CLI/TUI behavior remain unimplemented or unproved in this isolated unit.
+
+## Local command integration
+
+`cmd/bp/usage.go` exports `usageCommand(stateDir, entry, args)`. Root must dispatch
+it before `config.Ensure` or daemon startup. Its testable `usageRun` accepts
+explicit input/output streams and a clock. The command rejects remote entry and
+performs no socket, native RPC, provider, login, or model action.
+
+```text
+keelmux --state /private/state usage
+keelmux --state /private/state usage view --host host_ID --session session_ID --provider codex --json
+keelmux --state /private/state usage --from 2026-10-10T00:00:00Z --to 2026-10-11T00:00:00Z --timezone America/New_York --money
+keelmux --state /private/state usage import observations.json
+keelmux --state /private/state usage import - < observations.json
+```
+
+Bare `usage` shows the previous 24 hours. Text and JSON views qualify source
+coverage, unknown dimensions, conflicts, missing expected sources and freshness.
+`--model` matches trusted actual models; user declarations and requested aliases
+cannot satisfy it. `--accounts` and `--money` expose local optional detail; this
+same-user filesystem command does not authenticate or grant remote principals.
+
+Manual input is a UTF-8 JSON document no larger than 1 MiB:
+
+```json
+{
+  "version": 1,
+  "observations": [
+    {
+      "id": "declared-call-1",
+      "source": {
+        "id": "my-manual-records",
+        "kind": "manual",
+        "quality": "user_entered",
+        "observed_at": "2026-10-10T16:00:00Z",
+        "sequence": 1,
+        "coverage": "unknown"
+      },
+      "attempt": {
+        "key": {
+          "provider": "codex",
+          "namespace": "my-declared-scope",
+          "request_id": "declared-request-1",
+          "attempt_id": "declared-attempt-1"
+        },
+        "at": "2026-10-10T15:59:00Z",
+        "context": { "host": "host_ID", "session": "session_ID" },
+        "requested_model": "my-requested-alias",
+        "tool_calls": null,
+        "final": false
+      }
+    }
+  ]
+}
+```
+
+All authored source IDs and canonical namespaces are deterministically isolated
+under `manual_import:`; retries/parents are mapped to the same declared scope.
+Kind and quality must be absent or manual/user-entered and are normalized to
+manual/user-entered. Coverage is always unknown. Replaying the exact source/ID
+is idempotent. Provider authority, actual charges, and all shared quota imports
+are rejected. Account labels remain user-entered. Unknown fields, duplicate JSON
+keys, concatenated documents, excessive nesting, special files, symlinks,
+malformed records and intrinsic batch conflicts fail before state creation.
+Existing-ledger conflicts reject the entire transaction without partial records.
+If result output fails after commit, the error states that the import committed
+and identical input can be replayed safely.
+
+The isolated compiled command harness and CLI tests establish this command
+handler only; root-owned main dispatch remains an integration gate until wired
+and exercised in the product binary. Native quota mapping remains on hold until
+a separately qualified account-read transport receipt is available.

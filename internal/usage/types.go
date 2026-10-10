@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 type Quality string
@@ -160,7 +161,7 @@ func ref(s string, required bool) bool {
 	if s == "" {
 		return !required
 	}
-	if len(s) > 256 || strings.TrimSpace(s) != s || s == "unknown" {
+	if len(s) > 256 || !utf8.ValidString(s) || strings.TrimSpace(s) != s || s == "unknown" {
 		return false
 	}
 	for _, r := range s {
