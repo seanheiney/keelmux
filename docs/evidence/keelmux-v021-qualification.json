@@ -1,0 +1,341 @@
+{
+  "schema": 2,
+  "product": "Keelmux",
+  "version": "v0.2.1",
+  "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+  "result": "pass-published-public-installer-qualified",
+  "archives": {
+    "keelmux_v0.2.1_darwin_amd64.tar.gz": {
+      "sha256": "e8f542a8ca9873f4169bf3a575e660ebfe40f9953e3e0aa69ad30cebe4ebee8c",
+      "manifest": {
+        "aliases": {
+          "bp": "keelmux",
+          "bpd": "keelmuxd",
+          "bpg": "keelmux-entry"
+        },
+        "arch": "amd64",
+        "built_at": "2026-10-10T22:43:12Z",
+        "commit": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+        "development_test": false,
+        "files": {
+          "LICENSE": "901e05e6fcd7fb304f28703f4b20c17e9c393e98035748538e09321eb559de42",
+          "README.md": "00a08250f408fb7f79672769dba3035bea7fd04a10aa4e609a6d6f4c2dbc5d4c",
+          "keelmux": "0efb91b82a995ac1377c1c4844d8beb5a21ad9dfeafd8a2f9eab9f09634195f5",
+          "keelmux-entry": "af908ac3de65f3bb85736043949b79a96b30728091d576a44823f45ac4b04852",
+          "keelmux-supervisor": "1320c9184aa583b7ddc95194d4c17e67dc82bc818725c174b30e5f011744c448",
+          "keelmuxd": "8443ffc178f818f51c51895fe96c9baf2b6922c8a291fe58a84ad86f4441cc30"
+        },
+        "go_version": "go1.26.6",
+        "os": "darwin",
+        "product": "Keelmux",
+        "schema": 2,
+        "source_clean": true,
+        "version": "v0.2.1"
+      }
+    },
+    "keelmux_v0.2.1_darwin_arm64.tar.gz": {
+      "sha256": "a1d4fd851d73c396ebc99d7b7e2deb1e7b0c3f5f7c8bc2285728569f7f6dcbe6",
+      "manifest": {
+        "aliases": {
+          "bp": "keelmux",
+          "bpd": "keelmuxd",
+          "bpg": "keelmux-entry"
+        },
+        "arch": "arm64",
+        "built_at": "2026-10-10T22:43:12Z",
+        "commit": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+        "development_test": false,
+        "files": {
+          "LICENSE": "901e05e6fcd7fb304f28703f4b20c17e9c393e98035748538e09321eb559de42",
+          "README.md": "00a08250f408fb7f79672769dba3035bea7fd04a10aa4e609a6d6f4c2dbc5d4c",
+          "keelmux": "2567da979dd6b8c0a034d4592ec72886a08d225a51424248703a17f073c1aa72",
+          "keelmux-entry": "7c66047d8db05a5bffbb0e2c4dc16e89ec7b71c0e51eaa5a0ffd1a8ddc4d5494",
+          "keelmux-supervisor": "f9d5b47073f1d42737e551aa89c6b76dfb02ec5796fd0d21b945dd4357b1b357",
+          "keelmuxd": "5d55e60ce8fee6d166d985ae085231ff2538722469cf026e2f8d67f7bde713f7"
+        },
+        "go_version": "go1.26.6",
+        "os": "darwin",
+        "product": "Keelmux",
+        "schema": 2,
+        "source_clean": true,
+        "version": "v0.2.1"
+      }
+    },
+    "keelmux_v0.2.1_linux_amd64.tar.gz": {
+      "sha256": "e87354582fbaba6a3868d8883e555a214f972ff80d850596db0840d30fb95e62",
+      "manifest": {
+        "aliases": {
+          "bp": "keelmux",
+          "bpd": "keelmuxd",
+          "bpg": "keelmux-entry"
+        },
+        "arch": "amd64",
+        "built_at": "2026-10-10T22:43:12Z",
+        "commit": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+        "development_test": false,
+        "files": {
+          "LICENSE": "901e05e6fcd7fb304f28703f4b20c17e9c393e98035748538e09321eb559de42",
+          "README.md": "00a08250f408fb7f79672769dba3035bea7fd04a10aa4e609a6d6f4c2dbc5d4c",
+          "keelmux": "25fc35cfc8127971888b376b7ba1eb87b2e8a31eb9e3ce74b7356880827da2e2",
+          "keelmux-entry": "2d74c45c1b44fb333c17795f40e47c7b9dce99b6eeb229bc6c298ce55a4fe90e",
+          "keelmux-supervisor": "3589fc1c084fa43377afc5d6a2fa8957603581f91f2513e570b6fa046f872aac",
+          "keelmuxd": "aaeb458db416b1a92e01901f5a5632c6d7e9b2d054a43f3482106a7e1f2f0459"
+        },
+        "go_version": "go1.26.6",
+        "os": "linux",
+        "product": "Keelmux",
+        "schema": 2,
+        "source_clean": true,
+        "version": "v0.2.1"
+      }
+    },
+    "keelmux_v0.2.1_linux_arm64.tar.gz": {
+      "sha256": "19869ebad7dff4fb6402744c7dc2cbdfd5bb173c8de671bd5d09f06033f26831",
+      "manifest": {
+        "aliases": {
+          "bp": "keelmux",
+          "bpd": "keelmuxd",
+          "bpg": "keelmux-entry"
+        },
+        "arch": "arm64",
+        "built_at": "2026-10-10T22:43:12Z",
+        "commit": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+        "development_test": false,
+        "files": {
+          "LICENSE": "901e05e6fcd7fb304f28703f4b20c17e9c393e98035748538e09321eb559de42",
+          "README.md": "00a08250f408fb7f79672769dba3035bea7fd04a10aa4e609a6d6f4c2dbc5d4c",
+          "keelmux": "e5e019a9ba31d3550c46ffd7b32d2f51c7921da1cf142f57b6ddc12fe2a9271f",
+          "keelmux-entry": "f447550cf51b540d20501dadc4ca92295ea0d7da03758a982456310d34e78165",
+          "keelmux-supervisor": "187a7c30e4f72d4971c8773ee0c393bf016557373edb4db8cdcc15c4c947dfac",
+          "keelmuxd": "bf5e113f535c11eb58ef8d0689f8f243d3f61d24ffecba3a9031acd15b12327b"
+        },
+        "go_version": "go1.26.6",
+        "os": "linux",
+        "product": "Keelmux",
+        "schema": 2,
+        "source_clean": true,
+        "version": "v0.2.1"
+      }
+    }
+  },
+  "checksums_sha256": "e02358b81a352e18b39875a7c7940b9eeb50f6480cdcf200f5d3faac42470f6b",
+  "receipts": {
+    "producer.json": {
+      "sha256": "1fa2243d08a07c7d9706ef55a6b90dc6405d13fff887e31fdfa11ba74ad5b29b",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "macos-native-package.json": {
+      "sha256": "fd17875d80343d2e55024a8aba07262cf02725e48930371d9becdff545adb9c1",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "macos-irc-package.json": {
+      "sha256": "f5567b16b06c95faaec51512339af37a36ae7d8e3a881240a41bd2163407106d",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "mattermost-owned-source.json": {
+      "sha256": "f345b64516dd2fa4d772ae5a72bd9a34dbced22993f20fb50640a6ab9dbd5696",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "linux-native-package.json": {
+      "sha256": "76876ae9879b9f0666e85455c5c6f5c748f8712bfd2143da415f43ccdfea5eed",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "macos-installer.json": {
+      "sha256": "aa6b982b87e5a3e1afa5a549d6557a8658f188271bb85e93773a7213f7cd3a0f",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "hosted-provenance.json": {
+      "sha256": "a6383ab1bd223da8818256030d67a8f71a62f749206c58b3c697c2fccb302fe2",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "public-install-macos.json": {
+      "sha256": "d7bcfc92adab178ad2c8ac37f24bb6db7cdbdd33b0ec3ade022e9ab746b9f352",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "public-install-linux.json": {
+      "sha256": "172440aace4bc85e4fdbdf64ace05821f9fcc4eeeb0131d30dd0d3938a21cb12",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    },
+    "publication.json": {
+      "sha256": "41c3c1e5c368b00d3e614275180518f50d80e2d4433b703c7ed3775e34e737fa",
+      "result": "pass",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2"
+    }
+  },
+  "documentation": "https://seanheiney.github.io/keelmux/",
+  "source_documentation": "https://github.com/seanheiney/keelmux/tree/v0.2.1/docs",
+  "hosted_source_workflows": {
+    "feature_push": {
+      "run_id": 38092483173,
+      "url": "https://github.com/seanheiney/keelmux/actions/runs/38092483173",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "source (macos-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "source (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (linux/amd64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (darwin/arm64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (darwin/amd64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (linux/arm64)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "feature_pr": {
+      "run_id": 38092501602,
+      "url": "https://github.com/seanheiney/keelmux/actions/runs/38092501602",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "build (linux/arm64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "source (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (darwin/amd64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (linux/amd64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "source (macos-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (darwin/arm64)",
+          "conclusion": "success"
+        }
+      ],
+      "archive_checkout_sha": "96196d8e821d5947aca2f00672ef7c5c6e0acc09",
+      "archive_checkout_note": "Synthetic merge commit; tree independently verified equal to source. These are v0.0.0 smoke archives, not versioned release archives."
+    },
+    "main": {
+      "run_id": 38092841337,
+      "url": "https://github.com/seanheiney/keelmux/actions/runs/38092841337",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "source (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "source (macos-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (linux/amd64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (darwin/amd64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (linux/arm64)",
+          "conclusion": "success"
+        },
+        {
+          "name": "build (darwin/arm64)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "release_producer": {
+      "run_id": 38092845377,
+      "url": "https://github.com/seanheiney/keelmux/actions/runs/38092845377",
+      "source_sha": "71d831f05405b68fc80cb38132b321f3ba1e6cc2",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "candidate",
+          "conclusion": "success"
+        }
+      ]
+    }
+  },
+  "hosted_delivery": {
+    "result": "pass",
+    "receipt_file": "hosted-provenance.json",
+    "receipt_sha256": "a6383ab1bd223da8818256030d67a8f71a62f749206c58b3c697c2fccb302fe2",
+    "artifact_count": 5,
+    "qualified_local_bytes_match": true,
+    "exact_tag_attestations_verified": true
+  },
+  "scope": {
+    "native_runtime": [
+      "macOS arm64 / Codex 0.159.0 / Claude Code 2.1.296"
+    ],
+    "linux_runtime": "nonroot Linux arm64 terminal fixtures, eleven daemon CLI restarts and actual 16-group installer; native providers unqualified",
+    "irc": "actual installed macOS arm64 owned Ergo 2.19.1, three threads/two project channels, 152 checks",
+    "mattermost": "owned real Mattermost 11.11.1 adapter race and source-built native Linux arm64 daemon/CLI; customer destination unqualified",
+    "slack": "protocol fixtures only",
+    "build_targets_without_packaged_runtime_qualification": [
+      "darwin/amd64",
+      "linux/amd64"
+    ],
+    "model_turns_submitted": 0,
+    "independent_remote_servers_proved": false,
+    "host_reboot_native_resume_proved": false,
+    "schema_downgrade_proved": false,
+    "structured_controller_product_launcher": false,
+    "native_private_entry_provider_journey_qualified": false
+  },
+  "public_one_line_install": {
+    "status": "pass",
+    "targets": [
+      "macOS arm64",
+      "nonroot Linux arm64"
+    ],
+    "anonymous": true,
+    "overrides_used": false,
+    "owned_uninstall_and_sentinels_preserved": true,
+    "receipt_files": [
+      "public-install-macos.json",
+      "public-install-linux.json"
+    ]
+  },
+  "publication": {
+    "state": "published",
+    "immutable_tag_preserved": true,
+    "public_latest_release": "v0.2.1",
+    "url": "https://github.com/seanheiney/keelmux/releases/tag/v0.2.1",
+    "previous_v020_candidate": "held-unpublished-draft",
+    "anonymous_public_v021_install": "pass-macos-arm64-and-nonroot-linux-arm64"
+  }
+}

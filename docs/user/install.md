@@ -25,9 +25,9 @@ The 0.2 `doctor` checks the bundled supervisor and at least one launchable nativ
 For managed machines, download and review the script before running it, and select an exact release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/v0.2.0/install.sh -o keelmux-install.sh
+curl -fsSL https://raw.githubusercontent.com/seanheiney/keelmux/v0.2.1/install.sh -o keelmux-install.sh
 # Review keelmux-install.sh using your normal software-review process.
-sh keelmux-install.sh --version v0.2.0 \
+sh keelmux-install.sh --version v0.2.1 \
   --prefix "$HOME/.local/share/keelmux" --bin-dir "$HOME/.local/bin"
 ```
 
@@ -42,10 +42,10 @@ Version directories remain separate. The atomic `current` link selects the insta
 Where the release has GitHub provenance attestations, verify a downloaded asset with the GitHub CLI before your organization's installation workflow:
 
 ```sh
-gh attestation verify keelmux_v0.2.0_darwin_arm64.tar.gz \
+gh attestation verify keelmux_v0.2.1_darwin_arm64.tar.gz \
   --repo seanheiney/keelmux \
   --signer-workflow seanheiney/keelmux/.github/workflows/release.yml \
-  --source-ref refs/tags/v0.2.0 --deny-self-hosted-runners
+  --source-ref refs/tags/v0.2.1 --deny-self-hosted-runners
 ```
 
 Choose the filename matching your target. Compare the attested source digest with the release's recorded commit. The one-line installer checks HTTPS downloads, checksums and manifests; it does not invoke GitHub attestation verification for you.

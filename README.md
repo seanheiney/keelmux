@@ -12,6 +12,8 @@ Ctrl-G d                →  return to your switcher
 
 [Online documentation](https://seanheiney.github.io/keelmux/) · [Get started](docs/user/quickstart.md) · [Documentation](docs/README.md) · [CLI reference](docs/user/cli.md) · [Recovery](docs/user/operations.md#recover-a-session) · [Security](SECURITY.md)
 
+[Latest release: v0.2.1](https://github.com/seanheiney/keelmux/releases/tag/v0.2.1) · [Exact qualification](https://github.com/seanheiney/keelmux/releases/download/v0.2.1/QUALIFICATION.json)
+
 ## Install
 
 The installer selects the latest published release. Keelmux 0.2 bundles an independent native supervisor; tmux is optional for existing sessions. The historical 0.1 release uses tmux. Bring your chosen native CLI and its native login.

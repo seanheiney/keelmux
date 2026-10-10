@@ -2,7 +2,7 @@
 
 Release notes describe implemented behavior and exact evidence. The [roadmap](docs/user/roadmap.md) records the broader product vision separately.
 
-## Unreleased · 0.2.0 qualification
+## 0.2.1 · 2026-10-10
 
 - Independent native PTY/process supervision is the default, with a bundled supervisor and no mandatory tmux. Native attachment, screen recovery and writer ownership survive control-daemon replacement.
 - Durable authored inboxes and explicit replies support Mattermost, Slack and IRC, with immutable authenticated bindings and exact delivery receipts. Remote notes never inject terminal input or automatically start model work.
@@ -11,7 +11,13 @@ Release notes describe implemented behavior and exact evidence. The [roadmap](do
 - Runtime recovery and authored-channel terminal views, three-size screenshots, canonical operator guides and a generated documentation site.
 - Schema 2 release archives include all four executables. Package qualification verifies public command links, exact loaded bytes, cooperative cancellation and unresolved launch effects before accepting cleanup.
 
-This development scope is under [release qualification #17](https://github.com/seanheiney/keelmux/issues/17). Current exact-source receipts and remaining package/public-delivery gates are in [implementation status](docs/build/STATUS.md). The experimental structured Codex controller has no product launcher or live semantic capability. Published 0.1.0 remains unchanged.
+The [published release](https://github.com/seanheiney/keelmux/releases/tag/v0.2.1) is frozen at `71d831f05405b68fc80cb38132b321f3ba1e6cc2`. Its [qualification index](https://github.com/seanheiney/keelmux/releases/download/v0.2.1/QUALIFICATION.json) records tested packages, hosted provenance, anonymous installation and explicit limits. Current implementation and roadmap states are in [implementation status](docs/build/STATUS.md). The experimental structured Codex controller has no product launcher or live semantic capability. Published 0.1.0 remains unchanged.
+
+- Stable validated kernel boot UUIDs prevent clock-adjustment false death; unsupported legacy native receipts remain uncertain even in stopped IRC journals. Complete buffered terminal close frames survive peer exit.
+
+## Held v0.2.0 candidate
+
+Tag `v0.2.0` remains at `85879183bcf9da5b52972166e93b29e38aa336dc`. Its draft was held after the additional main source workflow failed an optional tmux key-input fixture. It was never published. The bounded test-input repair is included in v0.2.1; production Go sources remained unchanged. Existing candidate receipts retain their original source and do not qualify the replacement archives.
 
 ## 0.1.0
 

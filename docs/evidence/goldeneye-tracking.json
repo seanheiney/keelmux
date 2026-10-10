@@ -204,5 +204,87 @@
     "message_sha256": "409e33925faa01f444b9237bc217041e5955d6668c3b64b4a5f4d2d587659b97",
     "read_status": 200,
     "unique_exact_message": true
+  },
+  "feature_expansion_20261010": [
+    {
+      "key": "native_controller",
+      "issue_id": "745e3b29-62f4-4033-b6ba-baea5652cf98",
+      "sequence_id": 5,
+      "name": "Implement structured native agent controllers",
+      "owner": "feature_controller",
+      "state": "In Progress",
+      "state_read_status": 200,
+      "comment_id": "e5d38cfe-3b46-48b1-ae90-4d43459449cf",
+      "comment_status": 201,
+      "exact_body_read_verified": true,
+      "acceptance": "Owned native upstream adapter and real common-Service authority integration; one-shot durable operation fencing, restart and acknowledgement reconciliation; explicit unavailable semantics; scoped adverse race/vet tests and exact source receipts. No model turns or native Enter."
+    },
+    {
+      "key": "remote_inventory",
+      "issue_id": "305ab0cf-8529-4c2a-86bb-74769bd70aed",
+      "sequence_id": 6,
+      "name": "Deliver enrolled remote hosts and agent continuity",
+      "owner": "remote_inventory lane, queued",
+      "state": "In Progress",
+      "state_read_status": 200,
+      "comment_id": "eedd312c-51ec-47c0-b5fb-fd756d1d7ee0",
+      "comment_status": 201,
+      "exact_body_read_verified": true,
+      "acceptance": "Explicit SSH peer configuration and identity-pinned permitted remote inventory; host/workspace selection with truthful unavailable states and no automatic target movement. Test enrollment failure, revocation and stale identity. Independent real second-server acceptance remains a separate gate."
+    },
+    {
+      "key": "usage_visibility",
+      "issue_id": "02558365-706e-4d4d-a29d-6a2de2c1ef62",
+      "sequence_id": 9,
+      "name": "Expose source-qualified agent usage and account readiness",
+      "owner": "usage_visibility lane, queued",
+      "state": "In Progress",
+      "state_read_status": 200,
+      "comment_id": "6a999676-405d-4311-b2d4-0b85343131ec",
+      "comment_status": 201,
+      "exact_body_read_verified": true,
+      "acceptance": "Persistent source-qualified request/usage observations and deduplicated projections; unknown coverage stays unknown, native token dimensions and quota windows remain scoped; contextual CLI/TUI usage view without estimates presented as actual spend or credentials stored."
+    },
+    {
+      "key": "project_administration",
+      "issue_id": "f2766d8e-0885-4aa1-8f47-89af517b2121",
+      "sequence_id": 10,
+      "name": "Manage company product groups and project navigation",
+      "owner": "project_administration lane, queued",
+      "state": "In Progress",
+      "state_read_status": 200,
+      "comment_id": "c293907a-3507-464e-81a1-11e2450dbc07",
+      "comment_status": 201,
+      "exact_body_read_verified": true,
+      "acceptance": "Optional group hierarchy and overlapping stable project/thread membership; remembered selection/filter and archive/remove behavior preserve workers and drafts; scoped/global counts deduplicate sessions and navigation makes no model call."
+    },
+    {
+      "key": "runtime_diagnostics",
+      "issue_id": "bd6ff3b4-deb2-41ff-8752-648afd356ce7",
+      "sequence_id": 11,
+      "name": "Provide contextual native runtime and communication diagnostics",
+      "owner": "runtime_diagnostics lane, queued",
+      "state": "In Progress",
+      "state_read_status": 200,
+      "comment_id": "31b1671f-3f33-46c6-b4b6-3e46c00a442e",
+      "comment_status": 201,
+      "exact_body_read_verified": true,
+      "acceptance": "Read-only structured diagnosis for native supervisor, owned daemon, provider readiness and communication bindings with exact source/freshness and direct contextual next actions; no guessed auth/quota or automatic repair replay."
+    }
+  ],
+  "mattermost_v021_and_feature_expansion": {
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "post_id": "ad8sgzf4tbbdzgxoc6tob8q1re",
+    "url": "https://chat.sean.net/seannet/pl/ad8sgzf4tbbdzgxoc6tob8q1re",
+    "message_sha256": "d9f4e662f5efc9ff59b51e3e5ddf579c4974f792dadb60060bd133fe982c7cbc",
+    "read_status": 200,
+    "unique_exact_message": true
+  },
+  "release_v021_published_qualification": {
+    "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+    "comment_id": "57caa062-3b2d-474e-a200-1bc7c3ce54a9",
+    "write_status": 201,
+    "read_status": 200,
+    "exact_body_read_verified": true
   }
 }

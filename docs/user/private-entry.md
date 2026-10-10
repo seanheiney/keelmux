@@ -1,5 +1,7 @@
 # Private entry experiment
 
+The recorded real-provider entry journeys qualify the historical tmux runtime across two homes on one computer. A newly qualified v0.2.1 native-provider gateway journey and independently authenticated second server remain pending; see the [support matrix](support-matrix.md).
+
 A private entry exposes one permitted inventory and routes native terminal attachments to explicit execution homes. Each home retains its database, native terminals and credentials. The client companion runs on the client machine.
 
 The tested experiment uses two homes on one physical Mac. It does not certify two independent servers, SSH enrollment, public listeners or a production remote-access service. Use [the support matrix](support-matrix.md) for that boundary.

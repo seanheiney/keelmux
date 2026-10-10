@@ -2,9 +2,28 @@
 
 Keelmux declares support per provider, version, platform, authentication mode and scenario. An installed CLI, a successful build and a working model turn establish different things.
 
+## Published v0.2.1
+
+[v0.2.1](https://github.com/seanheiney/keelmux/releases/tag/v0.2.1) is frozen at `71d831f05405b68fc80cb38132b321f3ba1e6cc2`. Its [qualification index](https://github.com/seanheiney/keelmux/releases/download/v0.2.1/QUALIFICATION.json) binds actual installed packages, hosted byte comparison, tagged workflow attestations and anonymous default installation to this source. The default runtime owns native PTYs and processes; tmux is an optional historical compatibility adapter.
+
+| Scenario | Qualified evidence | Limit |
+| --- | --- | --- |
+| macOS arm64, Codex CLI 0.159.0 and Claude Code 2.1.296 | Installed native composer, unsubmitted Unicode/Escape/resize, read-only and writer fencing, switcher detach/return, same-execution recovery after daemon loss, exact cleanup | macOS 26.7.1; zero submitted model turns; effective model/account attribution and reboot resume unqualified |
+| Linux arm64 native terminal backend | Installed fixture eight groups and eleven daemon CLI restarts, original authority and lost-response recovery | Nonroot pinned Debian 13.7 container; authored terminal fixtures, no vendor programs |
+| Per-user installer, macOS arm64/Linux arm64 | Sixteen actual package groups on each platform, four loaded canonical binaries, default anonymous HTTPS install/uninstall, preserved authentication/state/profile sentinels | No automatic dependency installation or database downgrade |
+| Managed Ergo 2.19.1, macOS arm64 | Actual installed three-thread/two-project workflow, 152 checks, exact distinct bot accounts, both restarts and owned cleanup | Loopback TLS/SASL; bounded live history and explicit gaps; public server deployment unqualified |
+| Mattermost 11.11.1 | Owned real service, eleven adapter race groups and seven source-built native daemon/CLI groups | Customer server and packaged TUI journey unqualified; daemon fixture has no native session process |
+| Slack | Strict protocol fixtures and durable authored-message source gates | Real customer service remains unqualified |
+| macOS amd64/Linux amd64 archives | Reproducible cross-builds and exact-source provenance | Packaged native runtime/provider acceptance unqualified |
+| Hosted source and release | macOS arm64/Ubuntu amd64 race/vet, installer controls and archive smoke; all four v0.2.1 archives match local qualified bytes; five exact-tag attestations verified | Source/archive smoke does not establish native provider or model-turn support on that runner |
+
+The communication surface contains authored notes and explicit replies. Incoming messages cannot press terminal keys, approve tools or submit model work. Lost acknowledgements remain uncertain and are reconciled without automatic replay.
+
+## Historical development evidence
+
 The published v0.1.0 terminal-runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6 and tmux 3.7b, with installed **Codex CLI 0.159.0** and **Claude Code 2.1.296**. Four archive targets build: macOS/Linux, arm64/amd64. Independent macOS arm64 packaged installation and authority-refusal acceptance passed on source `0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44`: [package receipt](../evidence/keelmux-release-macos-independent.md). Linux arm64 terminal-backend acceptance runs actual packaged binaries in a pinned Debian container with explicit fixture programs; it does not prove native Linux Codex or Claude behavior. Other provider versions and build-only targets need their own receipts. The tagged release attaches its final exact-source qualification separately.
 
-## Independent native runtime development
+### Independent native runtime development
 
 The development default owns native PTY/process supervision. Optional tmux compatibility only addresses previously recorded executions; a failed native launch cannot fall back to tmux. See the [architecture decision](../architecture/0002-native-runtime-ownership.md).
 
@@ -14,7 +33,7 @@ Real native-supervised pinned Ergo persistence and private services accounts pas
 
 The clean schema 2 candidate at `db94705` passed installed macOS arm64 native-provider qualification. Its Linux arm64 archive passed native fixture 8 groups, installer 16 groups and four-loaded-binary smoke in an owned isolated nonroot environment. [Exact candidate evidence](../evidence/native-release-linux-db94705-candidate.md) also records successful historical schema 1 installer compatibility and exact-instance daemon cleanup. These candidate gates do not qualify subsequent project routing or terminal changes, final hosted archives, public downloads, Linux native providers or amd64 runtime behavior. The historical provider receipts below qualify the v0.1.0 tmux runtime.
 
-## Published v0.1.0 terminal core
+## Historical v0.1.0 terminal core
 
 | Capability | Evidence | Limit |
 | --- | --- | --- |
@@ -32,9 +51,11 @@ The original accepted implementation is `4b36f4d773a31388c7ec8ade146eb1929a8d2a1
 
 ## Release qualification
 
-The [tagged release](https://github.com/seanheiney/keelmux/releases/tag/v0.1.0) supplies machine receipts for the final archives, loaded versions, actual installation and supported runtime checks. Compare their artifact source commit and archive digest with `RELEASE.json` and `SHA256SUMS`; historical receipts above qualify only their own source. macOS amd64 and Linux amd64 are build targets until an actual runtime receipt establishes more. Native authenticated turns, independent remote servers and host reboot remain outside the initial terminal-runtime claim.
+The [historical tagged release](https://github.com/seanheiney/keelmux/releases/tag/v0.1.0) supplies machine receipts for the final archives, loaded versions, actual installation and supported runtime checks. Compare their artifact source commit and archive digest with `RELEASE.json` and `SHA256SUMS`; historical receipts above qualify only their own source. macOS amd64 and Linux amd64 are build targets until an actual runtime receipt establishes more. Native authenticated turns, independent remote servers and host reboot remain outside the initial terminal-runtime claim.
 
 ## Private entry
+
+The following real-provider entry receipts qualify the historical tmux runtime. No newly qualified v0.2.1 native-provider gateway journey or independent second server is claimed.
 
 | Capability | Evidence | Limit |
 | --- | --- | --- |
@@ -52,11 +73,11 @@ The helper is not a product app-server launcher. Its isolated no-auth custom pro
 
 The source-integrated primary controller has independent private-journal/native-home review and passing source race/vet. It still requires real adapters for the existing common lifecycle gate and authenticated upstream. The [controller review](../evidence/Codex-controller-peer-review-2026-10-10.md) qualifies injected boundary fixtures only; no product launcher or semantic capability is enabled.
 
-## Authored communications development
+## Authored communications
 
-The development branch adds immutable authenticated Mattermost, Slack and IRC bindings, a durable authored inbox, explicit replies and read-only receipt reconciliation. The [owned native Mattermost receipt](../evidence/mattermost-owned-native-db94705.json) qualifies actual verified TLS, service/API behavior and source native daemon/CLI delivery at `db94705`, with tmux absent. Slack currently has protocol-fixture evidence. Managed IRC now maps project channels to distinct stable thread bots with explicit initial addressing. The [152-check owned product receipt](../evidence/irc-project-product-66a5d68.md) qualifies three native thread sentinels across two projects at clean `66a5d68`, exact addressed delivery, both restarts, stable account/channel identities, zero native input and authenticated process cleanup. Source tests also qualify old-state migration and refusal of registration replay after private account-authority loss. [Independent recovery review](../evidence/IRC-project-recovery-peer-review-2026-10-10.md) passed; final captain/package checks remain active. Historical thread-channel product receipts do not qualify the new mapping.
+v0.2.1 includes immutable authenticated Mattermost, Slack and IRC bindings, a durable authored inbox, explicit replies and read-only receipt reconciliation. The [final qualification](https://github.com/seanheiney/keelmux/releases/download/v0.2.1/QUALIFICATION.json) records fresh owned Mattermost service/source daemon proof and the actual installed managed IRC project workflow at `71d831f05405b68fc80cb38132b321f3ba1e6cc2`. Slack has protocol-fixture evidence. Retained thread claims require their original private account authority, and unknown registration or delivery effects cannot authorize replay. Historical thread-channel receipts do not qualify the project-channel mapping.
 
-Remote text never submits terminal input, approves tools or starts a model turn. These development checks do not qualify a customer workspace. The [channel guide](channels.md) and [managed IRC guide](managed-irc.md) describe their exact behavior and recovery limits.
+Remote text never submits terminal input, approves tools or starts a model turn. The owned-service checks do not qualify a customer workspace. The [channel guide](channels.md) and [managed IRC guide](managed-irc.md) describe exact configuration, behavior and recovery limits.
 
 ## Outside the current runtime claim
 
