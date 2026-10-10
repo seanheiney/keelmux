@@ -1,0 +1,40 @@
+{
+  "scope": "policy_unit_only_no_relay_native_model_auth_approval_or_live_authority_claim",
+  "implementation_commit": "0fa9c4131187d05f5ad366ba3cb3750f232f26c4",
+  "tested_head": "a8295e721d40d8abebe2a5e68cc89b02a0d20368",
+  "test_inputs_sha256": {
+    "internal/codexbroker/policy_acceptance_test.go": "9b291edee419b5ede8ce8c196947e5b82afc3dbee8a1eb6735a69eafb29936e5",
+    "internal/codexbroker/testdata/codex_0159_bootstrap.json": "16ccbb29164440c093891779fff2b38a448a286efa0572bc4a1c0122831256cc"
+  },
+  "commands": [
+    "go test -race -json ./internal/codexbroker",
+    "go vet ./internal/codexbroker"
+  ],
+  "result": "pass",
+  "acceptance_top_level_groups": 18,
+  "acceptance_test_nodes_passed": 254,
+  "all_package_test_nodes_failed": 0,
+  "go_version": "go version go1.26.6 darwin/arm64",
+  "os": {
+    "name": "macOS",
+    "version": "26.7.1",
+    "arch": "arm64"
+  },
+  "first_run_corrections": [
+    "Restored captured public clientInfo.name codex-tui after sanitizer mistakenly substituted codex_cli_rs.",
+    "Exercised normal Classify then NativeOutput ordering to supply verified home workspace baseline.",
+    "Kept exact known-schema output as required positive controls; added unknown-variant outcomes as projection-or-withholding checks, as permitted by published default-deny contract."
+  ],
+  "missing": [
+    "actual counted relay delivery",
+    "real Service.CodexAuthority live revocation gates",
+    "real zero-turn native CLI through broker",
+    "native model turns",
+    "native approval/callback forwarding"
+  ],
+  "independent_acceptance_commit": "0c0e9d4dc704a5e8384cad3d48f3cd313cfaf593",
+  "root_integration_commit": "79dd6e2",
+  "root_verification_sha": "5d2222e",
+  "first_failure_receipt_location": "independent validator private ignored work; summarized here without raw output",
+  "root_verification_result": "pass"
+}
