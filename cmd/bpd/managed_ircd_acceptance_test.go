@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -32,6 +33,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/protocol"
 	bpruntime "github.com/seanheiney/keelmux/internal/runtime"
 	"github.com/seanheiney/keelmux/internal/store"
+	"golang.org/x/sys/unix"
 )
 
 // This opt-in product qualification builds the actual control executables from
@@ -43,6 +45,9 @@ import (
 //	  go test ./cmd/bpd -run '^TestManagedIRCDProductAcceptance$' -v -count=1
 //
 // An optional absolute KEELMUX_MANAGED_IRCD_REPORT names a new JSON receipt.
+// KEELMUX_MANAGED_IRCD_BIN_DIR optionally names an existing owned directory of
+// actual package executables. Those three explicit files are frozen into the
+// private bin; all --version metadata must match this clean checkout first.
 func TestManagedIRCDProductAcceptance(t *testing.T) {
 	if os.Getenv("KEELMUX_MANAGED_IRCD_ACCEPTANCE") != "1" {
 		t.Skip("explicit owned product acceptance only")
@@ -241,17 +246,42 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 		}
 		checks[code] = true
 	}
-	var binaryDigests = map[string]string{}
-	for _, pair := range [][2]string{{"keelmux", "bp"}, {"keelmuxd", "bpd"}, {"keelmux-supervisor", "keelmux-supervisor"}} {
-		c := exec.CommandContext(ctx, "go", "build", "-trimpath", "-ldflags", "-X github.com/seanheiney/keelmux/internal/buildinfo.Commit="+source, "-o", filepath.Join(bin, pair[0]), "./cmd/"+pair[1])
-		c.Dir = sourceDir
-		out, e := c.CombinedOutput()
-		ensure(e == nil, fmt.Sprintf("actual_%s_built_diagnostic_bytes_%d", pair[0], len(out)))
-		binaryDigests[pair[0]] = managedProductDigest(t, filepath.Join(bin, pair[0]))
+	env := []string{"PATH=" + bin, "HOME=" + root, "TMPDIR=" + root, "TERM=xterm-256color", "LANG=C.UTF-8"}
+	var binaryDigests map[string]string
+	if supplied := os.Getenv("KEELMUX_MANAGED_IRCD_BIN_DIR"); supplied != "" {
+		report["binary_origin"] = "supplied-package-executables"
+		binaryDigests, err = managedProductFreezePackageBinaries(ctx, supplied, bin)
+		if err != nil {
+			t.Fatalf("product stage %s: supplied executable tuple could not be safely frozen", stage)
+		}
+		for _, name := range managedProductBinaryNames {
+			checks["actual_"+name+"_package_bytes_frozen"] = true
+		}
+	} else {
+		report["binary_origin"] = "clean-source-build"
+		binaryDigests = map[string]string{}
+		for _, pair := range [][2]string{{"keelmux", "bp"}, {"keelmuxd", "bpd"}, {"keelmux-supervisor", "keelmux-supervisor"}} {
+			c := exec.CommandContext(ctx, "go", "build", "-trimpath", "-ldflags", "-X github.com/seanheiney/keelmux/internal/buildinfo.Commit="+source, "-o", filepath.Join(bin, pair[0]), "./cmd/"+pair[1])
+			c.Dir = sourceDir
+			out, e := c.CombinedOutput()
+			ensure(e == nil, fmt.Sprintf("actual_%s_built_diagnostic_bytes_%d", pair[0], len(out)))
+			binaryDigests[pair[0]] = managedProductDigest(t, filepath.Join(bin, pair[0]))
+		}
 	}
+	executableVersion, err := managedProductVerifyExecutableVersions(ctx, bin, env, source)
+	if err != nil {
+		t.Fatalf("product stage %s: actual executable versions do not match clean source and one another", stage)
+	}
+	for name, expected := range binaryDigests {
+		if managedProductDigest(t, filepath.Join(bin, name)) != expected {
+			t.Fatalf("product stage %s: frozen executable bytes changed during version preflight", stage)
+		}
+	}
+	report["binary_version"] = executableVersion
+	report["binary_version_commit"] = source
+	report["binary_version_protocol"] = protocol.Version
 	report["binary_sha256"] = binaryDigests
 	report["archive_sha256"] = managedProductDigest(t, archive)
-	env := []string{"PATH=" + bin, "HOME=" + root, "TMPDIR=" + root, "TERM=xterm-256color", "LANG=C.UTF-8"}
 	ensure(managedProductMissing(filepath.Join(bin, "tmux")), "no_tmux_on_control_path")
 	cli := func(out any, wantSuccess bool, args ...string) {
 		t.Helper()
@@ -1007,4 +1037,286 @@ func (f *managedProductLaunchFixture) Stop(_ context.Context, ref domain.Runtime
 }
 func (f *managedProductLaunchFixture) AttachCommand(domain.RuntimeRef, bool) ([]string, error) {
 	return nil, errors.New("input/attachment is outside this provider-free fixture")
+}
+
+var managedProductBinaryNames = []string{"keelmux", "keelmuxd", "keelmux-supervisor"}
+
+const managedProductBinaryBound = 256 << 20
+
+// Open the explicit source directory once, then each fixed basename relative
+// to that fd without following symlinks. Copy only owned regular executables;
+// never modify the originals or discover executables through the system PATH.
+func managedProductFreezePackageBinaries(ctx context.Context, supplied, destination string) (map[string]string, error) {
+	if !filepath.IsAbs(supplied) || filepath.Clean(supplied) != supplied || strings.ContainsAny(supplied, "\x00\r\n") {
+		return nil, errors.New("explicit clean absolute package directory required")
+	}
+	fd, e := unix.Open(supplied, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	if e != nil {
+		return nil, errors.New("owned package directory unavailable")
+	}
+	directory := os.NewFile(uintptr(fd), "owned supplied package directory")
+	defer directory.Close()
+	var directoryInfo unix.Stat_t
+	if unix.Fstat(fd, &directoryInfo) != nil || directoryInfo.Uid != uint32(os.Geteuid()) || directoryInfo.Mode&0022 != 0 {
+		return nil, errors.New("package directory authority invalid")
+	}
+	var created []string
+	done := false
+	defer func() {
+		if !done {
+			for _, path := range created {
+				_ = os.Remove(path)
+			}
+		}
+	}()
+	digests := map[string]string{}
+	for _, name := range managedProductBinaryNames {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		fileFD, e := unix.Openat(fd, name, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
+		if e != nil {
+			return nil, errors.New("explicit package executable unavailable")
+		}
+		input := os.NewFile(uintptr(fileFD), "owned package executable")
+		sha, e := managedProductFreezeExecutable(ctx, input, destination, name)
+		if e != nil {
+			_ = input.Close()
+			return nil, e
+		}
+		path := filepath.Join(destination, name)
+		created = append(created, path)
+		// Refuse a source pathname replaced while copying, even when the
+		// original open descriptor still refers to valid owned bytes.
+		againFD, e := unix.Openat(fd, name, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
+		if e != nil {
+			_ = input.Close()
+			return nil, errors.New("package executable changed during freeze")
+		}
+		again := os.NewFile(uintptr(againFD), "owned package executable confirmation")
+		firstInfo, firstErr := input.Stat()
+		secondInfo, secondErr := again.Stat()
+		_ = input.Close()
+		_ = again.Close()
+		if firstErr != nil || secondErr != nil || !os.SameFile(firstInfo, secondInfo) {
+			return nil, errors.New("package executable changed during freeze")
+		}
+		digests[name] = sha
+	}
+	done = true
+	return digests, nil
+}
+
+func managedProductFreezeExecutable(ctx context.Context, input *os.File, destination, name string) (string, error) {
+	before, e := input.Stat()
+	owner, ok := func() (*syscall.Stat_t, bool) {
+		if before == nil {
+			return nil, false
+		}
+		v, ok := before.Sys().(*syscall.Stat_t)
+		return v, ok
+	}()
+	if e != nil || !ok || owner.Uid != uint32(os.Geteuid()) || !before.Mode().IsRegular() || before.Mode().Perm()&0100 == 0 || before.Mode().Perm()&0022 != 0 || before.Mode()&(os.ModeSetuid|os.ModeSetgid|os.ModeSticky) != 0 || before.Size() <= 0 || before.Size() > managedProductBinaryBound {
+		return "", errors.New("owned regular bounded executable required")
+	}
+	outputPath := filepath.Join(destination, name)
+	output, e := os.OpenFile(outputPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0500)
+	if e != nil {
+		return "", errors.New("private executable destination unavailable")
+	}
+	done := false
+	defer func() {
+		_ = output.Close()
+		if !done {
+			_ = os.Remove(outputPath)
+		}
+	}()
+	hash := sha256.New()
+	n, e := io.Copy(io.MultiWriter(output, hash), io.LimitReader(&managedProductContextReader{ctx: ctx, input: input}, managedProductBinaryBound+1))
+	if e != nil || n != before.Size() || output.Sync() != nil || output.Close() != nil {
+		return "", errors.New("bounded executable freeze failed")
+	}
+	after, e := input.Stat()
+	if e != nil || after.Size() != before.Size() || after.Mode() != before.Mode() || !after.ModTime().Equal(before.ModTime()) {
+		return "", errors.New("package executable changed during freeze")
+	}
+	if _, e = input.Seek(0, io.SeekStart); e != nil {
+		return "", errors.New("package executable reread unavailable")
+	}
+	recheck := sha256.New()
+	if n, e = io.Copy(recheck, io.LimitReader(&managedProductContextReader{ctx: ctx, input: input}, managedProductBinaryBound+1)); e != nil || n != before.Size() || !bytes.Equal(hash.Sum(nil), recheck.Sum(nil)) {
+		return "", errors.New("package executable bytes changed during freeze")
+	}
+	done = true
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+type managedProductContextReader struct {
+	ctx   context.Context
+	input io.Reader
+}
+
+func (r *managedProductContextReader) Read(p []byte) (int, error) {
+	if r.ctx.Err() != nil {
+		return 0, r.ctx.Err()
+	}
+	return r.input.Read(p)
+}
+
+type managedProductBoundedOutput struct{ bytes.Buffer }
+
+func (b *managedProductBoundedOutput) Write(p []byte) (int, error) {
+	if b.Len()+len(p) > 4096 {
+		return 0, errors.New("version output exceeds finite bound")
+	}
+	return b.Buffer.Write(p)
+}
+
+var managedProductVersionPattern = regexp.MustCompile(`^Keelmux ([A-Za-z0-9][A-Za-z0-9._+\-]{0,63}) \(commit ([a-f0-9]{40}), protocol bp/1\)\n?$`)
+
+func managedProductVerifyExecutableVersions(ctx context.Context, bin string, env []string, source string) (string, error) {
+	if len(source) != 40 {
+		return "", errors.New("full source commit required")
+	}
+	var version string
+	for _, name := range managedProductBinaryNames {
+		probe, cancel := context.WithTimeout(ctx, 3*time.Second)
+		command := exec.CommandContext(probe, filepath.Join(bin, name), "--version")
+		command.Env = env
+		var stdout, stderr managedProductBoundedOutput
+		command.Stdout, command.Stderr = &stdout, &stderr
+		e := command.Run()
+		cancel()
+		parts := managedProductVersionPattern.FindStringSubmatch(stdout.String())
+		if e != nil || stderr.Len() != 0 || len(parts) != 3 || parts[2] != source || version != "" && version != parts[1] {
+			return "", errors.New("executable version tuple does not match frozen source")
+		}
+		version = parts[1]
+	}
+	return version, nil
+}
+
+func TestManagedProductPackageFreezeAndProvenance(t *testing.T) {
+	const source = "0123456789abcdef0123456789abcdef01234567"
+	for _, refusal := range []string{"valid", "relative-directory", "symlink-directory", "missing-executable", "symlink-executable", "directory-executable", "non-executable", "writable-executable", "oversized-executable", "wrong-commit", "mixed-version", "malformed-version", "trailing-version", "nonzero-version", "bounded-output", "bounded-version-time"} {
+		t.Run(refusal, func(t *testing.T) {
+			original, frozen, private := t.TempDir(), t.TempDir(), t.TempDir()
+			versionLine := func(version, commit string) string {
+				return "Keelmux " + version + " (commit " + commit + ", protocol bp/1)"
+			}
+			var before = map[string][]byte{}
+			for i, name := range managedProductBinaryNames {
+				line, suffix := versionLine("v0.1.0", source), ""
+				if i == 2 {
+					switch refusal {
+					case "wrong-commit":
+						line = versionLine("v0.1.0", strings.Repeat("a", 40))
+					case "mixed-version":
+						line = versionLine("v0.2.0", source)
+					case "malformed-version":
+						line = "unstructured untrusted provenance"
+					case "trailing-version":
+						line += "\nextra metadata"
+					case "nonzero-version":
+						suffix = "exit 17\n"
+					case "bounded-output":
+						line = strings.Repeat("v", 5000)
+					case "bounded-version-time":
+						suffix = "while :; do :; done\n"
+					}
+				}
+				// This provider-free executable only serves --version. No runtime,
+				// native process, discovery, or caller-installed file is touched.
+				data := []byte("#!/bin/sh\n[ \"$1\" = --version ] || exit 91\nprintf '%s\\n' '" + line + "'\n" + suffix)
+				path := filepath.Join(original, name)
+				if os.WriteFile(path, data, 0700) != nil {
+					t.Fatal("owned executable fixture")
+				}
+				before[name] = data
+			}
+			// Extra caller files are neither copied nor discovered on PATH.
+			if os.WriteFile(filepath.Join(original, "tmux"), []byte("not an executable"), 0600) != nil {
+				t.Fatal("extra owned caller fixture")
+			}
+			input := original
+			path := filepath.Join(original, "keelmux-supervisor")
+			expectsFreeze := true
+			switch refusal {
+			case "relative-directory":
+				input, expectsFreeze = "relative/bin", false
+			case "symlink-directory":
+				input, expectsFreeze = filepath.Join(private, "alias"), false
+				if os.Symlink(original, input) != nil {
+					t.Fatal("owned directory symlink fixture")
+				}
+			case "missing-executable":
+				expectsFreeze = false
+				if os.Remove(path) != nil {
+					t.Fatal("owned missing file fixture")
+				}
+			case "symlink-executable":
+				expectsFreeze = false
+				if os.Remove(path) != nil || os.Symlink(filepath.Join(original, "keelmux"), path) != nil {
+					t.Fatal("owned file symlink fixture")
+				}
+			case "directory-executable":
+				expectsFreeze = false
+				if os.Remove(path) != nil || os.Mkdir(path, 0700) != nil {
+					t.Fatal("owned directory file fixture")
+				}
+			case "non-executable":
+				expectsFreeze = false
+				if os.Chmod(path, 0600) != nil {
+					t.Fatal("owned non-executable fixture")
+				}
+			case "writable-executable":
+				expectsFreeze = false
+				if os.Chmod(path, 0777) != nil {
+					t.Fatal("owned writable fixture")
+				}
+			case "oversized-executable":
+				expectsFreeze = false
+				if os.Truncate(path, managedProductBinaryBound+1) != nil {
+					t.Fatal("owned oversized fixture")
+				}
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			digests, err := managedProductFreezePackageBinaries(ctx, input, frozen)
+			if !expectsFreeze {
+				if err == nil {
+					t.Fatal("malformed caller tuple was frozen")
+				}
+				entries, _ := os.ReadDir(frozen)
+				if len(entries) != 0 {
+					t.Fatal("refused tuple left partial frozen executable authority")
+				}
+				return
+			}
+			if err != nil || len(digests) != 3 {
+				t.Fatal("valid owned tuple did not freeze", err)
+			}
+			for _, name := range managedProductBinaryNames {
+				actual, err := os.ReadFile(filepath.Join(frozen, name))
+				originalBytes, originalErr := os.ReadFile(filepath.Join(original, name))
+				sum := sha256.Sum256(actual)
+				info, infoErr := os.Lstat(filepath.Join(frozen, name))
+				if err != nil || originalErr != nil || infoErr != nil || info.Mode().Perm() != 0500 || !bytes.Equal(actual, before[name]) || !bytes.Equal(originalBytes, before[name]) || digests[name] != hex.EncodeToString(sum[:]) {
+					t.Fatal("frozen bytes/digest or caller originals changed")
+				}
+			}
+			if !managedProductMissing(filepath.Join(frozen, "tmux")) {
+				t.Fatal("caller/system executable discovery escaped the explicit tuple")
+			}
+			env := []string{"PATH=" + frozen, "HOME=" + private, "TMPDIR=" + private, "LANG=C.UTF-8"}
+			version, err := managedProductVerifyExecutableVersions(ctx, frozen, env, source)
+			if refusal == "valid" {
+				if err != nil || version != "v0.1.0" {
+					t.Fatal("matching actual versions rejected", err)
+				}
+			} else if err == nil {
+				t.Fatal("mismatched or malformed executable provenance accepted")
+			}
+		})
+	}
 }
