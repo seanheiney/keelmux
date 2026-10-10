@@ -14,14 +14,15 @@ This is the dedicated Keelmux product repository (formerly Agent Backplane). It 
 8. A daemon restart reconciles surviving processes. A host reboot cannot preserve arbitrary processes. Native resume and context handoff are explicit distinct paths.
 9. Credentials stay in the correct local native realm. Subscription pools select authorized eligible routes; quotas and credentials are not merged.
 10. Federation must expose one permitted inventory through one entry connection. Gateway recovery, task-home availability, execution movement and authority failover are distinct.
-11. No mandatory Herdr dependency without measured comparative evidence. tmux is the first native lifecycle baseline.
+11. Keelmux owns native PTY/process supervision, attachment, and recovery. The owner explicitly removed tmux as a mandatory dependency on 2026-10-10. Published v0.1.0 remains a qualified tmux baseline; preserve it only as an optional compatibility adapter. No mandatory Herdr dependency without measured comparative evidence.
 12. Captains are optional budgeted participants. Advice first, source-linked observations, meaningful-event coalescing, and no model activity during unchanged idle observation.
 
 ## Captain and parallel work
 
 - The persistent build captain is `gpt-6.1-sol` with `ultra` reasoning, as requested by the owner. Do not silently substitute its model.
 - The captain reads the full product spec/build plan and owns integration, contracts, task assignment and evidence. Match each worker's expertise to a bounded task. Inherit model settings unless the user authorizes alternatives.
-- Track implementation tasks in this repository's GitHub issues and `docs/build/TASKS.md`. Record owner, dependencies, allowed paths, state, acceptance, commit and evidence.
+- Goldeneye Plane is the owner's project system of record: [Keelmux / KEELMUX](https://plane.local.sean.network/goldeneye/projects/307ddb14-3cca-4188-b5b1-6299c45756ec), workspace `goldeneye`, project UUID `307ddb14-3cca-4188-b5b1-6299c45756ec`. Mirror public work in GitHub issues and `docs/build/TASKS.md`. Record owner, dependencies, allowed paths, state, acceptance, commit and evidence. The owner authorized dedicated Keelmux Plane and Mattermost project updates on 2026-10-10; do not reuse or modify another application's tracking.
+- Use the `using-plane` workflow: resolve the operations credential from existing private local configuration, fetch `PLANE_API_KEY` through the tailnet operations secret API, and keep credentials out of logs, source, arguments, and evidence. Verify issue/comment writes by HTTP status, returned UUID, and a read-back. A queued update is not a posted update. Never provision or change another app merely to obtain tracking access.
 - Publish stable interfaces before parallel workers depend on them. Avoid shared-file edits; captain owns shared manifests, entry points and integration wiring.
 - Prefer separate worktrees/branches for independent implementers. Use `codex/` branch names. Never overwrite another worker's edits or commit unrelated files.
 - Workers report behavior changed, files touched, exact tests/results, limitations, and all missing/not-run evidence. The captain reviews each contribution before integrating.
@@ -31,7 +32,7 @@ This is the dedicated Keelmux product repository (formerly Agent Backplane). It 
 
 - Tests should establish meaningful identity, lifecycle, ordering, authorization, idempotency and recovery behavior. Mock-only success does not prove terminal fidelity or provider integration.
 - Gate real native keys, Unicode, resize, Ctrl-C, detach/reconnect, daemon loss and provider attribution separately.
-- Use isolated test state and owned tmux sockets. Never kill arbitrary terminals or reuse the user's production sockets for tests.
+- Use isolated test state and owned runtime sockets. Legacy tmux tests use only dedicated owned sockets. Never kill arbitrary terminals or reuse the user's production sockets for tests.
 - Record exact SHA, OS, runtime/provider versions, actual supported combinations, command, result and missing evidence in `docs/evidence/` and the issue.
 - Unsupported combinations remain outside the claimed matrix. Never call a feature shipped merely because a scaffold or test double exists.
 - Maintain `docs/build/STATUS.md` after integrated milestones. Keep the full vision while distinguishing implemented, experimentally demonstrated, and planned capabilities.

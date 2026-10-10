@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "verified_date": "2026-10-10",
+  "documents": [
+    {
+      "kind": "product",
+      "page_id": "page_3c1ef53937d08191b084fe3e702ce9bb",
+      "body_sha256": "97f5a4432e2d6f6fc6ccf698c9ffade5b8752fcd3c5ea34bf13faf4787f70aa2",
+      "repository_snapshot_body_equal": true,
+      "verification": "current accessible Page read; repository snapshot header excluded"
+    },
+    {
+      "kind": "build",
+      "page_id": "page_f423896d21548191b10beb588787574f",
+      "body_sha256": "7ab8007c503f2430e1c450fd946736722f64229319006c0129104a8329682f91",
+      "repository_snapshot_body_equal": true,
+      "verification": "current accessible Page read; repository snapshot header excluded"
+    }
+  ],
+  "authority_note": "Full vision and build plan are governing context. Owner steering on 2026-10-10 removes mandatory tmux in the next architecture; preserve imported snapshots and record the new decision separately."
+}
