@@ -13,6 +13,7 @@ Run `keelmux` to open the remembered switcher. Navigation reads known inventory;
 | `g` | Open groups |
 | `b` | Return to the previous group |
 | `p` | Edit a local draft for the selected thread and lane |
+| `c` | Open the selected thread's authored channel inbox |
 | `r` | Refresh inventory |
 | `?` | Show contextual help |
 | `q` | Close the switcher; owned sessions keep running |
@@ -45,7 +46,15 @@ Each group remembers selection, filter and available view position. **All work**
 
 Press **p** on a selected session to compose a draft. Enter adds a newline; Escape saves and returns. Drafts are keyed to stable thread and recipient lane and remain local. They are not submitted to a model, posted to chat or injected into a native composer.
 
-A changed target is shown before future delivery can be added. Current model interaction happens in the native terminal. Mattermost, IRC and structured prompt submission remain on the [roadmap](roadmap.md).
+A changed target is shown before future delivery can be added. Current model interaction happens in the native terminal. Structured prompt submission remains on the [roadmap](roadmap.md).
+
+## Channel inbox
+
+After [binding a thread](channels.md), select its session and press **c**. Incoming notes are authored snapshots, with their sender and binding visible. **b**, then Enter chooses one active destination; **p** opens a local reply. **Enter** adds a newline and **Ctrl-S** queues the exact reply to chat. Escape returns to the inbox or work. Reply text never enters a native composer.
+
+Use arrows to select a note, **PgUp/PgDn** to scroll its text, **d** to query its exact delivery receipt and **u** to reconcile an uncertain receipt read-only. **r** refreshes the snapshot and any saved queue intent. **?** shows the contextual keys. Configuration activity, intake freshness, a local queue receipt and an acknowledged external post remain separately labeled.
+
+If the queue acknowledgement is lost, the saved intent is frozen. Reopen Keelmux and query its receipt; do not create a replacement ID. An explicit Ctrl-S retry can reuse that exact intent only after the local service reports it missing and the same destination remains active. An uncertain external post is never resent. See [receipt meanings](channels.md#read-and-reply).
 
 ## Stop a session deliberately
 

@@ -18,6 +18,14 @@ Registry records, terminal history, daemon logs, drafts, provider homes and back
 
 Use the [documented backup and recovery procedure](docs/user/operations.md). A saved PID or socket path alone does not prove a live process belongs to Keelmux. An uncertain operation must not be replayed automatically.
 
+## Channel bindings
+
+A channel binding authorizes scoped chat observation and explicit authored replies. It grants remote senders no terminal, model-turn, native approval or execution access. Sender allowlists use verified platform identities; display names and IRC nicknames do not establish authority. Each binding pins its endpoint, realm, authenticated bot/account and destination. A changed scope requires a new binding.
+
+Use a dedicated bot with access limited to the intended destination. Store its credential in an owned private regular file at an absolute path. Symlinks, FIFOs, public files and oversized secrets are refused without changing their permissions. Keep credential bytes out of shell arguments and reports. Local registry backups include private message text, immutable routing and credential file references; they do not include the credential bytes.
+
+Mattermost/Slack intake keeps the first observed authored note, with bounded history since activation. Remote edits and deletions are not projected. IRC requires authenticated services accounts and correlated server echo; disconnected history remains a coverage gap. None of these paths is a compliance archive, reader receipt or exactly-once external delivery claim. Lost acknowledgements remain uncertain until matching existing evidence is found through read-only reconciliation.
+
 ## Report a vulnerability
 
 Do not publish credentials, exploit details or private work in a public issue. Use [GitHub private vulnerability reporting](https://github.com/seanheiney/keelmux/security/advisories/new). If GitHub does not offer that private form, withhold sensitive details; do not substitute a public issue.

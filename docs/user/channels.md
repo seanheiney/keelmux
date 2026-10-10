@@ -129,6 +129,8 @@ This release supports IRC channel references beginning with `#` or `&`, followed
 
 Channel control runs at the local execution home through its private socket. The private entry does not expose channel management. Bindings are per-user authority; groups and native terminal attachment permissions do not grant remote senders command access.
 
+The current per-home limits are 32 active bindings, 128 retained bindings, 256 allowlisted identities per binding and 16 KiB of UTF-8 text per note. A poll reads at most 15 remote replies and local history queries at most 100 notes. Four bounded workers serialize effects within each binding; provider cooldowns still apply. Retained disabled bindings count toward the total. There is no automatic receipt purge, route reactivation or history retention policy in this release.
+
 The registry and client drafts contain private message text and provenance. Back them up and redact support reports accordingly. Logs and receipts can be shared only after inspecting their content. Keep the database on a local filesystem and operate backups with the [recovery guide](operations.md).
 
 Before claiming a live integration, record the exact Keelmux source, server/app version, authenticated bot/account, intended channel/root, incoming allowlisted note, outgoing matching remote post, lost acknowledgement behavior and cleanup. Protocol fixtures establish implementation behavior; they do not establish acceptance on your server. See the [support matrix](support-matrix.md) and [routing contract](../research/CHANNEL_ROUTING.md).

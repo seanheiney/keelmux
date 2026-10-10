@@ -21,10 +21,16 @@ Start with the selected state and exact session. Preserve operation IDs and draf
 | Link refused in a normal shell | Inherited managed launch context | Invoke inside the intended owned session; never manufacture private launch variables |
 | Home unavailable through entry | `directory` home availability versus entry connection | Repair the named home; healthy homes can remain usable |
 | Codex broker method/schema refused | Experimental pinned support and receipt | Keep the blocker and report a sanitized schema; do not allow arbitrary passthrough |
+| Channel binding refused | Exact bot identity, server/team, channel/root, private credential file and bot membership | Repair that scoped configuration; display names and broader credentials do not substitute for proof |
+| Active channel has no new notes | Intake state, last check/success, sender allowlist and activation time | Incoming bot/self, other roots and unlisted senders are excluded; a failed poll does not erase the last success |
+| Channel reply acknowledgement lost | Saved message ID, immutable destination/text and delivery receipt | Query the original receipt; never create a replacement ID for an uncertain external effect |
+| Channel receipt stays uncertain | Matching existing remote post and bounded read-only reconciliation | Keep it uncertain if evidence is unavailable; a missing result does not authorize resend |
+| IRC history gap | Persistent connection generation and required server capabilities | Treat disconnected history as unavailable; reconnect does not restore complete history |
+| Old binary refuses upgraded state | Registry schema 3 or client place version 2 | Keep the newer state; use a compatible release or restore a coordinated pre-upgrade backup |
 
 ## Collect a useful report
 
-Provide the application build/source, OS/architecture, tmux/native versions, exact command with sensitive values removed, expected versus observed behavior, session capability state and operation outcome. State whether the issue used local native terminals or the experimental entry/broker.
+Provide the application build/source, OS/architecture, tmux/native versions, exact command with sensitive values removed, expected versus observed behavior, session capability state and operation outcome. State whether the issue used local native terminals, authored channels or the experimental entry/broker. For channels, include the provider/server version, finite intake/receipt state and a synthetic reproduction; exclude bot tokens, private note text and raw server responses.
 
 `providers` and `inspect` already qualify unknown evidence, but their JSON may contain local executable/workspace paths and stable IDs. Review it before posting. Native screens, full state directories, runtime receipts and logs can contain more sensitive material. The project does not need credential files or private launch tokens to reproduce a report.
 
