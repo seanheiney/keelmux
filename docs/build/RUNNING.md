@@ -32,7 +32,7 @@ Codex discovery has been checked through the native skills catalogue, and Claude
 
 ## Private entry experiment
 
-`bpg` routes permitted native terminal attachments to explicit daemon homes. It currently binds one principal through an owned private configuration and Unix socket. The companion `bp` must be on the client machine. It has no public listener, automatic enrollment, or independent remote-host acceptance. The same-computer two-home fixture is a transport test. Consult [STATUS](STATUS.md) before treating this experiment as accepted.
+`bpg` routes permitted native terminal attachments to explicit daemon homes. It currently binds one principal through an owned private configuration and Unix socket. The companion `bp` must be on the client machine. The tested local experiment supports real Codex and Claude native terminals, exact acquisition recovery and healthy partial inventory. Public listeners, automatic enrollment and independent remote-host acceptance remain unfinished. Consult [STATUS](STATUS.md) for the exact tested combination.
 
 Prepare a private JSON configuration with exact IDs from the execution homes:
 
@@ -59,6 +59,6 @@ chmod 600 /absolute/entry.json
 ./bin/bp --state /absolute/client-state --entry /absolute/entry-state/control.sock
 ```
 
-The entry hides home runtime locators and exposes native attachment capabilities. Launch, stop, link and reconciliation management remain at the execution home. An unreachable home appears separately from an unreachable entry. Saved acquisition identity remains necessary for exact release/recovery after lost acknowledgements. Configuration changes apply on entry restart; dynamic grant-revocation behavior is tested through the gateway API.
+The entry hides home runtime locators and exposes native attachment capabilities. Launch, stop, link and reconciliation management remain at the execution home. An unreachable home appears separately from an unreachable entry; a slow home fetch has a three-second shared directory deadline. Saved acquisition identity remains necessary for exact release/recovery after lost acknowledgements. Configuration changes apply on entry restart. Live executable configuration reload is not implemented; API revocation and executable startup revocation have separate tests.
 
 An independently authenticated SSH-forwarded private peer socket is a possible future transport; enrollment, tunnel recovery and an actual second machine have not been proved. Native account/model attribution, semantic messages, continuation, and thread migration are separate unfinished features.

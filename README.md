@@ -2,7 +2,7 @@
 
 A terminal-first, user-owned bouncer for agent work: keep real model CLIs running on your machines, reach permitted sessions through one connection, and continue work across terminals and supported chat clients.
 
-The local terminal core is runnable on the tested macOS arm64 setup. Independent acceptance entered real Codex and Claude programs, detached and recovered after daemon loss, and checked adverse lifecycle states. Owned skill setup and a private entry executable are integrated; the gateway is undergoing security and terminal cleanup hardening. See [current evidence and gaps](docs/build/STATUS.md).
+The local terminal core and private entry experiment are runnable on the tested macOS arm64 setup. Independent acceptance entered real Codex and Claude programs locally and through one entry, detached and reconnected, and checked adverse lifecycle states. Owned skill setup, acquisition recovery and bounded partial-home inventory are integrated. See [current evidence and gaps](docs/build/STATUS.md).
 
 ## Product contract
 
