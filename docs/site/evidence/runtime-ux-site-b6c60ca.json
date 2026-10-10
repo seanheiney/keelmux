@@ -1,0 +1,200 @@
+{
+  "documentation_source_commit": "b6c60ca3348dd8fb04501f0e125890a0b0ef95f8",
+  "terminal_capture_source_commit": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+  "browser": "Codex In-app Browser, CUA browser ID 4; engine/version not recorded",
+  "target": "owned local static preview at http://127.0.0.1:8768/keelmux/",
+  "layout_observations": [
+    {
+      "page": "home",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_width": 390,
+      "hero_bottom": 829,
+      "images_loaded": true,
+      "hero_image": "switcher-compact.png"
+    },
+    {
+      "page": "home",
+      "viewport": [
+        360,
+        800
+      ],
+      "page_width": 360,
+      "hero_bottom": 799,
+      "images_loaded": true,
+      "hero_image": "switcher-compact.png"
+    },
+    {
+      "page": "home",
+      "viewport": [
+        768,
+        1024
+      ],
+      "page_width": 768,
+      "hero_bottom": 520,
+      "images_loaded": true,
+      "hero_image": "switcher.png"
+    },
+    {
+      "page": "home",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "page_width": 1440,
+      "hero_bottom": 789,
+      "images_loaded": true,
+      "hero_image": "switcher.png"
+    },
+    {
+      "page": "daily-use",
+      "viewport": [
+        320,
+        740
+      ],
+      "page_width": 320,
+      "images_loaded": true
+    },
+    {
+      "page": "daily-use",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_width": 390,
+      "images_loaded": true
+    },
+    {
+      "page": "daily-use",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "page_width": 1440,
+      "images_loaded": true
+    },
+    {
+      "page": "troubleshooting",
+      "viewport": [
+        320,
+        740
+      ],
+      "page_width": 320,
+      "images_loaded": true
+    },
+    {
+      "page": "troubleshooting",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_width": 390,
+      "images_loaded": true
+    },
+    {
+      "page": "troubleshooting",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "page_width": 1440,
+      "images_loaded": true
+    },
+    {
+      "page": "architecture",
+      "viewport": [
+        320,
+        740
+      ],
+      "page_width": 320,
+      "images_loaded": true
+    },
+    {
+      "page": "architecture",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_width": 390,
+      "images_loaded": true
+    },
+    {
+      "page": "architecture",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "page_width": 1440,
+      "images_loaded": true
+    },
+    {
+      "page": "managed-irc",
+      "viewport": [
+        320,
+        740
+      ],
+      "page_width": 320,
+      "images_loaded": true
+    },
+    {
+      "page": "managed-irc",
+      "viewport": [
+        390,
+        844
+      ],
+      "page_width": 390,
+      "images_loaded": true
+    },
+    {
+      "page": "managed-irc",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "page_width": 1440,
+      "images_loaded": true
+    }
+  ],
+  "interaction_checks": {
+    "search_query": "saved attachment",
+    "search_results": 5,
+    "daily_use_recovery_in_results": true,
+    "mobile_guides_menu_expanded": "true",
+    "mobile_guides_menu_after_escape": "false"
+  },
+  "visual_review": {
+    "actual_pty_rasters": [
+      "native-80x24.png",
+      "native-120x32.png",
+      "native-40x14.png",
+      "uncertain-40x14.png",
+      "legacy-40x14.png",
+      "channels/multiline-reply-40x14.png"
+    ],
+    "browser_screenshots": "Tool-emitted desktop/mobile hero and mobile managed-IRC screenshots visually reviewed; browser bitmaps not persisted. Final navigation also displayed the expected hero entrance animation."
+  },
+  "checks": {
+    "go_test_race_internal_tui": "pass; e81ddbd implementation, unchanged through docs-only source b6c60ca",
+    "go_vet_internal_tui": "pass",
+    "static_documentation_acceptance_groups": 10,
+    "static_documentation_result": "pass",
+    "node_check_site_js": "pass",
+    "canonical_guide_hashes_verified": 18,
+    "builder_asset_hashes_verified": 4,
+    "image_asset_hashes_verified": 12,
+    "generated_pages": 19
+  },
+  "cleanup": {
+    "browser_viewport_override_reset": true,
+    "owned_preview_tab_closed": true
+  },
+  "missing_proof": [
+    "Real native-provider integration of this view",
+    "Saved attachment PTY screenshot; original-target/generation/token safety covered by source race tests",
+    "Persisted browser screenshot files",
+    "Packaged release qualification",
+    "Hosted Pages publication"
+  ]
+}

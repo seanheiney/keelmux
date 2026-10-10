@@ -1,0 +1,55 @@
+{
+  "source_commit": "b6c60ca3348dd8fb04501f0e125890a0b0ef95f8",
+  "base_path": "/keelmux/",
+  "canonical_sources": {
+    "docs/user/quickstart.md": "1ac95e14f49b4a0de07d235e66519ad00666714fd85da5c04e4ca178b6b34a03",
+    "docs/user/install.md": "63f9c6dbac8c26f3a9bbf51c4165e739327b662db01092dcec1ed8c355c25f8a",
+    "docs/user/daily-use.md": "24c756cb9a9c3c14a0efe59d99d33fb5a65ad699682effb44c73dc0408a114dd",
+    "docs/user/channels.md": "24811254dfcd7d95e2f30479a157bfafad27f8f2666f0534b4bfea20d3ef458a",
+    "docs/user/managed-irc.md": "8ac01c63f5836ef78e9e6c2ff25af8f95610bbae491914ea0f8e11278b2b9717",
+    "docs/user/skills.md": "32c3acc75d192fd1e6b177b5662e300c267f610508932b851b369ac6c0388b67",
+    "docs/user/operations.md": "2901053d3f632645a7af8eed75766a6247096feb44ee9fee9f961c81fac15842",
+    "docs/user/configuration.md": "d6765345644c9c32bf45a4e3a72a6ebe645135458846d801d0c3fce2b916c321",
+    "docs/user/private-entry.md": "8a0c99e12a6a2a9bee0a68cc41713a8e49ce1a38197b84353e62b2bf489fc1b7",
+    "docs/user/troubleshooting.md": "96df85515993ae85b87c71570b94f622fa4724c415c0d19e092325f622def7f3",
+    "docs/user/cli.md": "a23cc621761fbe576566c1993ee871fe65f486de9f498c6e252a9370218f1a41",
+    "docs/user/architecture.md": "0c9d5e4509d9f8153d938c45853f0339461d428c084be6845e6ced2a77f2a49b",
+    "docs/user/support-matrix.md": "6f8e35525a8974b604a7f580ebe827fcd5a2324c9ebbd11cc6cf6e5987c138a2",
+    "docs/user/roadmap.md": "ab0e866fd9949ab207a42e23e5a6173b928c10edf0168ade6faf425d971e18dd",
+    "SECURITY.md": "ba363c5da5152af2b77d3994bfc4fb80f9b2f20407b5153f1c04c90483ad6034",
+    "SUPPORT.md": "3fa0eab6101602e76a89398415883363eaed1e69fd6216194de485a493d4e7c8",
+    "CONTRIBUTING.md": "c6da121a3f1a4999ba82a1395fe9137156f2bb79b339e38d03539194e99875d4",
+    "CHANGELOG.md": "ddfa8ce7810d684c3e57c087a06e3fcfaade9f9a7a03234e075f47dc269af13f"
+  },
+  "builder_sources": {
+    "docs/site/build.py": "3e2d5f942c0649289b30df5ba18b4aa557f521696568e933094a23827d502985",
+    "docs/site/assets/site.css": "fd3e0886404e733789cb2af39d532aef2ce53661bb39d8775370b39a51ff531a",
+    "docs/site/assets/site.js": "92eaf41698d5c997a94cbe20944a55e0f2564d9be39c69bbda62342f0b232b4d",
+    "docs/site/assets/favicon.svg": "6543b4f0fee1b0b32f8187fe6231b57f2dd378d55b9d5a484a0ed6f5bf85377c"
+  },
+  "image_hashes": {
+    "switcher.png": "cbbfa5a8cfa7b5d9f513f83d4a1a015367ce472a086b0e44cf2384a6f35e0803",
+    "switcher.txt": "e197c0ea4b08ab2fed50ab59b6b8b849f2c0d8e3c366af56dae43f08141588a6",
+    "switcher-wide.png": "4864c7fd6a7945d7aac7d2f20086307188d4411a68b3a5ac303796f6e058659b",
+    "switcher-wide.txt": "47cf649e8cc95b690bb91fafa257f6d93654308b03190db93868d96fe678239e",
+    "switcher-compact.png": "9de37d5d8699c901ea9377b43bde6695786e5872220af853936b5ebfe3801de6",
+    "switcher-compact.txt": "9592bb4eaeef500405edcb932ce97aceda6e877b55e572f40cfb1dadd4f50a32",
+    "runtime-repair.png": "ca1334a3c39d30cf1bd6dc24f087e4efaf251996baabe6bd59b6164706615b84",
+    "runtime-repair.txt": "c14e38a43b537aed2a65f6b570f8928a87b714e14b27b761ced391ed429aca22",
+    "channel-inbox.png": "c12d1f79b9db1f1be6e78de36c400eb186ae483661c208412cf41f282b744942",
+    "channel-inbox.txt": "4e1cc0314b2b15177a14e9ddff4c69a10ac8c817b468005f4f5269e9a0eba4df",
+    "channel-reply.png": "d5d9f2e7402ad492ea410e5fcd69784c3a2c0c19fda244d2b9a8dfaebad3a52a",
+    "channel-reply.txt": "0769d03e36ce7d91b93af08cf84118674d7d765ebf01d42f6eac53b4c01eb25b"
+  },
+  "image_sources": {
+    "switcher": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+    "switcher-wide": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+    "switcher-compact": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+    "runtime-repair": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+    "channel-inbox": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc",
+    "channel-reply": "e81ddbd68f3078b6d1fac57f97a3c9dd5d057bcc"
+  },
+  "terminal_receipt_sha256": "a8752d7d66d2508835fcfba188c54740ad9a75a97e761607078a9235dfba39ef",
+  "pages": 19,
+  "runtime": "static; local search; no analytics/CDN"
+}
