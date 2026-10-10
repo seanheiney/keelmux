@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "observed_at": "2026-10-10T21:06:25.650322+00:00",
+  "module_and_validation_checkout": "6fccb0b53c899abca73a4e04bf468122483fd8cb",
+  "owned_module_commits": [
+    "27b9e9a97a7c489e9d4b976fa41777b73e9e55a7",
+    "c029c8822480afb3936ef566337af5567d57020c",
+    "51ffc74dd69d2964f8f382541dcaef069886030a",
+    "36255060f4548fc26f4b0c89a992a0b4ef6e1599",
+    "85a0349a32ffd91b6a97742629d6c3164f5f147b",
+    "9ecc376b1daffdacb9c94a046a2cd56bddca6198",
+    "c6360de0668a10c87ead673ad57fb51bd010e0d1",
+    "6fccb0b53c899abca73a4e04bf468122483fd8cb"
+  ],
+  "dependencies": {
+    "native": [
+      "dba8b70c181b8c6786e8d1bfd92e96e37fbd4a38",
+      "2b42469dee3566d63d709e640f1092f499a145f7"
+    ],
+    "manifests": "92d075298d79a45633cb1e07804a8dbf8ac91e6a"
+  },
+  "scope": "Source-built managed IRC module and actual native process supervisor with official checksum-pinned Ergo. Not an installed Keelmux release archive, bpd/TUI qualification, provider/model turn, customer deployment or production service.",
+  "tests": {
+    "command": "KEELMUX_ERGO_ARCHIVE=<actual native pinned archive> KEELMUX_ERGO_ASSET_DIR=<four actual pinned archives> KEELMUX_NATIVE_HELPER=<source-built -race supervisor> go test -count=1 -race -v ./internal/ircd; go vet ./internal/ircd",
+    "darwin_arm64": "PASS 14 groups, 7 subcases; 1 child-control-only test skipped by design",
+    "linux_arm64": "PASS 14 groups, 7 subcases; 1 child-control-only test skipped by design",
+    "controls": [
+      "6 separate short-lived control processes",
+      "persistent exact native instance after controller exit",
+      "same operation reconciles without launch replay",
+      "explicit restart creates different instance",
+      "stale stop refused; exact owned stop confirmed",
+      "distinct bot/human private credentials and per-account journals",
+      "human lost ACK read-only reconciliation",
+      "unknown existing account refused without password changes",
+      "mutated owned human secret refused",
+      "bot and human registration identities retained across restart",
+      "128 total account admission bound",
+      "canonical account names and private directory/file refusal",
+      "fresh status does not create files or processes",
+      "actual same-TLS foreign listener refused and left alive",
+      "four official archive digests and strict shape verified",
+      "runtime directory publication atomic and no overwrite"
+    ],
+    "child_helper_cleanup": "native test confirms each direct child/helper PID absent, test temp state removed"
+  },
+  "platforms": {
+    "darwin_arm64": {
+      "os": "macOS26.7.1 25G309 Darwin25.6.0",
+      "go": "go1.26.6",
+      "helper_race": true,
+      "helper_sha256": "5d6241eeaffc89a36a56726d7bc6faefda4dc9fadb053fcba70dca2539be784e",
+      "ergo_version": "2.19.1",
+      "ergo_build_go": "go1.26.5",
+      "ergo_archive_sha256": "1bd97a0917036061e2dcdfc29149c2e252e3bc856282e0956afa2aaaa54dd787",
+      "ergo_binary_sha256": "3f1b503515f38997774a66f44e9b32c028ff55a4546fca00f07c944bc9a59569"
+    },
+    "linux_arm64": {
+      "image_reference": "golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36",
+      "actual_image_config_digest": "sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36",
+      "container_id": "15d54d1c59cdd130490f5b4c4d88e823730da7a74f9c3cfcd6d7b92fcbec4f4c",
+      "go": "go1.26.6",
+      "kernel": "6.8.0-100-generic",
+      "gcc": "Debian12.2.0-14+deb12u1",
+      "uid_gid": "65534:65534",
+      "network": "none",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges"
+      ],
+      "init": true,
+      "host_mounts": [],
+      "private_tmpfs": {
+        "/tmp": "rw,exec,mode=1777,size=256m",
+        "/work": "rw,exec,mode=0700,uid=65534,gid=65534,size=1600m"
+      },
+      "helper_race": true,
+      "helper_sha256": "75b16c8dfa4d0ab761cb5124df2bf57aa62aca88a3b87ee07b77d4e8c42ebd2c",
+      "ergo_archive_sha256": "3f68fee0ede09eeeb205a553fe9727b409c686752e1cc2fea34ae2f9d64517fb",
+      "ergo_binary_sha256": "0bb493df16381df21a27080a4037b070202429ecca988d68f744ebad26b412a2",
+      "ergo_version": "2.19.1",
+      "ergo_build_go": "go1.26.5"
+    }
+  },
+  "source_provenance": {
+    "source_tar_sha256": "10f208d1e37517b777f27f1c3ddab74dcaca752bed3840a103ccfed139283b01",
+    "bundle_sha256": "57bb13915b65e30635d7f08f3fb8b9949189b6ba3cefd0bc118fcc8237a9e972",
+    "public_source_vendor_assets_files_verified": 2869,
+    "network_downloads_in_container": false,
+    "source_revision_method": "exact git archive; all copied public source/vendor/archives checked against host SHA256 manifest, no fake Git checkout"
+  },
+  "fixture_diagnostic": {
+    "initial_noexec_container": "e5668bb4d89e48fa76e4a93492efedf68daf62fdbddcc823bcddffa5e01d4b5a",
+    "initial_result": "Go test executable refused by Docker default noexec tmpfs before any test or runtime launch. Diagnostic retained; owned container removed and rebuilt with executable private tmpfs. No product failure or runtime pass inferred.",
+    "public_compiled_cache_reused_sha256": "978c7f95b1b224442bed5ba20c121e40752bb78b58f868d27169fcccf558d88b"
+  },
+  "file_sha256": {
+    "account-linux-helper-build-info.log": "1be31431fbbb0385d3efe86f2036a65158c68e71aa917692761a912dc6cbbcea",
+    "source-6fccb0b.tar": "10f208d1e37517b777f27f1c3ddab74dcaca752bed3840a103ccfed139283b01",
+    "account-linux-noexec-tests.log": "8a0676ce5f8d2a4a8fcb43af717ca1f79f827937951bf6315154f5741db90b06",
+    "account-macos-helper-build-info.log": "a7a935b5d240d48c6dcb8f16d3becd887b01525af0c67fd13848083baf45f14a",
+    "linux-account-bundle-manifest.json": "893c01bba0783d83ddabab568c3c37cf8ea5d619baf0efeb546462dee6fb148a",
+    "account-final-linux-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-final-macos-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "account-linux-source-verification.log": "58f46984eb7ed1c65bb33d4242b4dc3aad52f172de3de5ecba9a7558697dd1cc",
+    "account-linux-noexec-mounts.log": "41dc7b860954cefcf0d446867cf038a7df7ba3a3966ef82393e1cc2ae119721c",
+    "account-native-macos-tests.log": "2e64ebd20a9ddb7be54c9a4c6ac16a4c590ab4ba197a63257b6e4a99a3b35c6f",
+    "account-container-id.txt": "a065de9dd7b24d0f6717c97b74f141fcdb69ed723fbdfc2874ee1bb5f0a97d16",
+    "account-final-linux-tests.log": "28d6ae86dd9b24f708f21567248dfb0465617a0789c1ae772133de960de9af17",
+    "account-source-checksums.txt": "6ea84a8cbe3a75b2e57120e1a364d4e8c0fde1e6df544813a2245c0c3f477070",
+    "account-linux-processes-after-tests.log": "e6bb26cccb1992f50650aaf87ca3421d5b4f954da4579a1d0b7c19a9bbd4c01f",
+    "account-final-macos-tests.log": "53fddbcb06f181bf43a21e8ad43289b45686fd124d9b43652f06115449d33d70"
+  },
+  "cleanup": {
+    "owned_container_removed": true,
+    "inspect_after_removal_exit": 1,
+    "fixture_noexec_container_also_removed": true,
+    "no_test_runtime_processes_after_tests": true,
+    "owned_temporary_runtime_state_removed": true,
+    "other_containers_or_projects_modified": false,
+    "global_trust_auth_firewall_provider_model_changes": false
+  }
+}

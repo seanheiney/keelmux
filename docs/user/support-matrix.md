@@ -2,7 +2,7 @@
 
 Keelmux declares support per provider, version, platform, authentication mode and scenario. An installed CLI, a successful build and a working model turn establish different things.
 
-The current runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6 and tmux 3.7b, with installed **Codex CLI 0.159.0** and **Claude Code 2.1.296**. Four archive targets build: macOS/Linux, arm64/amd64. Independent macOS arm64 packaged installation and authority-refusal acceptance passed on source `0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44`: [package receipt](../evidence/keelmux-release-macos-independent.md). Linux arm64 terminal-backend acceptance runs actual packaged binaries in a pinned Debian container with explicit fixture programs; it does not prove native Linux Codex or Claude behavior. Other provider versions and build-only targets need their own receipts. The tagged release attaches its final exact-source qualification separately.
+The published v0.1.0 terminal-runtime evidence covers **macOS 26.7.1 on Apple Silicon**, Go 1.26.6 and tmux 3.7b, with installed **Codex CLI 0.159.0** and **Claude Code 2.1.296**. Four archive targets build: macOS/Linux, arm64/amd64. Independent macOS arm64 packaged installation and authority-refusal acceptance passed on source `0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44`: [package receipt](../evidence/keelmux-release-macos-independent.md). Linux arm64 terminal-backend acceptance runs actual packaged binaries in a pinned Debian container with explicit fixture programs; it does not prove native Linux Codex or Claude behavior. Other provider versions and build-only targets need their own receipts. The tagged release attaches its final exact-source qualification separately.
 
 ## Independent native runtime development
 
@@ -10,9 +10,9 @@ The development default owns native PTY/process supervision. Optional tmux compa
 
 Integrated source `7f13006` passed full race tests and vet. Its actual daemon test uses a PATH containing only Keelmux binaries, kills and restarts the control daemon, and verifies the same child PID/start/execution survives. Native transport tests exercise Unicode, resize, Escape, literal Ctrl-G, detach, caller terminal restoration and reconnect using the real helper. Independent terminal review found and repaired control-framing, split-grapheme and special-file refusal defects before this integration.
 
-Real native-supervised pinned Ergo persistence passed separately on macOS arm64 and isolated nonroot Linux arm64; its exact module/runtime receipt remains separate from whole-product and final-package qualification. Actual Codex/Claude native-supervisor startup and final installer/package reruns are active gates. The historical provider receipts below qualify the v0.1.0 tmux runtime.
+Real native-supervised pinned Ergo persistence and private services accounts passed race tests and vet separately on macOS arm64 and isolated nonroot Linux arm64. The [module receipt](../evidence/managed-ircd-native-accounts.json) identifies the exact source, official runtime digests, six independent control processes and owned cleanup; whole-product CLI/channel and final-package qualification remain separate. Actual Codex/Claude native-supervisor startup and final installer/package reruns are active gates. The historical provider receipts below qualify the v0.1.0 tmux runtime.
 
-## Terminal core
+## Published v0.1.0 terminal core
 
 | Capability | Evidence | Limit |
 | --- | --- | --- |
@@ -48,8 +48,14 @@ Strict default-deny policy, a private Unix WebSocket relay and a durable actor s
 
 The helper is not a product app-server launcher. Its isolated no-auth custom provider, fixture thread creation and private test homes are not product defaults. Product native resume, daemon/reboot recovery, authenticated turns, nonempty history, live approval routing, semantic writer handover and model/account/usage attribution remain unproved. `SemanticPrompt` stays false.
 
+## Authored communications development
+
+The development branch adds immutable authenticated Mattermost, Slack and IRC bindings, a durable authored inbox, explicit replies and read-only receipt reconciliation. The [owned Mattermost receipt](../evidence/mattermost-owned-ef39b9e.json) qualifies actual verified TLS, service/API behavior and source daemon/CLI delivery at its stated source. Slack currently has protocol-fixture evidence. Actual pinned Ergo TLS/SASL/channel registration and native service persistence have separate source evidence; final integrated authored IRC delivery and packaged checks are active.
+
+Remote text never submits terminal input, approves tools or starts a model turn. These development checks do not qualify a customer workspace. The [channel guide](channels.md) and [managed IRC guide](managed-irc.md) describe their exact behavior and recovery limits.
+
 ## Outside the current runtime claim
 
-Grok native lifecycle, independent-server enrollment, Mattermost/IRC delivery, shared login repair, subscription routing, usage totals, model/account/harness/host continuity, optional captains and independent-user accessibility/simplicity pilots remain on the [roadmap](roadmap.md). Source fixtures or a planned command do not establish these features.
+Grok native lifecycle, independent-server enrollment, customer Mattermost/IRC validation, shared login repair, subscription routing, usage totals, model/account/harness/host continuity, optional captains and independent-user accessibility/simplicity pilots remain on the [roadmap](roadmap.md). Source fixtures or a planned command do not establish these features.
 
 Before a release, record its exact SHA, artifacts, OS/CPU, native versions/authentication mode, commands, passing scenarios and all unsupported/not-run cases. Installation, source checks, native runtime acceptance and public publication are separate gates.
