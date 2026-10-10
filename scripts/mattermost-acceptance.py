@@ -76,7 +76,7 @@ class Harness:
         self.secrets += [ca_key, key]
         for p in (ca_key, ca, key, csr, cert):
             private(p, b"")
-        self.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-sha256", "-nodes", "-days", "1", "-subj", "/CN=Keelmux Owned Acceptance CA", "-keyout", str(ca_key), "-out", str(ca)])
+        self.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-sha256", "-nodes", "-days", "1", "-subj", "/CN=Keelmux Owned Acceptance CA", "-addext", "basicConstraints=critical,CA:TRUE", "-addext", "keyUsage=critical,keyCertSign,cRLSign", "-addext", "subjectKeyIdentifier=hash", "-keyout", str(ca_key), "-out", str(ca)])
         self.run(["openssl", "req", "-newkey", "rsa:2048", "-sha256", "-nodes", "-subj", "/CN=localhost", "-keyout", str(key), "-out", str(csr)])
         ext = self.state / "cert.ext"
         private(ext, "subjectAltName=IP:127.0.0.1,DNS:localhost\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n")
@@ -110,6 +110,7 @@ class Harness:
         self.receipt["dirty_diff_sha256"] = hashlib.sha256(source).hexdigest()
         self.receipt["harness_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
         self.receipt["test_sha256"] = hashlib.sha256((ROOT / "internal/channelservice/mattermost_acceptance_test.go").read_bytes()).hexdigest()
+        self.receipt["go"] = self.run(["go", "version"]).decode().strip()
         engine = json.loads(self.run(["docker", "version", "--format", "{{json .Server}}"])); self.receipt["docker"] = {"version": engine["Version"], "os": engine["Os"], "arch": engine["Arch"]}
         for image in (MM_IMAGE, PG_IMAGE):
             self.run(["docker", "image", "inspect", image])  # Never implicitly pulls/upgrades.
@@ -175,8 +176,10 @@ class Harness:
                 ping, headers = self.request("GET", "/system/ping")
                 if ping.get("status") == "OK":
                     ready = True; self.receipt["mattermost_version"] = ".".join(headers.get("X-Version", "unknown").split(".")[0:3]); break
-            except Failure:
-                pass
+            except Failure as exc:
+                cause = exc.__cause__
+                if isinstance(cause, urllib.error.URLError) and isinstance(cause.reason, ssl.SSLCertVerificationError):
+                    raise Failure("fixture_tls_validation_failed") from exc
             time.sleep(1)
         if not ready:
             raise Failure("mattermost_not_ready")
@@ -231,6 +234,14 @@ class Harness:
                 except subprocess.TimeoutExpired:
                     os.killpg(proc.pid, signal.SIGKILL); proc.wait(timeout=5)
                 raise Failure("acceptance_timeout") from exc
+            except BaseException:
+                if proc.poll() is None:
+                    os.killpg(proc.pid, signal.SIGTERM)
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(proc.pid, signal.SIGKILL); proc.wait(timeout=5)
+                raise
         path = self.state / "result.json"
         if path.exists():
             self.receipt["acceptance"] = json.loads(path.read_text())
@@ -276,7 +287,7 @@ class Harness:
                 failures.append("network")
         for path in self.secrets:
             path.unlink(missing_ok=True)
-        self.receipt["cleanup"]["host_secrets_removed"] = all(not p.exists() for p in self.secrets)
+        self.receipt["cleanup"]["host_secret_files_removed"] = all(not p.exists() for p in self.secrets)
         self.receipt["cleanup"]["failures"] = failures
         if failures:
             self.receipt["passed"] = False; self.receipt["failure_kind"] = "cleanup_incomplete"

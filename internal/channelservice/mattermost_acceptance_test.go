@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -61,6 +62,7 @@ func (p *mmAcceptancePost) UnmarshalJSON(data []byte) error {
 // sees it. The counter measures real product POST calls, not fixture setup.
 type mmAcceptanceTransport struct {
 	base            *http.Transport
+	state           string
 	mu              sync.Mutex
 	posts, verified int
 	dropID          domain.ID
@@ -94,14 +96,28 @@ func (w *mmAcceptanceTransport) RoundTrip(req *http.Request) (*http.Response, er
 	if response.TLS != nil && len(response.TLS.VerifiedChains) > 0 {
 		w.verified++
 	}
+	index := w.verified
 	w.mu.Unlock()
+	data, readErr := io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
+	_ = response.Body.Close()
+	if readErr != nil || len(data) > 1<<20 {
+		return nil, errors.New("owned trace response exceeded bound")
+	}
+	trace, _ := json.Marshal(struct {
+		Method, Path, Query string
+		Status              int
+		Body                []byte
+	}{req.Method, req.URL.Path, req.URL.RawQuery, response.StatusCode, data})
+	if err := os.WriteFile(filepath.Join(w.state, "private-wire-"+strconv.Itoa(index)+".json"), trace, 0600); err != nil {
+		return nil, errors.New("owned trace could not be retained")
+	}
+	response.Body = io.NopCloser(bytes.NewReader(data))
 	if !drop {
 		return response, nil
 	}
-	data, err := io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
 	_ = response.Body.Close()
 	var p mmAcceptancePost
-	if err != nil || len(data) > 1<<20 || response.StatusCode != http.StatusCreated || json.Unmarshal(data, &p) != nil || p.ID == "" {
+	if response.StatusCode != http.StatusCreated || json.Unmarshal(data, &p) != nil || p.ID == "" {
 		return nil, errors.New("owned loss fixture did not obtain actual post acknowledgement")
 	}
 	w.mu.Lock()
@@ -150,7 +166,7 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 	}
 	base := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}, Proxy: nil}
 	defer base.CloseIdleConnections()
-	wire := &mmAcceptanceTransport{base: base}
+	wire := &mmAcceptanceTransport{base: base, state: fixture.State}
 	client := &http.Client{Transport: wire, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	// Setup requests use an independent trusted client and do not inflate the
 	// adapter's real POST counter.
@@ -170,7 +186,7 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 	t.Cleanup(func() {
 		posts, verified, drops := wire.counters()
 		result["actual_adapter_posts"], result["verified_tls_responses"], result["dropped_actual_acknowledgements"] = posts, verified, drops
-		result["passed"] = !t.Failed() && len(checks) == 10 && posts == 2 && verified > 0 && drops == 1
+		result["passed"] = !t.Failed() && len(checks) == 11 && posts == 2 && verified > 0 && drops == 1
 		hash := sha256.Sum256(ca)
 		result["ca_sha256"] = hex.EncodeToString(hash[:])
 		b, _ := json.MarshalIndent(result, "", "  ")
@@ -405,6 +421,18 @@ func TestMattermostOwnedAcceptance(t *testing.T) {
 		t.Fatal("restart_replayed_uncertain_post")
 	}
 	checks["reopen_and_retry_never_resend_uncertain"] = true
+	// A copied marker or a remote edit cannot stand in for this frozen content.
+	request("bot", http.MethodPut, "/posts/"+dropped.ID, map[string]string{"id": dropped.ID, "message": "Owned changed receipt text"}, nil)
+	request("admin", http.MethodGet, "/posts/"+dropped.ID, nil, &accepted)
+	original, e := db.ChannelDelivery(ctx, lost.ID)
+	if e != nil || accepted.Message == lost.Text || accepted.Props["keelmux_delivery_id"] != string(lost.ID) || accepted.Props["keelmux_payload_hash"] != hex.EncodeToString(original.PayloadHash[:]) {
+		t.Fatal("edited_receipt_control_invalid")
+	}
+	if d, e := service.Reconcile(ctx, lost.ID); e != nil || d.State != channels.Uncertain {
+		t.Fatal("changed_remote_text_falsely_reconciled")
+	}
+	request("bot", http.MethodPut, "/posts/"+dropped.ID, map[string]string{"id": dropped.ID, "message": lost.Text}, nil)
+	checks["edited_receipt_with_same_markers_remains_uncertain"] = true
 	if err = service.Disable(ctx, bound.ID); err != nil {
 		t.Fatal("owned_disable_failed")
 	}
