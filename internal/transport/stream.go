@@ -90,10 +90,29 @@ func (s *Stream) ReadFrame() (Frame, error) {
 	if _, err := io.ReadFull(s.reader, header[:1]); err != nil {
 		return Frame{}, err
 	}
-	if err := s.conn.SetReadDeadline(time.Now().Add(ioTimeout)); err != nil {
+	deadlineSet := false
+	boundRead := func(length int) error {
+		// A peer can close immediately after sending its final frame. Keep
+		// complete bytes already fetched by bufio, even when the connection
+		// can no longer accept a deadline. Incomplete frames still need the
+		// same bounded connection read as soon as their first byte arrives.
+		if deadlineSet || s.reader.Buffered() >= length {
+			return nil
+		}
+		if err := s.conn.SetReadDeadline(time.Now().Add(ioTimeout)); err != nil {
+			return err
+		}
+		deadlineSet = true
+		return nil
+	}
+	defer func() {
+		if deadlineSet {
+			_ = s.conn.SetReadDeadline(time.Time{})
+		}
+	}()
+	if err := boundRead(len(header) - 1); err != nil {
 		return Frame{}, err
 	}
-	defer s.conn.SetReadDeadline(time.Time{})
 	if _, err := io.ReadFull(s.reader, header[1:]); err != nil {
 		return Frame{}, err
 	}
@@ -102,6 +121,9 @@ func (s *Stream) ReadFrame() (Frame, error) {
 		return Frame{}, errors.New("invalid or oversized terminal frame")
 	}
 	f := Frame{Kind: Kind(header[0]), Data: make([]byte, int(length))}
+	if err := boundRead(len(f.Data)); err != nil {
+		return Frame{}, err
+	}
 	if _, err := io.ReadFull(s.reader, f.Data); err != nil {
 		return Frame{}, err
 	}
