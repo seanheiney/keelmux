@@ -59,7 +59,7 @@ func Open(path string) (*Store, error) {
 	db.SetMaxOpenConns(1)
 	s := &Store{db: db, lock: lock}
 	var schemaVersion int
-	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 2 {
+	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 3 {
 		s.Close()
 		if err != nil {
 			return nil, err
@@ -74,6 +74,25 @@ func Open(path string) (*Store, error) {
 	}
 	if err == nil {
 		err = validateCodexSchema(context.Background(), db)
+	}
+	if err == nil && schemaVersion < 3 {
+		tx, beginErr := db.BeginTx(context.Background(), nil)
+		if beginErr != nil {
+			err = beginErr
+		} else {
+			err = createChannelSchema(context.Background(), tx)
+			if err == nil {
+				_, err = tx.Exec(`PRAGMA user_version=3`)
+			}
+			if err == nil {
+				err = tx.Commit()
+			} else {
+				_ = tx.Rollback()
+			}
+		}
+	}
+	if err == nil {
+		err = validateChannelSchema(context.Background(), db)
 	}
 	if err != nil {
 		s.Close()
