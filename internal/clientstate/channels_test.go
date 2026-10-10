@@ -106,6 +106,7 @@ func TestNewUnknownAndAmbiguousV1FieldsRefuseWithoutReset(t *testing.T) {
 		`{"version":2,"client_id":"client","version":1}`,
 		`{"version":2,"client_id":"client","channel_drafts":[{"thread_id":"t","binding_id":"b","text":"frozen"}],"pending_channel_send":{"message_id":"m","thread_id":"t","binding_id":"b","text":"frozen"},"pending_channel_send":null}`,
 		`{"version":2,"client_id":"client","channel_drafts":[{"thread_id":"t","binding_id":"b","text":"frozen"}],"pending_channel_send":{"message_id":"m","thread_id":"t","binding_id":"b","text":"frozen"},"PENDING_CHANNEL_SEND":null}`,
+		`{"version":2,"client_id":"client","channel_drafts":[{"thread_id":"t","binding_id":"b","text":"frozen"}],"pending_channel_send":{"message_id":"m","thread_id":"t","binding_id":"b","text":"frozen"},"pending_channel_\u017fend":null}`,
 		`{"version":2,"client_id":"client","VERSION":1}`,
 		`{"version":2,"client_id":"client","places":{},"CHANNEL_DRAFTS":[]}`,
 		`{"version":1,"client_id":"client","channel_drafts":null}`,

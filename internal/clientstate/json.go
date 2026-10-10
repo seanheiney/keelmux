@@ -3,7 +3,6 @@ package clientstate
 import (
 	"encoding/json"
 	"errors"
-	"strings"
 )
 
 // A duplicated pending field can otherwise decode as null and erase the first
@@ -29,7 +28,7 @@ func distinctStateKeys(d *json.Decoder, depth int, schemaKeys bool) error {
 				return err
 			}
 			key, ok := token.(string)
-			if !ok || seen[key] || schemaKeys && key != strings.ToLower(key) {
+			if !ok || seen[key] || schemaKeys && !stateSchemaKey(key) {
 				return errors.New("client place has duplicate or invalid field")
 			}
 			seen[key] = true
@@ -43,4 +42,15 @@ func distinctStateKeys(d *json.Decoder, depth int, schemaKeys bool) error {
 	}
 	_, err = d.Token()
 	return err
+}
+
+func stateSchemaKey(key string) bool {
+	// The schema uses only ASCII lowercase tags. Unicode simple-fold aliases
+	// (for example long-s -> s) must not fall through encoding/json's matching.
+	for _, r := range key {
+		if r != '_' && (r < 'a' || r > 'z') {
+			return false
+		}
+	}
+	return key != ""
 }
