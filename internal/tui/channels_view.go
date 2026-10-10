@@ -38,6 +38,9 @@ func intakeLabel(b protocol.ChannelStatus) string {
 }
 
 func rootLabel(b protocol.ChannelStatus) string {
+	if b.IRCAddressed {
+		return "project channel (IRC)"
+	}
 	if b.RootID == "" {
 		return "channel (IRC)"
 	}
