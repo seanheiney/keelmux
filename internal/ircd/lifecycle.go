@@ -89,13 +89,17 @@ func (m *Manager) observe(ctx context.Context, r lifecycleRecord) (runtime.Obser
 }
 func (m *Manager) inspectStatus(ctx context.Context, c configRecord, r lifecycleRecord) (Status, error) {
 	s := Status{Config: c.Config, Instance: r.Session.Execution.ID, OperationID: r.OperationID, State: r.State, StartTime: r.StartTime, ObservedAt: time.Now().UTC()}
-	if r.State == "stopped" {
-		return s, nil
-	}
 	o, e := m.observe(ctx, r)
 	if e != nil {
 		s.State = "uncertain"
 		return s, e
+	}
+	if r.State == "stopped" {
+		if o.Alive {
+			s.State = "uncertain"
+			return s, ErrUncertain
+		}
+		return s, nil
 	}
 	if !o.Alive {
 		if r.State == "stop_attempted" {
@@ -218,7 +222,7 @@ func (m *Manager) start(ctx context.Context, operationID domain.ID) (Status, err
 	} else if !os.IsNotExist(e) {
 		return Status{}, e
 	}
-	if hasCurrent && current.State != "stopped" {
+	if hasCurrent {
 		s, e := m.inspectStatus(ctx, c, current)
 		if e != nil {
 			return s, e
@@ -308,9 +312,6 @@ func (m *Manager) stop(ctx context.Context, expectedInstance domain.ID) error {
 	if !validLocalID(expectedInstance, "execution") || expectedInstance != r.Session.Execution.ID {
 		return ErrConflict
 	}
-	if r.State == "stopped" {
-		return nil
-	}
 	o, e := m.observe(ctx, r)
 	if e != nil {
 		return e
@@ -320,7 +321,7 @@ func (m *Manager) stop(ctx context.Context, expectedInstance domain.ID) error {
 		r.State = "stopped"
 		return m.saveLifecycle(r)
 	}
-	if r.State == "stop_attempted" {
+	if r.State == "stop_attempted" || r.State == "stopped" {
 		return ErrUncertain
 	}
 	// Stop authority comes from the authenticated exact-instance supervisor.

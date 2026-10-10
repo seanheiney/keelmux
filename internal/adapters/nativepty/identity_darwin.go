@@ -8,11 +8,15 @@ import (
 )
 
 func bootID() (string, error) {
-	v, err := unix.SysctlTimeval("kern.boottime")
+	return darwinBootID(unix.Sysctl)
+}
+
+func darwinBootID(read func(string) (string, error)) (string, error) {
+	v, err := read("kern.bootsessionuuid")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: cannot read kernel boot-session UUID: %v", ErrUnavailable, err)
 	}
-	return fmt.Sprintf("darwin:%d:%d", v.Sec, v.Usec), nil
+	return validatedBootID("darwin", v)
 }
 func processStart(pid int) (string, error) {
 	if pid <= 0 {

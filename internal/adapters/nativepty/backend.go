@@ -250,7 +250,12 @@ func (b *Backend) observe(ctx context.Context, r receipt) (bpruntime.Observation
 	if err != nil {
 		return o, err
 	}
-	if boot != r.Ref.BootID {
+	match, err := sameBoot(boot, r.Ref.BootID)
+	if err != nil {
+		o.Detail = "Recorded boot identity is untrusted; execution outcome uncertain. No automatic replay."
+		return o, err
+	}
+	if !match {
 		o.Detail = "Host boot changed; old execution cannot survive. No automatic replay."
 		return o, nil
 	}
@@ -292,6 +297,13 @@ func (b *Backend) observe(ctx context.Context, r receipt) (bpruntime.Observation
 func (b *Backend) Stop(ctx context.Context, ref domain.RuntimeRef) error {
 	r, err := b.receiptForRef(ref)
 	if err != nil {
+		return err
+	}
+	boot, err := bootID()
+	if err != nil {
+		return err
+	}
+	if _, err = sameBoot(boot, r.Ref.BootID); err != nil {
 		return err
 	}
 	if r.Stage == "exited" || r.Stage == "failed" || r.Stage == "stopped" {

@@ -104,7 +104,11 @@ func (b *Backend) connect(ctx context.Context, r receipt) (*net.UnixConn, error)
 	if err != nil {
 		return nil, err
 	}
-	if boot != r.Ref.BootID {
+	match, err := sameBoot(boot, r.Ref.BootID)
+	if err != nil {
+		return nil, err
+	}
+	if !match {
 		return nil, ErrUnavailable
 	}
 	if r.SupervisorPID <= 0 || r.SupervisorStart == "" {

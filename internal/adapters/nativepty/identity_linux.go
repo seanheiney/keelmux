@@ -11,7 +11,10 @@ import (
 
 func bootID() (string, error) {
 	v, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
-	return "linux:" + strings.TrimSpace(string(v)), err
+	if err != nil {
+		return "", fmt.Errorf("%w: cannot read kernel boot UUID: %v", ErrUnavailable, err)
+	}
+	return validatedBootID("linux", strings.TrimSuffix(string(v), "\n"))
 }
 func processStart(pid int) (string, error) {
 	if pid <= 0 {
