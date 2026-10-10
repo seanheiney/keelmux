@@ -32,6 +32,25 @@ import time
 import uuid
 
 
+class AcceptanceCancelled(BaseException):
+    """Cooperative cancellation, delivered only at ownership-safe checkpoints."""
+
+
+cancel_requested = False
+
+
+def request_cancel(_signum, _frame):
+    # Do not raise inside launch/fork bookkeeping: the response and exact owned
+    # execution must be recorded before cleanup can safely stop it.
+    global cancel_requested
+    cancel_requested = True
+
+
+def check_cancelled():
+    if cancel_requested:
+        raise AcceptanceCancelled()
+
+
 def run(argv, **kw):
     return subprocess.run(argv, check=True, capture_output=True, text=True, timeout=15, **kw).stdout.strip()
 
@@ -43,6 +62,7 @@ def digest(data):
 def wait(fn, label, timeout=15):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        check_cancelled()
         try:
             answer = fn()
             if answer:
@@ -138,6 +158,7 @@ class Terminal:
 
     def pump(self, seconds=0.15):
         time.sleep(seconds)
+        check_cancelled()
         assert self.reader_error is None, self.reader_error
         return plain(bytes(self.output))
 
@@ -353,9 +374,11 @@ class Acceptance:
             assert alive(pid, original), 'owned child or supervisor lifetime changed'
 
     def check(self, label, fn):
+        check_cancelled()
         print('RUN', label, flush=True)
         try:
             result = fn()
+            check_cancelled()
             if label == 'native_default_daemon_start':
                 result = {k: v for k, v in result.items() if k != 'instance'}
             self.report['checks'].append({'name': label, 'result': 'pass', 'detail': result})
@@ -538,6 +561,7 @@ class Acceptance:
 
 
 def main():
+    global cancel_requested
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bin-dir', required=True)
     parser.add_argument('--expected-source', required=True)
@@ -548,6 +572,9 @@ def main():
                         help='diagnostic only: record known pre-drive query prefix; default rejects it')
     args = parser.parse_args()
     args.workspace = str(Path(args.workspace).resolve(strict=True))
+    cancel_requested = False
+    signal.signal(signal.SIGTERM, request_cancel)
+    signal.signal(signal.SIGINT, request_cancel)
     test = Acceptance(args)
     failed = False
     try:
@@ -560,7 +587,16 @@ def main():
                 # Each provider is independently qualified; no dialog is answered.
                 for terminal in test.terminals:
                     terminal.close()
+    except AcceptanceCancelled:
+        failed = True
+        test.report['checks'].append({'name': 'native_acceptance_cancelled', 'result': 'fail',
+                                     'failure': 'bounded_parent_cancellation'})
     finally:
+        # A repeated cancellation request must not interrupt exact-identity
+        # cleanup. The parent independently bounds this grace period.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        cancel_requested = False
         test.cleanup()
     return 1 if failed or test.report['result'] != 'pass' else 0
 
