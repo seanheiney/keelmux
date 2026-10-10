@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "source": {
+    "name": "Keelmux",
+    "version": "development",
+    "commit": "f039c676e30e930e1a8c70da0452f30c87d30330",
+    "built_at": "2026-10-10T21:02:06Z",
+    "protocol": "bp/1",
+    "go_version": "go1.26.6",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "harness_sha256": "d6194b2727ecb91fdbbff45cdb61ec841b9332fc71f4074dadaefe9d0272fe79",
+  "utc": "2026-10-10T21:10:10Z",
+  "platform": "macOS-26.7.1-arm64-arm-64bit-Mach-O",
+  "binaries": {
+    "keelmux": {
+      "sha256": "a21448e4230467432a1a926e189711d29b5e5560d0799cf288c393430ff2f2e4",
+      "version": "Keelmux development (commit f039c676e30e930e1a8c70da0452f30c87d30330, protocol bp/1)"
+    },
+    "keelmuxd": {
+      "sha256": "b34bd3aa46755cc4e41fc695a237cf6190d438b1d0a8458e1c2b3f996b4a3571",
+      "version": "Keelmux development (commit f039c676e30e930e1a8c70da0452f30c87d30330, protocol bp/1)"
+    },
+    "keelmux-supervisor": {
+      "sha256": "71be38b3200b88a7f873afbfe581c489fae7632f99a3482a68a64a7068b027bf",
+      "version": "Keelmux development (commit f039c676e30e930e1a8c70da0452f30c87d30330, protocol bp/1)"
+    }
+  },
+  "providers": {
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "qualification": "source-built development binaries with installed native CLIs",
+  "model_prompt_submitted": false,
+  "native_enter_submitted": false,
+  "credentials": "existing native realm; no credential/config/trust changes by harness",
+  "checks": [
+    {
+      "name": "native_default_daemon_start",
+      "result": "pass",
+      "detail": {
+        "pid": 67499,
+        "protocol": "bp/1",
+        "build": {
+          "name": "Keelmux",
+          "version": "development",
+          "commit": "f039c676e30e930e1a8c70da0452f30c87d30330",
+          "built_at": "2026-10-10T21:02:06Z",
+          "protocol": "bp/1",
+          "go_version": "go1.26.6",
+          "os": "darwin",
+          "arch": "arm64"
+        }
+      }
+    },
+    {
+      "name": "claude_native_transport_tui",
+      "result": "fail",
+      "failure": "product drive did not detach"
+    }
+  ],
+  "missing_evidence": [
+    "authenticated model turn and verified effective account/model",
+    "installed release package and installer for this source",
+    "host reboot/native resume",
+    "remote transport and Linux native CLIs",
+    "native skill invocation and prompt delivery"
+  ],
+  "cleanup": {
+    "owned_process_count": 2,
+    "owned_processes_no_longer_live": true,
+    "exact_product_stop_requested": true,
+    "no_saved_pid_signals": true,
+    "private_captures_retained": true,
+    "issues": []
+  },
+  "result": "fail",
+  "harness_invokes_tmux": false,
+  "evidence_scope": "Intermediate diagnostic attempt; consult native-supervisor-qualification.md for harness fixes and final source gate."
+}

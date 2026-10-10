@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "source": {
+    "name": "Keelmux",
+    "version": "development",
+    "commit": "4c265651855478c16408173852beb2d2fbca0704",
+    "built_at": "2026-10-10T21:13:22Z",
+    "protocol": "bp/1",
+    "go_version": "go1.26.6",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "harness_sha256": "3d4ec68983c4e621162572e4caae2aa7ef2f90d781529e2d8851a0fc1b975166",
+  "utc": "2026-10-10T21:13:58Z",
+  "platform": "macOS-26.7.1-arm64-arm-64bit-Mach-O",
+  "binaries": {
+    "keelmux": {
+      "sha256": "7dc2e52141661690726e08d4dbd3c927c1806e2c87d054e5299d1a834d7ba64c",
+      "version": "Keelmux development (commit 4c265651855478c16408173852beb2d2fbca0704, protocol bp/1)"
+    },
+    "keelmuxd": {
+      "sha256": "ab3ba9ac8f70fd2ae4f59d6edeb148f4e62887ea51ac1e3a18119b18393e938d",
+      "version": "Keelmux development (commit 4c265651855478c16408173852beb2d2fbca0704, protocol bp/1)"
+    },
+    "keelmux-supervisor": {
+      "sha256": "b0b632b5f52f270c89e1d7ce07e241912974de9501644018d78b1b4181330e54",
+      "version": "Keelmux development (commit 4c265651855478c16408173852beb2d2fbca0704, protocol bp/1)"
+    }
+  },
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "qualification": "source-built development binaries with installed native CLIs",
+  "diagnostic_client_probe_exception": false,
+  "model_prompt_submitted": false,
+  "native_enter_submitted": false,
+  "credentials": "existing native realm; no credential/config/trust changes by harness",
+  "harness_invokes_tmux": false,
+  "checks": [
+    {
+      "name": "native_default_daemon_start",
+      "result": "pass",
+      "detail": {
+        "pid": 73955,
+        "protocol": "bp/1",
+        "build": {
+          "name": "Keelmux",
+          "version": "development",
+          "commit": "4c265651855478c16408173852beb2d2fbca0704",
+          "built_at": "2026-10-10T21:13:22Z",
+          "protocol": "bp/1",
+          "go_version": "go1.26.6",
+          "os": "darwin",
+          "arch": "arm64"
+        }
+      }
+    },
+    {
+      "name": "codex_native_transport_tui",
+      "result": "pass",
+      "detail": {
+        "default_backend": "native",
+        "composer_before_native_input": true,
+        "outer_client_terminal_probe_observed": false,
+        "unsubmitted_unicode_draft": true,
+        "escape_forwarded": true,
+        "writer_resize": [
+          92,
+          29
+        ],
+        "read_only_input_and_resize_blocked": true,
+        "second_writer_refused": true,
+        "ctrl_g_d_detach_exit_zero": true,
+        "same_execution_after_reconnect_and_daemon_sigkill": true,
+        "same_operation_no_relaunch": true,
+        "stale_daemon_stop_refused": true,
+        "orphan_attach_grant_reconciled_and_explicitly_released": true,
+        "tui_detach_and_saved_selection": true,
+        "ref_sha256": "3e7a1c6befec1fae6785c1f22fdc4cf1c690f5ae029deab427a3172d5508db98",
+        "child_pid": 73972,
+        "child_process_start": "darwin:1791666839:177285",
+        "supervisor_pid": 73971,
+        "supervisor_process_start": "darwin:1791666839:157342",
+        "native_enter_count": 0,
+        "model_turn_count": 0
+      }
+    },
+    {
+      "name": "claude_native_transport_tui",
+      "result": "pass",
+      "detail": {
+        "default_backend": "native",
+        "composer_before_native_input": true,
+        "outer_client_terminal_probe_observed": false,
+        "unsubmitted_unicode_draft": true,
+        "escape_forwarded": true,
+        "writer_resize": [
+          92,
+          29
+        ],
+        "read_only_input_and_resize_blocked": true,
+        "second_writer_refused": true,
+        "ctrl_g_d_detach_exit_zero": true,
+        "same_execution_after_reconnect_and_daemon_sigkill": true,
+        "same_operation_no_relaunch": true,
+        "stale_daemon_stop_refused": true,
+        "orphan_attach_grant_reconciled_and_explicitly_released": true,
+        "tui_detach_and_saved_selection": true,
+        "ref_sha256": "8ee40593af1238845306b8677cd362f649d04a17c4e64a4cd993f0093af0a4c8",
+        "child_pid": 74816,
+        "child_process_start": "darwin:1791666850:356819",
+        "supervisor_pid": 74815,
+        "supervisor_process_start": "darwin:1791666850:334530",
+        "native_enter_count": 0,
+        "model_turn_count": 0
+      }
+    }
+  ],
+  "missing_evidence": [
+    "authenticated model turn and verified effective account/model",
+    "installed release package and installer for this source",
+    "host reboot/native resume",
+    "remote transport and Linux native CLIs",
+    "native skill invocation and prompt delivery"
+  ],
+  "cleanup": {
+    "owned_process_count": 4,
+    "owned_processes_no_longer_live": true,
+    "exact_product_stop_requested": true,
+    "no_saved_pid_signals": true,
+    "private_captures_retained": true,
+    "issues": []
+  },
+  "result": "pass"
+}
