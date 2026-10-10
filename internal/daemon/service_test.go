@@ -311,6 +311,16 @@ func TestLinkRequiresPrivateNonceAndExactLiveProcess(t *testing.T) {
 	e := setup(t)
 	v := e.launch(t)
 	in := protocol.LinkRequest{SessionID: v.Session.ID, ExecutionID: v.Session.Execution.ID, OperationID: v.Operation.ID, Token: "private-launch-nonce"}
+	status := in
+	status.Status = true
+	before, err := e.service.Link(context.Background(), status)
+	if err != nil || before.Linked {
+		t.Fatal("status changed link state", err)
+	}
+	status.Off = true
+	if _, err := e.service.Link(context.Background(), status); err == nil {
+		t.Fatal("status and off accepted together")
+	}
 	for _, token := range []string{"", "forged"} {
 		bad := in
 		bad.Token = token
