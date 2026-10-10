@@ -201,6 +201,7 @@ class LinuxAcceptance:
         self.terminals = []
         self.sessions = []
         self.owned_panes = {}
+        self.owned_servers = {}
         self.manifest = None
         self.binary = str(self.package / "keelmux")
         self.daemon_binary = str(self.package / "keelmuxd")
@@ -211,6 +212,7 @@ class LinuxAcceptance:
             "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "platform": platform.platform(), "kernel": command(["uname", "-r"]),
             "machine": platform.machine(), "python": platform.python_version(),
+            "effective_uid": os.geteuid(), "effective_gid": os.getegid(),
             "tmux": command(["tmux", "-V"]),
             "packages": command(["dpkg-query", "-W", "-f=${Package} ${Version}\n",
                                    "tmux", "python3", "lsof", "procps"]),
@@ -343,6 +345,8 @@ class LinuxAcceptance:
         self.sessions.append(session)
         ref = session["execution"]["runtime"]
         self.owned_panes[ref["pid"]] = process_start(ref["pid"])[0]
+        server_pid = int(self.tmux("display-message", "-p", "#{pid}"))
+        self.owned_servers[server_pid] = process_start(server_pid)[0]
         return session, request
 
     def stable(self, session):
@@ -564,7 +568,12 @@ class LinuxAcceptance:
             except subprocess.TimeoutExpired:
                 self.daemon.kill()
                 self.daemon.wait(timeout=5)
-        if (self.state / "tmux.sock").exists():
+        # A dead tmux server can leave its socket pathname behind. Only ask a
+        # server to stop while the exact recorded owned lifetime is live.
+        live_servers = [pid for pid, start in self.owned_servers.items()
+                        if (current := process_start(pid)) and current[0] == start
+                        and current[1] != "Z"]
+        if live_servers:
             try:
                 self.tmux("kill-server")
             except subprocess.CalledProcessError:
@@ -573,7 +582,7 @@ class LinuxAcceptance:
         # exited. Wait only for the recorded owned process lifetimes.
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
-            live = [pid for pid, start in self.owned_panes.items()
+            live = [pid for pid, start in (self.owned_panes | self.owned_servers).items()
                     if (current := process_start(pid)) and current[0] == start
                     and current[1] != "Z"]
             if not live:
@@ -583,6 +592,10 @@ class LinuxAcceptance:
             current = process_start(pid)
             if current and current[0] == start and current[1] != "Z":
                 errors.append("owned pane remains live after cleanup")
+        for pid, start in self.owned_servers.items():
+            current = process_start(pid)
+            if current and current[0] == start and current[1] != "Z":
+                errors.append("owned tmux server remains live after cleanup")
         if any(p.poll() is None for p in self.daemon_processes):
             errors.append("owned daemon remains live after cleanup")
         if self.original_home is not None:
@@ -593,7 +606,8 @@ class LinuxAcceptance:
             shutil.rmtree(self.temp)
         self.report["cleanup"] = {"owned_terminal_clients_reaped": all(not t.open for t in self.terminals),
             "owned_daemons_reaped": all(p.poll() is not None for p in self.daemon_processes),
-            "owned_panes_not_live": not errors, "owned_temp_removed": not self.temp.exists(), "errors": errors}
+            "owned_panes_and_tmux_servers_not_live": not errors,
+            "owned_temp_removed": not self.temp.exists(), "errors": errors}
         assert not errors, "owned runtime cleanup failed"
 
     def run(self):
