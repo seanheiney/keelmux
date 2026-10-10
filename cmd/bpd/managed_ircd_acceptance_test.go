@@ -23,12 +23,13 @@ import (
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/ircd"
+	"github.com/seanheiney/keelmux/internal/ircdchannel"
 	"github.com/seanheiney/keelmux/internal/protocol"
 )
 
 // This opt-in product qualification builds the actual control executables from
 // a clean frozen checkout. It uses only a private owned Ergo realm, its private
-// account files, and a shell input sentinel. No provider or terminal input API is
+// account files, and three shell input sentinels in two explicit projects. No provider or terminal input API is
 // involved. The default unit suite performs no provisioning or external IO.
 //
 //	KEELMUX_MANAGED_IRCD_ACCEPTANCE=1 KEELMUX_ERGO_ARCHIVE=/absolute/pinned.tar.gz \
@@ -69,13 +70,13 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	if os.Mkdir(bin, 0700) != nil || os.Mkdir(state, 0700) != nil {
 		t.Fatal("owned private test directories unavailable")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	report := map[string]any{
-		"schema": "keelmux-managed-ircd-product/v1", "source_commit": source,
+		"schema": "keelmux-irc-project-product/v1", "source_commit": source,
 		"source_clean": true, "host_target": runtime.GOOS + "/" + runtime.GOARCH,
 		"go_version": runtime.Version(), "started_at": time.Now().UTC(),
-		"scope":                      "isolated owned CLI/API/native/TLS/IRC authored-inbox acceptance",
+		"scope":                      "isolated owned project CLI/API/native/TLS/IRC addressed authored-inbox acceptance",
 		"provider_or_model_activity": false, "native_input_sent": false,
 		"production_or_customer_proof": false,
 		"limitations": []string{
@@ -92,9 +93,9 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	defer client.HTTP.CloseIdleConnections()
 	var native *nativepty.Backend
 	var manager *ircd.Manager
-	var fixture domain.RuntimeRef
+	var fixtures []domain.RuntimeRef
 	var ircInstance domain.ID
-	var peer *chatadapter.IRC
+	var peers [2]*chatadapter.IRC
 	var controlDone <-chan error
 	var supervisorPIDs []int
 	var controlPIDs []int
@@ -104,8 +105,10 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	t.Cleanup(func() {
 		clean, c := context.WithTimeout(context.Background(), 20*time.Second)
 		defer c()
-		if peer != nil {
-			_ = peer.Close()
+		for _, peer := range peers {
+			if peer != nil {
+				_ = peer.Close()
+			}
 		}
 		cleanupOK := true
 		if manager != nil {
@@ -115,12 +118,14 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 				cleanupOK = false
 			}
 		}
-		if native != nil && fixture.ExecutionID != "" {
-			if e := native.Stop(clean, fixture); e != nil {
-				cleanupOK = false
-			}
-			if o, e := native.Inspect(clean, fixture); e != nil || o.Alive {
-				cleanupOK = false
+		if native != nil {
+			for _, fixture := range fixtures {
+				if e := native.Stop(clean, fixture); e != nil {
+					cleanupOK = false
+				}
+				if o, e := native.Inspect(clean, fixture); e != nil || o.Alive {
+					cleanupOK = false
+				}
 			}
 		}
 		if d, e := client.Daemon(clean); e == nil {
@@ -155,7 +160,11 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 			cleanupOK = false
 		}
 		if !managedProductWait(clean, 5*time.Second, func() bool {
-			for _, pid := range append(supervisorPIDs, controlPIDs...) {
+			ownedPIDs := append(append([]int{}, supervisorPIDs...), controlPIDs...)
+			for _, proof := range processProofs {
+				ownedPIDs = append(ownedPIDs, proof.PID)
+			}
+			for _, pid := range ownedPIDs {
 				if syscall.Kill(pid, 0) != syscall.ESRCH {
 					return false
 				}
@@ -172,8 +181,8 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 		report["final_stage"] = stage
 		report["passed"] = !t.Failed() && cleanupOK
 		if path := os.Getenv("KEELMUX_MANAGED_IRCD_REPORT"); path != "" {
-			if !filepath.IsAbs(path) || !strings.HasPrefix(filepath.Base(path), "managed-ircd-product-") || filepath.Ext(path) != ".json" {
-				t.Error("receipt requires a new absolute managed-ircd-product-*.json path")
+			if !filepath.IsAbs(path) || !strings.HasPrefix(filepath.Base(path), "irc-project-product-") || filepath.Ext(path) != ".json" {
+				t.Error("receipt requires a new absolute irc-project-product-*.json path")
 			} else if b, e := json.MarshalIndent(report, "", "  "); e != nil {
 				t.Error("finite receipt encoding failed")
 			} else if f, e := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600); e != nil {
@@ -242,19 +251,43 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	}
 	native, err = nativepty.NewWithOptions(filepath.Join(state, "native"), nativepty.Options{HelperPath: filepath.Join(bin, "keelmux-supervisor")})
 	ensure(err == nil, "owned_native_backend")
-	stage = "inert native fixture"
-	sentinel, ready := filepath.Join(root, "native-input"), filepath.Join(root, "fixture-ready")
-	ensure(os.WriteFile(sentinel, nil, 0600) == nil, "input_sentinel_created")
-	launch := protocol.LaunchRequest{OperationID: domain.NewID("op"), Name: "inert IRC inbox fixture", Workspace: root, Provider: "fixture", ProviderVersion: "owned-test", Argv: []string{"/bin/sh", "-c", "/bin/stty -icanon -echo min 1 time 0; printf ready > '" + ready + "'; exec /bin/cat > '" + sentinel + "'"}}
-	session, e := client.Launch(ctx, launch)
-	fixture = session.Session.Execution.Runtime
-	ensure(e == nil && fixture.Backend == "native" && fixture.ExecutionID != "" && fixture.Pane == "", "actual_native_fixture_running")
-	fixtureProof := managedProductOwnedProcess(t, state, fixture.ExecutionID)
-	processProofs = append(processProofs, fixtureProof)
-	supervisorPIDs = append(supervisorPIDs, fixtureProof.SupervisorPID)
-	ensure(managedProductWait(ctx, 5*time.Second, func() bool { return !managedProductMissing(ready) }), "fixture_byte_input_sentinel_ready")
-	report["fixture_execution"] = fixture.ExecutionID
-	report["stable_thread"] = session.Session.ThreadID
+	stage = "three inert native fixtures and explicit projects"
+	var sessions [3]protocol.LaunchResponse
+	var sentinels [3]string
+	var fixtureProofs [3]managedProductProcessProof
+	workspaces := [2]string{filepath.Join(root, "project-a"), filepath.Join(root, "project-b")}
+	for _, workspace := range workspaces {
+		ensure(os.Mkdir(workspace, 0700) == nil, "owned_project_workspace_created")
+	}
+	projectIndex := [3]int{0, 0, 1}
+	for i := range sessions {
+		sentinels[i] = filepath.Join(root, fmt.Sprintf("native-input-%d", i))
+		ready := filepath.Join(root, fmt.Sprintf("fixture-ready-%d", i))
+		ensure(os.WriteFile(sentinels[i], nil, 0600) == nil, fmt.Sprintf("input_sentinel_%d_created", i))
+		launch := protocol.LaunchRequest{OperationID: domain.NewID("op"), Name: fmt.Sprintf("inert IRC project fixture %d", i), Workspace: workspaces[projectIndex[i]], Provider: "fixture", ProviderVersion: "owned-test", Argv: []string{"/bin/sh", "-c", "/bin/stty -icanon -echo min 1 time 0; printf ready > '" + ready + "'; exec /bin/cat > '" + sentinels[i] + "'"}}
+		var e error
+		sessions[i], e = client.Launch(ctx, launch)
+		fixture := sessions[i].Session.Execution.Runtime
+		if fixture.ExecutionID != "" {
+			fixtures = append(fixtures, fixture)
+		}
+		ensure(e == nil && fixture.Backend == "native" && fixture.ExecutionID != "" && fixture.Pane == "", fmt.Sprintf("actual_native_fixture_%d_running", i))
+		fixtureProofs[i] = managedProductOwnedProcess(t, state, fixture.ExecutionID)
+		processProofs = append(processProofs, fixtureProofs[i])
+		supervisorPIDs = append(supervisorPIDs, fixtureProofs[i].SupervisorPID)
+		ensure(managedProductWait(ctx, 5*time.Second, func() bool { return !managedProductMissing(ready) }), fmt.Sprintf("fixture_%d_byte_input_sentinel_ready", i))
+	}
+	var projects [2]domain.Project
+	for i := range projects {
+		id := domain.NewID("project")
+		cli(&projects[i], true, "projects", "create", "--name", fmt.Sprintf("Owned project %d", i), "--workspace", workspaces[i], "--project", string(id))
+		ensure(projects[i].Validate() == nil && projects[i].ID == id && projects[i].Workspace == workspaces[i] && projects[i].HostID == sessions[0].Session.HostID, fmt.Sprintf("actual_cli_explicit_project_%d", i))
+		var repeated domain.Project
+		cli(&repeated, true, "projects", "create", "--name", projects[i].Name, "--workspace", projects[i].Workspace, "--project", string(id))
+		ensure(repeated == projects[i], fmt.Sprintf("same_project_%d_identity_no_replay", i))
+	}
+	projectList, e := client.Projects(ctx)
+	ensure(e == nil && len(projectList) == 2, "actual_durable_project_registry")
 	stage = "offline provisioning and actual CLI"
 	manager, err = ircd.NewWithSupervisor(filepath.Join(state, "irc"), native)
 	ensure(err == nil, "owned_ircd_manager")
@@ -281,78 +314,180 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	var human protocol.IRCDConnection
 	cli(&human, true, "ircd", "account", "alice")
 	ensure(human.Account == "alice" && human.CredentialRef != connection.CredentialRef && human.RealmID == connection.RealmID, "actual_human_account_private_ref")
-	var binding protocol.ChannelStatus
-	bindID, channelOp := domain.NewID("binding"), domain.NewID("operation")
-	bindArgs := []string{"ircd", "bind", "--session", string(session.Session.ID), "--allow-user", "alice", "--binding", string(bindID), "--operation", string(channelOp)}
-	cli(&binding, true, bindArgs...)
-	ensure(binding.Active && binding.ThreadID == session.Session.ThreadID && !binding.SemanticDispatch && binding.SelfID == connection.Account, "actual_cli_stable_thread_registered_bind")
-	registered, e := manager.ConfirmChannel(ctx, binding.ChannelID, binding.ThreadID)
-	ensure(e == nil && registered.State == "confirmed" && registered.Owner == connection.Account && registered.ID == channelOp && registered.RegisteredAt != "", "authenticated_exact_registered_channel_owner")
-	report["registered_channel"] = map[string]any{"channel": binding.ChannelID, "owner": registered.Owner, "operation": registered.ID, "registered_at": registered.RegisteredAt}
-	stage = "actual human TLS SASL peer"
-	peer = chatadapter.NewIRCWithDialer(manager.Dial)
-	peerBinding := channels.Binding{ID: domain.NewID("binding"), Provider: channels.IRC, Endpoint: human.Endpoint, RealmID: human.RealmID, SelfID: "alice", ChannelID: binding.ChannelID, CredentialRef: human.CredentialRef, Active: true, ActivationCutoff: time.Now().UTC()}
-	proof, e := peer.Probe(ctx, peerBinding)
-	ensure(e == nil && proof.SelfID == "alice" && proof.RealmID == human.RealmID && proof.ChannelID == binding.ChannelID, "actual_scoped_ca_tls_sasl_human_identity")
-	peerSend := func(text string) {
-		t.Helper()
-		m := channels.Message{ID: domain.NewID("message"), BindingID: peerBinding.ID, Text: text}
-		d := channels.Delivery{ID: m.ID, MessageID: m.ID, BindingID: peerBinding.ID, PayloadHash: channels.PayloadHash(peerBinding, m), State: channels.Attempted}
-		r, e := peer.Send(ctx, peerBinding, d, m)
-		ensure(e == nil && r.State == channels.Delivered && r.RemoteID != "", "human_message_matching_actual_echo")
+	originalHuman := human
+	var bindings [3]protocol.ChannelStatus
+	var bindArgs [3][]string
+	var threadCredentials [3]ircd.Credential
+	var channelOps [3]domain.ID
+	for i := range bindings {
+		id, operation := domain.NewID("binding"), domain.NewID("operation")
+		channelOps[i] = operation
+		bindArgs[i] = []string{"ircd", "bind", "--project", string(projects[projectIndex[i]].ID), "--session", string(sessions[i].Session.ID), "--allow-user", "alice", "--binding", string(id), "--operation", string(operation)}
+		cli(&bindings[i], true, bindArgs[i]...)
+		nick, nickErr := ircd.ThreadAccount(sessions[i].Session.ThreadID)
+		channel, channelErr := ircdchannel.ProjectChannelName(ircdchannel.Project{ID: projects[projectIndex[i]].ID, HostID: projects[projectIndex[i]].HostID, Name: projects[projectIndex[i]].Name, Workspace: projects[projectIndex[i]].Workspace})
+		ensure(bindings[i].Active && bindings[i].ThreadID == sessions[i].Session.ThreadID && bindings[i].ProjectID == projects[projectIndex[i]].ID && bindings[i].IRCAddressed && !bindings[i].SemanticDispatch && nickErr == nil && channelErr == nil && bindings[i].SelfID == nick && bindings[i].ChannelID == channel, fmt.Sprintf("actual_cli_project_thread_%d_registered_addressed_bind", i))
+		threadCredentials[i], e = manager.EnsureThreadAccount(ctx, bindings[i].ThreadID)
+		ensure(e == nil && threadCredentials[i].Account == nick, fmt.Sprintf("thread_%d_exact_owned_service_account", i))
 	}
-	var peerMessages []channels.RemoteMessage
-	cursor := ""
-	collect := func() bool {
-		r, e := peer.Fetch(ctx, peerBinding, cursor, 100)
-		if e != nil {
+	ensure(bindings[0].ChannelID == bindings[1].ChannelID && bindings[0].SelfID != bindings[1].SelfID && bindings[0].ChannelID != bindings[2].ChannelID && bindings[0].SelfID != bindings[2].SelfID && bindings[1].SelfID != bindings[2].SelfID, "two_threads_shared_project_distinct_bots_other_project_separate")
+	ensure(threadCredentials[0].CredentialRef != threadCredentials[1].CredentialRef && threadCredentials[0].CredentialRef != threadCredentials[2].CredentialRef && threadCredentials[1].CredentialRef != threadCredentials[2].CredentialRef, "all_thread_credentials_distinct_private_owned_refs")
+	var registered [2]ircd.ProjectChannelOperation
+	for i, b := range []protocol.ChannelStatus{bindings[0], bindings[2]} {
+		registered[i], e = manager.ConfirmProjectChannel(ctx, b.ChannelID, b.ProjectID)
+		firstOperation := channelOps[0]
+		if i == 1 {
+			firstOperation = channelOps[2]
+		}
+		ensure(e == nil && registered[i].State == "confirmed" && registered[i].Owner == connection.Account && registered[i].ProjectID == projects[i].ID && registered[i].ID == firstOperation && registered[i].RegisteredAt != "", fmt.Sprintf("authenticated_exact_project_%d_registered_channel_owner", i))
+	}
+	report["projects"] = []map[string]any{
+		{"project_id": projects[0].ID, "channel": registered[0].Channel, "owner": registered[0].Owner, "operation": registered[0].ID, "registered_at": registered[0].RegisteredAt},
+		{"project_id": projects[1].ID, "channel": registered[1].Channel, "owner": registered[1].Owner, "operation": registered[1].ID, "registered_at": registered[1].RegisteredAt},
+	}
+	var threadProofs []map[string]any
+	for i, b := range bindings {
+		threadProofs = append(threadProofs, map[string]any{"session_id": b.SessionID, "thread_id": b.ThreadID, "execution_id": fixtures[i].ExecutionID, "project_id": b.ProjectID, "channel": b.ChannelID, "account": b.SelfID, "nick": b.SelfID, "binding_id": b.ID, "addressed": b.IRCAddressed})
+	}
+	report["threads"] = threadProofs
+	var adaptersAfter time.Time
+	readyAdapters := func() bool {
+		list, err := client.Channels(ctx)
+		if err != nil || len(list) != len(bindings) {
 			return false
 		}
-		cursor = r.NextCursor
-		peerMessages = append(peerMessages, r.Messages...)
+		for _, b := range bindings {
+			found := false
+			for _, status := range list {
+				if status.ID == b.ID && status.SelfID == b.SelfID && status.ProjectID == b.ProjectID && status.IRCAddressed && status.LastSuccess != nil && !status.LastSuccess.Before(adaptersAfter) {
+					found = true
+				}
+			}
+			if !found {
+				return false
+			}
+		}
 		return true
 	}
-	countRemote := func(text, actor string) int {
+	ensure(managedProductWait(ctx, 15*time.Second, readyAdapters), "all_three_actual_stable_bot_adapters_connected")
+	stage = "actual human TLS SASL peers"
+	var peerBindings [2]channels.Binding
+	var peerMessages [2][]channels.RemoteMessage
+	var cursors [2]string
+	connectPeers := func() {
+		t.Helper()
+		for i := range peers {
+			peers[i] = chatadapter.NewIRCWithDialer(manager.Dial)
+			peerBindings[i] = channels.Binding{ID: domain.NewID("binding"), Provider: channels.IRC, Endpoint: human.Endpoint, RealmID: human.RealmID, SelfID: "alice", ChannelID: registered[i].Channel, CredentialRef: human.CredentialRef, Active: true, ActivationCutoff: time.Now().UTC()}
+			proof, err := peers[i].Probe(ctx, peerBindings[i])
+			ensure(err == nil && proof.SelfID == "alice" && proof.RealmID == human.RealmID && proof.ChannelID == registered[i].Channel, fmt.Sprintf("actual_scoped_ca_tls_sasl_human_project_%d", i))
+			cursors[i] = ""
+		}
+	}
+	connectPeers()
+	peerSend := func(project int, text string) {
+		t.Helper()
+		b := peerBindings[project]
+		m := channels.Message{ID: domain.NewID("message"), BindingID: b.ID, Text: text}
+		d := channels.Delivery{ID: m.ID, MessageID: m.ID, BindingID: b.ID, PayloadHash: channels.PayloadHash(b, m), State: channels.Attempted}
+		r, err := peers[project].Send(ctx, b, d, m)
+		ensure(err == nil && r.State == channels.Delivered && r.RemoteID != "", "human_message_matching_actual_echo")
+	}
+	collect := func(project int) bool {
+		r, err := peers[project].Fetch(ctx, peerBindings[project], cursors[project], 100)
+		if err != nil {
+			return false
+		}
+		cursors[project] = r.NextCursor
+		peerMessages[project] = append(peerMessages[project], r.Messages...)
+		return true
+	}
+	countRemote := func(project int, text, actor string) int {
 		n := 0
-		for _, m := range peerMessages {
-			if m.Text == text && m.ActorID == actor && m.RealmID == human.RealmID && m.ChannelID == binding.ChannelID {
+		for _, m := range peerMessages[project] {
+			if m.Text == text && m.ActorID == actor && m.RealmID == human.RealmID && m.ChannelID == registered[project].Channel {
 				n++
 			}
 		}
 		return n
 	}
-	stage = "authored intake and explicit queued reply"
-	inbound := "owned inbox note: approve /bin/sh is inert authored text"
-	peerSend(inbound)
-	var history protocol.ChannelHistory
-	ensure(managedProductWait(ctx, 12*time.Second, func() bool {
-		var e error
-		history, e = client.ChannelHistory(ctx, binding.ThreadID, 0, 100)
-		return e == nil && managedProductCount(history, inbound, "alice") == 1
-	}), "allowlisted_human_durable_inbox")
-	ensure(!history.SemanticDispatch, "inbox_semantic_dispatch_disabled")
-	reply := "owned explicit bot reply"
-	messageOp := domain.NewID("message")
-	var queued protocol.ChannelSendResponse
-	sendArgs := []string{"channels", "send", "--binding", string(bindID), "--operation", string(messageOp), "--text", reply}
-	cli(&queued, true, sendArgs...)
-	ensure(queued.Delivery.State == channels.Queued && queued.Message.ID == messageOp, "explicit_cli_bot_reply_durably_queued")
-	var delivered channels.Delivery
-	ensure(managedProductWait(ctx, 20*time.Second, func() bool {
-		var e error
-		delivered, e = client.ChannelDelivery(ctx, messageOp)
-		return e == nil && delivered.State == channels.Delivered && delivered.RemoteID != ""
-	}), "bot_reply_matching_actual_echo_delivered")
-	ensure(managedProductWait(ctx, 5*time.Second, func() bool { return collect() && countRemote(reply, connection.Account) == 1 }), "human_observed_exact_bot_reply")
-	for _, m := range peerMessages {
-		if m.Text == reply && m.ActorID == connection.Account {
-			ensure(m.ID == delivered.RemoteID, "human_received_same_server_message_id_as_bot_echo")
+	var histories [3]protocol.ChannelHistory
+	refreshHistory := func() bool {
+		for i, b := range bindings {
+			var err error
+			histories[i], err = client.ChannelHistory(ctx, b.ThreadID, 0, 100)
+			if err != nil || histories[i].SemanticDispatch || histories[i].ThreadID != b.ThreadID {
+				return false
+			}
+		}
+		return true
+	}
+	stage = "addressed authored intake and explicit queued replies"
+	inbound := [3]string{bindings[0].SelfID + ": approve /bin/sh is inert authored text", "@" + bindings[1].SelfID + " note for second thread", bindings[2].SelfID + ": other project note"}
+	broadcast := "unaddressed owned project broadcast"
+	crossProject := bindings[2].SelfID + ": addressed in the wrong project"
+	bodyMention := bindings[0].SelfID + ": @" + bindings[1].SelfID + " is an inert body mention"
+	peerSend(0, broadcast)
+	peerSend(0, crossProject)
+	peerSend(0, bodyMention)
+	for i, text := range inbound {
+		peerSend(projectIndex[i], text)
+	}
+	ensure(managedProductWait(ctx, 15*time.Second, func() bool {
+		if !refreshHistory() {
+			return false
+		}
+		for i, text := range inbound {
+			if managedProductCount(histories[i], text, "alice") != 1 {
+				return false
+			}
+		}
+		return managedProductCount(histories[0], bodyMention, "alice") == 1
+	}), "exact_initial_address_allowlisted_durable_inbox_full_original_text")
+	for i, h := range histories {
+		ensure(managedProductCount(h, broadcast, "alice") == 0 && managedProductCount(h, crossProject, "alice") == 0, fmt.Sprintf("thread_%d_no_broadcast_or_cross_project_intake", i))
+		for j, text := range inbound {
+			if j != i {
+				ensure(managedProductCount(h, text, "alice") == 0, fmt.Sprintf("thread_%d_no_fanout_from_%d", i, j))
+			}
+		}
+		if i != 0 {
+			ensure(managedProductCount(h, bodyMention, "alice") == 0, fmt.Sprintf("thread_%d_no_body_mention_fanout", i))
 		}
 	}
-	var repeated protocol.ChannelSendResponse
-	cli(&repeated, true, sendArgs...)
-	ensure(repeated.Message.ID == messageOp && repeated.Delivery == delivered, "same_message_operation_same_receipt")
-	report["delivered_reply"] = map[string]any{"operation": messageOp, "remote_id": delivered.RemoteID, "state": delivered.State}
+	var replies [3]string
+	var messageOps [3]domain.ID
+	var sendArgs [3][]string
+	var delivered [3]channels.Delivery
+	for i, b := range bindings {
+		replies[i] = fmt.Sprintf("owned explicit thread %d reply", i)
+		messageOps[i] = domain.NewID("message")
+		sendArgs[i] = []string{"channels", "send", "--binding", string(b.ID), "--operation", string(messageOps[i]), "--text", replies[i]}
+		var queued protocol.ChannelSendResponse
+		cli(&queued, true, sendArgs[i]...)
+		ensure(queued.Delivery.State == channels.Queued && queued.Message.ID == messageOps[i], fmt.Sprintf("explicit_cli_thread_%d_reply_durably_queued", i))
+		ensure(managedProductWait(ctx, 20*time.Second, func() bool {
+			var err error
+			delivered[i], err = client.ChannelDelivery(ctx, messageOps[i])
+			return err == nil && delivered[i].State == channels.Delivered && delivered[i].RemoteID != ""
+		}), fmt.Sprintf("thread_%d_reply_matching_actual_echo_delivered", i))
+		ensure(managedProductWait(ctx, 5*time.Second, func() bool {
+			return collect(projectIndex[i]) && countRemote(projectIndex[i], replies[i], b.SelfID) == 1
+		}), fmt.Sprintf("human_observed_exact_thread_%d_bot_reply", i))
+		for _, m := range peerMessages[projectIndex[i]] {
+			if m.Text == replies[i] && m.ActorID == b.SelfID {
+				ensure(m.ID == delivered[i].RemoteID, fmt.Sprintf("thread_%d_human_server_id_equals_bot_echo", i))
+			}
+		}
+		var repeated protocol.ChannelSendResponse
+		cli(&repeated, true, sendArgs[i]...)
+		ensure(repeated.Message.ID == messageOps[i] && repeated.Delivery == delivered[i], fmt.Sprintf("thread_%d_same_message_operation_same_receipt", i))
+	}
+	var replyProofs []map[string]any
+	for i := range replies {
+		replyProofs = append(replyProofs, map[string]any{"operation": messageOps[i], "bot_account": bindings[i].SelfID, "remote_id": delivered[i].RemoteID, "state": delivered[i].State})
+	}
+	report["delivered_replies"] = replyProofs
 	stage = "actual control restart"
 	beforeControl, e := client.Daemon(ctx)
 	ensure(e == nil && beforeControl.Build.Commit == source, "actual_control_source_identity")
@@ -369,48 +504,86 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	}
 	afterIRC, e := manager.Status(ctx)
 	ensure(e == nil && afterIRC.Alive && afterIRC.Instance == beforeIRC.Instance && afterIRC.StartTime == beforeIRC.StartTime, "native_ircd_survives_control_restart")
-	ensure(managedProductOwnedProcess(t, state, ircInstance) == ircProof && managedProductOwnedProcess(t, state, fixture.ExecutionID) == fixtureProof, "exact_native_process_and_helper_lifetimes_preserved")
-	sessions, e := client.List(ctx)
-	ensure(e == nil && len(sessions) == 1 && sessions[0].ThreadID == binding.ThreadID && sessions[0].Execution.Runtime == fixture && sessions[0].Execution.State == "running", "native_fixture_stable_identity_survives_control_restart")
-	history, e = client.ChannelHistory(ctx, binding.ThreadID, 0, 100)
-	ensure(e == nil && managedProductCount(history, inbound, "alice") == 1 && managedProductCount(history, reply, "local-operator") == 1, "authored_inbox_persists_control_restart")
-	cli(&repeated, true, sendArgs...)
-	ensure(repeated.Delivery == delivered, "same_message_operation_after_restart_no_replay")
-	var rebound protocol.ChannelStatus
-	cli(&rebound, true, bindArgs...)
-	ensure(rebound.ID == binding.ID && rebound.ThreadID == binding.ThreadID && rebound.ChannelID == binding.ChannelID && rebound.ActivationCutoff == binding.ActivationCutoff, "registered_binding_readonly_reconfirmation")
-	// Allow enough time for the restarted daemon's bounded intake poll. Current
-	// IRC adapter generations explicitly preserve the disconnection gap warning.
-	ensure(managedProductWait(ctx, 12*time.Second, func() bool {
-		list, e := client.Channels(ctx)
-		return e == nil && len(list) == 1 && list[0].LastSuccess != nil
-	}), "actual_bot_adapter_reconnected")
-	secondInbound := "owned human note after control restart"
-	peerSend(secondInbound)
-	ensure(managedProductWait(ctx, 12*time.Second, func() bool {
-		var e error
-		history, e = client.ChannelHistory(ctx, binding.ThreadID, 0, 100)
-		return e == nil && managedProductCount(history, secondInbound, "alice") == 1
-	}), "allowlisted_intake_after_control_restart")
-	for i := 0; i < 20; i++ {
-		ensure(collect() && countRemote(reply, connection.Account) == 1, "actual_bot_reply_no_duplicate_after_retries_restart")
-		timer := time.NewTimer(50 * time.Millisecond)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			t.Fatal("bounded duplicate observation cancelled")
-		case <-timer.C:
+	ensure(managedProductOwnedProcess(t, state, ircInstance) == ircProof, "exact_ircd_process_and_helper_lifetime_preserved")
+	listed, e := client.List(ctx)
+	ensure(e == nil && len(listed) == 3, "all_native_fixtures_survive_control_restart")
+	for i, session := range sessions {
+		found := false
+		for _, listedSession := range listed {
+			if listedSession.ID == session.Session.ID && listedSession.ThreadID == bindings[i].ThreadID && listedSession.Execution.Runtime == fixtures[i] && listedSession.Execution.State == "running" {
+				found = true
+			}
+		}
+		ensure(found && managedProductOwnedProcess(t, state, fixtures[i].ExecutionID) == fixtureProofs[i], fmt.Sprintf("exact_thread_%d_native_identity_and_lifetime_preserved", i))
+	}
+	projectList, e = client.Projects(ctx)
+	ensure(e == nil && len(projectList) == 2, "project_registry_survives_control_restart")
+	for _, original := range projects {
+		p, err := client.Project(ctx, original.ID)
+		ensure(err == nil && p == original, "exact_immutable_project_survives_control_restart")
+	}
+	ensure(refreshHistory(), "durable_inbox_available_after_control_restart")
+	for i := range bindings {
+		ensure(managedProductCount(histories[i], inbound[i], "alice") == 1 && managedProductCount(histories[i], replies[i], "local-operator") == 1, fmt.Sprintf("thread_%d_authored_inbox_persists_control_restart", i))
+		var repeated protocol.ChannelSendResponse
+		cli(&repeated, true, sendArgs[i]...)
+		ensure(repeated.Delivery == delivered[i], fmt.Sprintf("thread_%d_message_operation_after_restart_no_replay", i))
+	}
+	verifyRoutes := func(stageName string) {
+		t.Helper()
+		for i, original := range bindings {
+			var rebound protocol.ChannelStatus
+			cli(&rebound, true, bindArgs[i]...)
+			ensure(rebound.ID == original.ID && rebound.ThreadID == original.ThreadID && rebound.ProjectID == original.ProjectID && rebound.IRCAddressed && rebound.SelfID == original.SelfID && rebound.ChannelID == original.ChannelID && rebound.ActivationCutoff == original.ActivationCutoff, fmt.Sprintf("thread_%d_exact_membership_account_nick_route_%s", i, stageName))
+			credential, err := manager.EnsureThreadAccount(ctx, original.ThreadID)
+			ensure(err == nil && credential == threadCredentials[i], fmt.Sprintf("thread_%d_private_account_ref_stable_%s", i, stageName))
+		}
+		for i, original := range registered {
+			confirmed, err := manager.ConfirmProjectChannel(ctx, original.Channel, original.ProjectID)
+			ensure(err == nil && confirmed.Owner == original.Owner && confirmed.RegisteredAt == original.RegisteredAt && confirmed.ID == original.ID, fmt.Sprintf("project_%d_registration_timestamp_operation_stable_%s", i, stageName))
 		}
 	}
-	stage = "native input isolation"
-	input, e := os.ReadFile(sentinel)
-	observed, observeErr := native.Inspect(ctx, fixture)
-	ensure(e == nil && len(input) == 0 && observeErr == nil && observed.Alive && observed.Ref == fixture && observed.WritableClients == 0, "authored_inbox_never_native_input")
-	report["native_input_bytes"] = len(input)
-	report["control_instances"] = []string{beforeControl.Instance, afterControl.Instance}
-	stage = "exact instance replacement and stale stop"
-	peer.Close()
-	peer = nil
+	verifyRoutes("control_restart")
+	ensure(managedProductWait(ctx, 15*time.Second, readyAdapters), "all_stable_bot_adapters_reconnected_after_control_restart")
+	secondInbound := [3]string{bindings[0].SelfID + ": first thread after control restart", "@" + bindings[1].SelfID + " second thread after control restart", bindings[2].SelfID + ": other project after control restart"}
+	for i, text := range secondInbound {
+		peerSend(projectIndex[i], text)
+	}
+	ensure(managedProductWait(ctx, 15*time.Second, func() bool {
+		if !refreshHistory() {
+			return false
+		}
+		for i, text := range secondInbound {
+			if managedProductCount(histories[i], text, "alice") != 1 {
+				return false
+			}
+		}
+		return true
+	}), "all_exact_addressed_intake_after_control_restart")
+	observeNoReplay := func() {
+		t.Helper()
+		for n := 0; n < 20; n++ {
+			for project := range peers {
+				ensure(collect(project), "bounded_actual_peer_fetch")
+			}
+			for i, b := range bindings {
+				ensure(countRemote(projectIndex[i], replies[i], b.SelfID) == 1, fmt.Sprintf("thread_%d_actual_reply_no_duplicate_after_retries_restart", i))
+			}
+			timer := time.NewTimer(50 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				t.Fatal("bounded duplicate observation cancelled")
+			case <-timer.C:
+			}
+		}
+	}
+	observeNoReplay()
+	stage = "exact IRC replacement and stale stop"
+	for i, peer := range peers {
+		ensure(peer.Close() == nil, "owned_human_peer_closed")
+		peers[i] = nil
+	}
 	var replacement protocol.IRCDStatus
 	cli(&replacement, true, "ircd", "restart", "--instance", string(ircInstance), "--operation", string(domain.NewID("operation")))
 	ensure(replacement.Alive && replacement.Instance != ircInstance, "actual_ircd_explicit_replacement")
@@ -421,15 +594,71 @@ func TestManagedIRCDProductAcceptance(t *testing.T) {
 	supervisorPIDs = append(supervisorPIDs, replacementProof.SupervisorPID)
 	cli(&same, true, "ircd", "status")
 	ensure(same.Alive && same.Instance == replacement.Instance, "stale_stop_preserves_replacement")
-	registeredAgain, e := manager.ConfirmChannel(ctx, binding.ChannelID, binding.ThreadID)
-	ensure(e == nil && registeredAgain.Owner == registered.Owner && registeredAgain.RegisteredAt == registered.RegisteredAt && registeredAgain.ID == registered.ID, "registered_channel_durable_across_ircd_replacement")
 	cli(&human, true, "ircd", "account", "alice")
-	ensure(human.Account == "alice", "human_account_readonly_after_ircd_replacement")
+	ensure(human == originalHuman, "human_private_account_identity_stable_after_ircd_replacement")
+	verifyRoutes("ircd_restart")
+	adaptersAfter = time.Now().UTC()
+	ensure(managedProductWait(ctx, 20*time.Second, readyAdapters), "all_exact_stable_bot_nicks_reconnected_after_ircd_restart")
+	connectPeers()
+	thirdInbound := [3]string{bindings[0].SelfID + ": first thread after IRC restart", "@" + bindings[1].SelfID + " second thread after IRC restart", bindings[2].SelfID + ": other project after IRC restart"}
+	for i, text := range thirdInbound {
+		peerSend(projectIndex[i], text)
+	}
+	ensure(managedProductWait(ctx, 15*time.Second, func() bool {
+		if !refreshHistory() {
+			return false
+		}
+		for i, text := range thirdInbound {
+			if managedProductCount(histories[i], text, "alice") != 1 {
+				return false
+			}
+		}
+		return true
+	}), "all_exact_addressed_intake_after_ircd_restart")
+	for i := range bindings {
+		var repeated protocol.ChannelSendResponse
+		cli(&repeated, true, sendArgs[i]...)
+		ensure(repeated.Delivery == delivered[i], fmt.Sprintf("thread_%d_message_operation_after_ircd_restart_no_replay", i))
+		for j := range bindings {
+			if j != i {
+				ensure(managedProductCount(histories[i], secondInbound[j], "alice") == 0 && managedProductCount(histories[i], thirdInbound[j], "alice") == 0, fmt.Sprintf("thread_%d_no_cross_recipient_intake_after_both_restarts_%d", i, j))
+			}
+		}
+	}
+	observeNoReplay()
+	for _, b := range bindings {
+		_, err := client.SyncChannel(ctx, b.ID)
+		ensure(err == nil, "final_exact_recipient_sync")
+	}
+	ensure(refreshHistory(), "final_durable_history_available")
+	for i, h := range histories {
+		ensure(managedProductCount(h, broadcast, "alice") == 0 && managedProductCount(h, crossProject, "alice") == 0, fmt.Sprintf("thread_%d_final_no_broadcast_cross_project", i))
+		for j := range bindings {
+			want := 0
+			if i == j {
+				want = 1
+			}
+			ensure(managedProductCount(h, inbound[j], "alice") == want && managedProductCount(h, secondInbound[j], "alice") == want && managedProductCount(h, thirdInbound[j], "alice") == want, fmt.Sprintf("thread_%d_final_exact_recipient_%d_all_three_generations", i, j))
+		}
+		wantMention := 0
+		if i == 0 {
+			wantMention = 1
+		}
+		ensure(managedProductCount(h, bodyMention, "alice") == wantMention, fmt.Sprintf("thread_%d_final_exact_initial_body_mention", i))
+	}
 	report["ircd_instances"] = []domain.ID{started.Instance, replacement.Instance}
-	stage = "explicit exact fixture cleanup"
-	cli(nil, true, "stop", string(session.Session.ID), "--operation", string(domain.NewID("op")))
-	stopped, e := native.Inspect(ctx, fixture)
-	ensure(e == nil && !stopped.Alive && stopped.Ref == fixture, "actual_cli_exact_native_fixture_stop")
+	stage = "native input isolation and exact fixture cleanup"
+	var inputSizes []int
+	for i, fixture := range fixtures {
+		input, err := os.ReadFile(sentinels[i])
+		observed, inspectErr := native.Inspect(ctx, fixture)
+		ensure(err == nil && len(input) == 0 && inspectErr == nil && observed.Alive && observed.Ref == fixture && observed.WritableClients == 0, fmt.Sprintf("thread_%d_authored_inbox_never_native_input", i))
+		inputSizes = append(inputSizes, len(input))
+		cli(nil, true, "stop", string(sessions[i].Session.ID), "--operation", string(domain.NewID("op")))
+		stopped, err := native.Inspect(ctx, fixture)
+		ensure(err == nil && !stopped.Alive && stopped.Ref == fixture, fmt.Sprintf("actual_cli_exact_native_fixture_%d_stop", i))
+	}
+	report["native_input_bytes"] = inputSizes
 	stage = "complete"
 }
 
