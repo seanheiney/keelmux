@@ -48,6 +48,9 @@ socket type/mode and an exact authenticated runtime reference. Stop signals only
 the supervisor's direct `os.Process` handle, never a saved PID or process group.
 The helper sets umask 077 for its own child. Same-user host owners retain access
 to their own state and processes; this is cooperating ownership, not isolation.
+PTY launches replace inherited empty or `dumb` TERM with `xterm-256color`, so a
+headless daemon can start native TUIs. Explicit launch TERM values are preserved;
+foreground services retain their non-terminal environment.
 
 ## Terminal coverage
 

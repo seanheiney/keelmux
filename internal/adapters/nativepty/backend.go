@@ -162,7 +162,7 @@ func (b *Backend) launch(ctx context.Context, spec domain.LaunchSpec, mode strin
 	var effectiveEnv []string
 	r = receipt{Version: 1, SessionID: spec.Session.ID, HostID: spec.Session.HostID, Digest: digest, Auth: nonce(), LinkToken: nonce(), Mode: mode, Stage: "intent", Ref: domain.RuntimeRef{Backend: "native", Socket: b.socket(spec.Session.Execution.ID), Session: nonce(), BootID: boot, ExecutionID: spec.Session.Execution.ID, OperationID: spec.OperationID}}
 	r.Executable = executable
-	effectiveEnv = b.managedEnv(spec, r.LinkToken)
+	effectiveEnv = b.managedEnv(spec, r.LinkToken, mode)
 	r.EnvDigest = environmentDigest(effectiveEnv)
 	// Commit+fsync intent before any helper process or child can exist. A crash
 	// after this point is reconciled by inspection, never a second spawn.
@@ -460,7 +460,7 @@ func validateSpec(spec domain.LaunchSpec) error {
 	}
 	return nil
 }
-func (b *Backend) managedEnv(spec domain.LaunchSpec, token string) []string {
+func (b *Backend) managedEnv(spec domain.LaunchSpec, token, mode string) []string {
 	values := map[string]string{}
 	order := []string{}
 	add := func(item string) {
@@ -480,10 +480,18 @@ func (b *Backend) managedEnv(spec domain.LaunchSpec, token string) []string {
 		}
 		add(v)
 	}
+	explicitTerm := false
 	for _, v := range spec.Env {
+		if strings.HasPrefix(v, "TERM=") {
+			explicitTerm = true
+		}
 		add(v)
 	}
-	if _, ok := values["TERM"]; !ok {
+	// A headless daemon commonly inherits TERM=dumb (or no TERM). Its PTY
+	// children use the supervisor's terminal implementation, independently of
+	// that daemon's own descriptors. Preserve an explicit caller override and
+	// leave foreground non-terminal service environments alone.
+	if mode == "pty" && !explicitTerm && (values["TERM"] == "" || values["TERM"] == "dumb") {
 		add("TERM=xterm-256color")
 	}
 	if _, ok := values["BP_STATE_DIR"]; !ok {

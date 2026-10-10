@@ -100,6 +100,48 @@ func readUntil(t *testing.T, s *Stream, want string) string {
 	}
 	return buf.String()
 }
+
+func TestHeadlessPTYTerminalEnvironment(t *testing.T) {
+	for _, inherited := range []string{"", "dumb", "screen-256color"} {
+		t.Run(inherited, func(t *testing.T) {
+			t.Setenv("TERM", inherited)
+			b := testBackend(t, 0)
+			spec := testSpec(`printf 'TERMINAL=%s\n' "$TERM"; read value`)
+			ref := launchTest(t, b, spec, false)
+			stream, err := b.Open(context.Background(), ref, false, 24, 80)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer stream.Close()
+			want := inherited
+			if want == "" || want == "dumb" {
+				want = "xterm-256color"
+			}
+			if !strings.Contains(string(stream.Snapshot), "TERMINAL="+want) {
+				readUntil(t, stream, "TERMINAL="+want)
+			}
+		})
+	}
+	t.Setenv("TERM", "dumb")
+	b := testBackend(t, 0)
+	spec := testSpec("true")
+	if !slicesContains(b.managedEnv(spec, "token", "process"), "TERM=dumb") {
+		t.Fatal("foreground service terminal environment was changed")
+	}
+	spec.Env = []string{"TERM=dumb"}
+	if !slicesContains(b.managedEnv(spec, "token", "pty"), "TERM=dumb") {
+		t.Fatal("explicit terminal environment was overridden")
+	}
+}
+
+func slicesContains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
 func openWriter(t *testing.T, b *Backend, ref domain.RuntimeRef) *Stream {
 	t.Helper()
 	s, err := b.Open(context.Background(), ref, false, 24, 80)
