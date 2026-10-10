@@ -1,0 +1,64 @@
+{
+  "schema": "keelmux-integrated-source/v1",
+  "source_commit": "850ce4a56ab21ad4dd4cd6a79b6ca313c326a60a",
+  "source_clean": true,
+  "host_target": "darwin/arm64",
+  "go_version": "go1.26.6",
+  "result": "pass",
+  "scope": "Combined native, authored-channel, project-registry, managed IRC and disabled-controller source checks; pre-final archive qualification.",
+  "checks": [
+    {
+      "command": "make build check",
+      "result": "pass",
+      "covers": "four canonical executables, compatibility aliases, full race suite and full vet"
+    },
+    {
+      "command": "python3 third_party/bubbletea/verify.py",
+      "result": "pass",
+      "copied_files": 35,
+      "upstream_commit": "9edf69c677c7353eca5fae6d3ea3986af39717b7"
+    },
+    {
+      "command": "go test -race -mod=readonly ./... && go vet -mod=readonly ./...",
+      "working_directory": "third_party/bubbletea",
+      "result": "pass"
+    },
+    {
+      "command": "python3 tests/installer_test.py",
+      "result": "pass",
+      "groups": 22,
+      "seconds": 34.6
+    },
+    {
+      "command": "python3 tests/native_package_acceptance_test.py -v",
+      "result": "pass",
+      "groups": 6,
+      "seconds": 5.662
+    },
+    {
+      "command": "python3 -m unittest discover -s docs/site/tests -q",
+      "result": "pass",
+      "groups": 10
+    },
+    {
+      "command": "node --check docs/site/assets/site.js",
+      "result": "pass"
+    }
+  ],
+  "documentation_followup": {
+    "source_commit": "6cee789d54070746e60d4cb7c805c3bcf88535c4",
+    "source_clean": true,
+    "static_groups": 10,
+    "javascript_syntax": "pass",
+    "independent_review": "no remaining release-blocking findings; schema4 and versioned0.2 instructions verified",
+    "production_code_changed_from_checked_source": false
+  },
+  "missing_evidence": [
+    "fresh final archives and actual installed providers",
+    "packaged managed IRC routing and restart gate",
+    "final Linux runtime/install fixture",
+    "hosted exact-source CI/provenance and public downloads",
+    "GitHub Pages deployment",
+    "customer bindings, model turns, reboot/native continuation and enrolled independent servers"
+  ]
+}
