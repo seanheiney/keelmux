@@ -24,6 +24,7 @@ OS = {"Darwin": "darwin", "Linux": "linux"}[platform.system()]
 ARCH = {"arm64": "arm64", "aarch64": "arm64", "x86_64": "amd64", "amd64": "amd64"}[platform.machine()]
 EPOCH = "1728000000"
 BUILT_AT = "2024-10-04T00:00:00Z"
+CANONICAL = ("keelmux", "keelmuxd", "keelmux-entry", "keelmux-supervisor")
 
 
 def sha(data):
@@ -75,11 +76,13 @@ class Fixture:
         self.server.server_close()
         self.thread.join()
 
-    def make_release(self, version="v0.1.0"):
+    def make_release(self, version="v0.1.0", schema=2):
         build = self.root / f"build-{version}"
         build.mkdir()
-        for name in ("keelmux", "keelmuxd", "keelmux-entry"):
-            text = f"#!/bin/sh\n[ \"$1\" = version ] || exit 8\nprintf '%s\\n' 'Keelmux {version} (commit {COMMIT}, protocol bp/1)'\n"
+        for name in CANONICAL:
+            text = (f"#!/bin/sh\n# Version-only fixture: {name}\n"
+                    'case "$1" in version|--version) ;; *) exit 8 ;; esac\n'
+                    f"printf '%s\\n' 'Keelmux {version} (commit {COMMIT}, protocol bp/1)'\n")
             (build / name).write_text(text)
         for name in ("LICENSE", "README.md"):
             (build / name).write_text(f"Fixture {name}\n")
@@ -88,6 +91,21 @@ class Fixture:
         subprocess.run([sys.executable, str(PACKER), str(build), str(output),
                         version, COMMIT, BUILT_AT, OS, ARCH, "go1.26.6",
                         EPOCH, "false", "0"], check=True)
+        if schema == 1:
+            # Finite legacy archive/receipt corpus, derived without invoking any
+            # old or native runtime. This exercises the installed-v1 contract.
+            def legacy(entries):
+                entries[:] = [(info, data) for info, data in entries
+                              if info.name != "keelmux-supervisor"]
+                for i, (info, data) in enumerate(entries):
+                    if info.name == "RELEASE.json":
+                        value = json.loads(data)
+                        value["schema"] = 1
+                        del value["files"]["keelmux-supervisor"]
+                        entries[i] = (info, json.dumps(value).encode())
+            self.rewrite(version, legacy)
+        elif schema != 2:
+            raise ValueError("unsupported fixture schema")
         self.checksums(version)
         return output / f"keelmux_{version}_{OS}_{ARCH}.tar.gz"
 
@@ -224,7 +242,7 @@ class InstallerTests(unittest.TestCase):
     def test_manifest_duplicate_escaped_key_and_wrong_version_are_denied(self):
         self.f.make_release()
         self.f.manifest_edit("v0.1.0", lambda data: data.replace(
-            b'"schema": 1,', b'"schema": 1, "sch\\u0065ma": 1,'))
+            b'"schema": 2,', b'"schema": 2, "sch\\u0065ma": 2,'))
         self.assert_failed(self.f.run())
         self.assertFalse((self.f.prefix / "current").exists())
 
@@ -283,6 +301,128 @@ class InstallerTests(unittest.TestCase):
         self.assert_ok(self.f.run(uninstall=True))
         self.assertEqual(binary.read_text(), "modified private code")
 
+    def test_helper_is_owned_sibling_without_public_command(self):
+        self.f.make_release()
+        self.assert_ok(self.f.run())
+        selected = self.f.prefix / self.f.current()
+        self.assertEqual((selected / ".keelmux-version").read_text().strip(),
+                         "keelmux-installed-v2")
+        self.assertTrue((selected / "keelmux-supervisor").is_file())
+        self.assertFalse(os.path.lexists(self.f.bin / "keelmux-supervisor"))
+        manifest = json.loads((selected / "RELEASE.json").read_text())
+        self.assertEqual(sha((selected / "keelmux-supervisor").read_bytes()),
+                         manifest["files"]["keelmux-supervisor"])
+        self.assert_ok(self.f.run(uninstall=True))
+        self.assertFalse((selected / "keelmux-supervisor").exists())
+
+    def test_legacy_v1_upgrade_reinstall_downgrade_and_uninstall_preserve_state(self):
+        self.f.make_release(schema=1)
+        self.f.make_release("v0.2.0")
+        self.assert_ok(self.f.run())
+        legacy = self.f.prefix / self.f.current()
+        self.assertEqual((legacy / ".keelmux-version").read_text().strip(),
+                         "keelmux-installed-v1")
+        self.assertFalse((legacy / "keelmux-supervisor").exists())
+        state = self.f.home / ".local/state/agent-backplane/registry.sqlite"
+        state.parent.mkdir(parents=True)
+        state.write_bytes(b"private registry sentinel")
+        auth = self.f.home / ".claude/.credentials.json"
+        auth.parent.mkdir()
+        auth.write_bytes(b"private auth sentinel")
+        self.assert_ok(self.f.run("v0.2.0"))
+        native = self.f.prefix / self.f.current()
+        self.assertTrue((native / "keelmux-supervisor").is_file())
+        self.assert_ok(self.f.run("v0.2.0"))
+        self.assert_ok(self.f.run())
+        self.assertEqual(self.f.prefix / self.f.current(), legacy)
+        self.assert_ok(self.f.run("v0.2.0"))
+        self.assert_ok(self.f.run(uninstall=True))
+        self.assertFalse((native / "keelmux-supervisor").exists())
+        self.assertFalse((legacy / "keelmux").exists())
+        self.assertEqual(state.read_bytes(), b"private registry sentinel")
+        self.assertEqual(auth.read_bytes(), b"private auth sentinel")
+
+    def test_missing_native_helper_preserves_legacy_current(self):
+        self.f.make_release(schema=1)
+        self.assert_ok(self.f.run())
+        old = self.f.current()
+        self.f.make_release("v0.2.0")
+        def remove_helper(entries):
+            entries[:] = [(info, data) for info, data in entries
+                          if info.name != "keelmux-supervisor"]
+        self.f.rewrite("v0.2.0", remove_helper)
+        self.assert_failed(self.f.run("v0.2.0"))
+        self.assertEqual(self.f.current(), old)
+
+    def test_native_helper_digest_mismatch_is_denied(self):
+        self.f.make_release()
+        def edit(entries):
+            for i, (info, data) in enumerate(entries):
+                if info.name == "keelmux-supervisor":
+                    entries[i] = (info, data + b"# modified fixture\n")
+        self.f.rewrite("v0.1.0", edit)
+        self.assert_failed(self.f.run())
+        self.assertFalse((self.f.prefix / "current").exists())
+
+    def test_native_helper_symlink_is_denied(self):
+        self.f.make_release()
+        def edit(entries):
+            for i, (info, data) in enumerate(entries):
+                if info.name == "keelmux-supervisor":
+                    info.type, info.linkname = tarfile.SYMTYPE, "keelmux"
+                    entries[i] = (info, None)
+        self.f.rewrite("v0.1.0", edit)
+        self.assert_failed(self.f.run())
+
+    def test_schema_archive_and_helper_digest_membership_must_agree(self):
+        for variant in ("schema1_with_helper", "schema2_without_digest", "schema1_extra_digest"):
+            with self.subTest(variant=variant):
+                version = "v0.3." + str(("schema1_with_helper", "schema2_without_digest", "schema1_extra_digest").index(variant))
+                self.f.make_release(version, schema=1 if variant == "schema1_extra_digest" else 2)
+                def edit(data):
+                    value = json.loads(data)
+                    if variant == "schema1_with_helper":
+                        value["schema"] = 1
+                    elif variant == "schema2_without_digest":
+                        del value["files"]["keelmux-supervisor"]
+                    else:
+                        value["files"]["keelmux-supervisor"] = "0" * 64
+                    return json.dumps(value).encode()
+                self.f.manifest_edit(version, edit)
+                self.assert_failed(self.f.run(version))
+                self.assertFalse((self.f.prefix / "current").exists())
+
+    def test_each_canonical_version_mismatch_is_denied_after_valid_digest(self):
+        for index, binary in enumerate(CANONICAL):
+            with self.subTest(binary=binary):
+                version = f"v0.4.{index}"
+                self.f.make_release(version)
+                def edit(entries):
+                    replacement = b"#!/bin/sh\nprintf '%s\\n' 'Keelmux v9.9.9 (commit " + COMMIT.encode() + b", protocol bp/1)'\n"
+                    for i, (info, data) in enumerate(entries):
+                        if info.name == binary:
+                            entries[i] = (info, replacement)
+                        elif info.name == "RELEASE.json":
+                            value = json.loads(data)
+                            value["files"][binary] = sha(replacement)
+                            entries[i] = (info, json.dumps(value).encode())
+                self.f.rewrite(version, edit)
+                self.assert_failed(self.f.run(version))
+                self.assertFalse((self.f.prefix / "current").exists())
+
+    def test_modified_installed_helper_refuses_upgrade_and_preserves_bytes(self):
+        self.f.make_release()
+        self.f.make_release("v0.2.0")
+        self.assert_ok(self.f.run())
+        old = self.f.current()
+        helper = self.f.prefix / old / "keelmux-supervisor"
+        helper.write_bytes(b"modified private helper")
+        self.assert_failed(self.f.run("v0.2.0"))
+        self.assertEqual(self.f.current(), old)
+        self.assert_ok(self.f.run(uninstall=True))
+        self.assertEqual(helper.read_bytes(), b"modified private helper")
+
+
     def test_http_and_platform_overrides_require_explicit_loopback_mode(self):
         self.f.make_release()
         self.assert_failed(self.f.run(env=dict(self.f.env, KEELMUX_ALLOW_TEST_HTTP="0")))
@@ -298,7 +438,7 @@ class PackerTests(unittest.TestCase):
             root = Path(temporary)
             source = root / "source"
             source.mkdir()
-            for name in ("keelmux", "keelmuxd", "keelmux-entry", "LICENSE", "README.md"):
+            for name in CANONICAL + ("LICENSE", "README.md"):
                 (source / name).write_text(name + "\n")
             archives = []
             for i in range(2):
@@ -310,7 +450,8 @@ class PackerTests(unittest.TestCase):
                 archives.append(next(output.glob("*.tar.gz")))
             self.assertEqual(archives[0].read_bytes(), archives[1].read_bytes())
             with tarfile.open(archives[0]) as archive:
-                self.assertEqual(len(archive.getmembers()), 9)
+                self.assertEqual(len(archive.getmembers()), 10)
+                self.assertEqual(json.load(archive.extractfile("RELEASE.json"))["schema"], 2)
                 manifest = json.load(archive.extractfile("RELEASE.json"))
                 self.assertEqual(manifest["commit"], COMMIT)
                 self.assertTrue(manifest["source_clean"])

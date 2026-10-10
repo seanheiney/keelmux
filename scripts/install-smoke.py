@@ -75,6 +75,24 @@ def main():
                     raise RuntimeError(f"Loaded metadata differs from manifest: {field}")
             if metadata["name"] != "Keelmux" or metadata["protocol"] != "bp/1":
                 raise RuntimeError("Loaded product identity/protocol differs.")
+            schema = manifest.get("schema")
+            if schema not in (1, 2):
+                raise RuntimeError("Unsupported package schema.")
+            canonical = ("keelmux", "keelmuxd", "keelmux-entry") + (
+                ("keelmux-supervisor",) if schema == 2 else ())
+            expected_version = (f"Keelmux {manifest['version']} "
+                                f"(commit {manifest['commit']}, protocol bp/1)")
+            loaded = {}
+            for name in canonical:
+                path = selected / name
+                actual = hashlib.sha256(path.read_bytes()).hexdigest()
+                if not path.is_file() or path.is_symlink() or actual != manifest["files"][name]:
+                    raise RuntimeError("Installed canonical binary differs from manifest.")
+                if run(str(path), "--version", env=env) != expected_version:
+                    raise RuntimeError("Loaded canonical binary version differs from manifest.")
+                loaded[name] = actual
+            if os.path.lexists(commands / "keelmux-supervisor"):
+                raise RuntimeError("Internal helper appeared in the public command directory.")
             run(*installer, "--version", args.version, env=env)
             state_file = prefix / "state-sentinel"
             state_file.write_text("preserved state")
@@ -88,6 +106,8 @@ def main():
                               "os": target_os, "arch": arch, "commit": manifest["commit"],
                               "source_clean": manifest.get("source_clean"),
                               "development_test": manifest.get("development_test"),
+                              "archive_schema": schema, "loaded_canonical_sha256": loaded,
+                              "supervisor_is_internal_sibling": schema == 2,
                               "coverage": "actual archive install/reinstall/version/uninstall; no sessions or providers"}))
         finally:
             server.shutdown()
