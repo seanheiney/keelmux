@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "tested_sha": "64e4211a7712b32696b57f457bdc5eadf1484e2a",
+  "source_checks": {
+    "command": "make build check",
+    "result": "pass",
+    "go": "1.26.6",
+    "os": "darwin",
+    "arch": "arm64",
+    "race": true,
+    "vet": true,
+    "log_sha256": "9ae640c4d50ee5fe8778ee630b6f1e77c0659e6bb70e10c194acb6a9782a7c7a"
+  },
+  "native_integrated_receipt": "Codex-broker-native-root-2026-10-10.json",
+  "native_integrated_sha": "d2e71aa693c3c04489e6439a576a2cb9b56d1298",
+  "scope": "internal zero-turn broker plus legacy terminal source checks; no product semantic capability",
+  "publication_history_scan": {
+    "tool": "gitleaks",
+    "commits_scanned": 146,
+    "reported_leaks": 0
+  },
+  "not_run": [
+    "product app-server launcher",
+    "authenticated model turns",
+    "nonempty history",
+    "approvals",
+    "real remote hosts",
+    "public release"
+  ]
+}

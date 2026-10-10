@@ -35,4 +35,4 @@ This is the dedicated Agent Backplane product repository. It is separate from Ch
 - Record exact SHA, OS, runtime/provider versions, actual supported combinations, command, result and missing evidence in `docs/evidence/` and the issue.
 - Unsupported combinations remain outside the claimed matrix. Never call a feature shipped merely because a scaffold or test double exists.
 - Maintain `docs/build/STATUS.md` after integrated milestones. Keep the full vision while distinguishing implemented, experimentally demonstrated, and planned capabilities.
-- Do not deploy, publish a public release, change billing, share credentials, or weaken checks to make a milestone pass.
+- The owner explicitly authorized public Keelmux publication on seanheiney GitHub on 2026-10-10, after selecting a distinctive name and verifying a functional product, one-line installer and documentation. Finish and review exact release artifacts before publication. Do not change billing, share credentials or weaken checks to pass. Existing separate real model-turn and external messaging gates remain in effect.
