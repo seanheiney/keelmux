@@ -116,7 +116,8 @@ type Baseline struct {
 }
 
 // OutputContext comes from the broker's trusted typed-ID/channel request map.
-// OriginalRequest is nil only for unsolicited native notifications/callbacks.
+// OriginalRequest is the upstream frame (ID already remapped), and is nil only
+// for unsolicited native notifications/callbacks.
 type OutputContext struct {
 	Recipient         ConnectionBinding
 	UpstreamChannelID domain.ID
@@ -128,7 +129,8 @@ type Policy interface {
 	Decode([]byte) (Frame, error)
 	// Default-deny by schema/parameters/role; Authority checks one-shot bootstrap.
 	Classify(ConnectionBinding, Frame, Baseline) (EffectClass, error)
-	// Recheck live read scope; filter IDs/cursors and withhold unknown/global data.
+	// Caller rechecks live read scope at delivery under the authority gate.
+	// Project exact request/thread scope; withhold unknown/global data.
 	NativeOutput(OutputContext, Frame) (Frame, bool, error)
 }
 
