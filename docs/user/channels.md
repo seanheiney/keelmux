@@ -4,6 +4,8 @@
 
 A binding connects a session's stable Keelmux thread to one Mattermost or Slack root, or to one authenticated IRC channel. Read authored notes in the switcher and send an explicit reply to the selected binding. The daemon preserves messages and delivery receipts independently of the terminal process.
 
+With [managed IRC](managed-irc.md), channels represent projects and each thread has its own bot. Messages starting with that bot's exact nickname address its inbox. Several thread bots can share a project channel without automatic fanout.
+
 Chat messages are notes. They do not submit model prompts, accept native approvals or execute commands. Continue model interaction in the native terminal. A `delivered` receipt means the external transport acknowledged the post; it does not establish that someone read it or that a model accepted it.
 
 ## Mattermost first

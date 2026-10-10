@@ -12,7 +12,8 @@ Global flags precede the command. Flags belonging to `run` precede the provider 
 | `keelmux version` | Display application version, source commit and protocol |
 | `keelmux help` | Show command help |
 | `keelmux providers` | Probe native installation/version and qualified login status |
-| `keelmux ircd --help` | Provision, inspect, start/stop/restart a private IRC server and bind stable thread channels; development only |
+| `keelmux projects --help` | Create and inspect durable local project identities; development only |
+| `keelmux ircd --help` | Manage a private IRC server, project channels and distinct stable thread bots; development only |
 | `keelmux doctor` | Check the native supervisor, providers and daemon; missing prerequisites exit nonzero |
 | `keelmux daemon status` | Inspect the live daemon instance and loaded build without starting one |
 | `keelmux daemon stop [--instance INSTANCE]` | Stop only that live daemon; preserve native sessions |
@@ -67,6 +68,8 @@ The configuration and scope are described in the [private entry guide](private-e
 ## Channels on the development branch
 
 The published v0.1.0 binary does not provide these commands. The channel branch adds `keelmux channels --help`, `bind`, `list`, `history`, `send`, `delivery`, `sync`, `reconcile` and `disable`. [Channel setup and receipts](channels.md) document their exact flags and recovery behavior. These local-home commands manage authored chat only; they do not submit native model turns or approve tools.
+
+For owned IRC, use `keelmux projects create --name NAME --workspace PATH`, preserve the returned project ID, and bind a session with `keelmux ircd bind --project PROJECT_ID --session SESSION_ID --allow-user ACCOUNT`. Threads in the same project share its registered channel and appear as distinct bots. [Managed IRC](managed-irc.md) covers addressing, credentials, retry identities and restart recovery. Project and IRC management belong to the local execution home and cannot be routed through `--entry`.
 
 ## Commands still on the roadmap
 

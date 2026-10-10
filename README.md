@@ -45,7 +45,7 @@ The daemon starts automatically. Closing the switcher keeps native processes run
 
 The current native runtime evidence covers **macOS arm64, Codex 0.159.0 and Claude Code 2.1.296**. Linux terminal-backend checks use explicit fixtures; native Linux providers and other architectures need their own acceptance; see the [support matrix](docs/user/support-matrix.md) for exact release artifacts and qualifications.
 
-A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Development builds add authored Mattermost/Slack/IRC inboxes, explicit replies and an optional managed Ergo server. Independent remote enrollment, structured model dispatch, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
+A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Development builds add authored Mattermost/Slack/IRC inboxes, explicit replies and an optional managed Ergo server with project channels and a distinct bot per stable thread. Independent remote enrollment, structured model dispatch, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
 
 ## Operate with confidence
 

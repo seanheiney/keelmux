@@ -1,6 +1,6 @@
 # Managed IRC
 
-The development build can provision and supervise its own pinned Ergo 2.19.1 server, register a stable channel for a Keelmux thread, and connect that channel to the authored communications inbox. This feature is under release qualification; v0.1.0 does not include it. Use [external channels](channels.md) for Mattermost, Slack or an existing IRC server.
+The development build can provision and supervise its own pinned Ergo 2.19.1 server. Each project has one registered IRC channel, and each stable Keelmux thread appears as its own authenticated bot in that channel. Address a bot to put a note in that thread's authored inbox. This feature is under release qualification; v0.1.0 does not include it. Use [external channels](channels.md) for Mattermost, Slack or an existing IRC server.
 
 The server is optional. It uses verified TLS on loopback, a private CA and private account files. Initialization downloads a checksum-pinned official archive for your supported platform. Ordinary session launch and daemon startup do not download or start an IRC server. Native PTY/process supervision owns the server lifetime; tmux is unnecessary.
 
@@ -18,25 +18,31 @@ Initialization chooses separate available loopback IRC/API ports. To request fix
 
 `status` reports the exact execution instance, verified running version, endpoint and observation time. It excludes credential paths and bytes. `init` and `account` deliberately return local connection paths so you can configure your client.
 
-## Connect a thread
+## Create a project and connect its threads
 
-Find the session ID with `keelmux list`. Create a services account for your IRC client with `keelmux ircd account ACCOUNT`; omitting the name selects the owned bot. Account credentials are stored in a private local file. Use that file and the returned CA path in a local IRC client that supports SASL and verified TLS. Keep the password in the client's credential store.
+Create the project at the execution home with its workspace and a display name. Find its stable ID with `keelmux projects list`, and a session ID with `keelmux list`. The session must have the exact same home and workspace. Membership is explicit and stays fixed across execution replacement and daemon restart; switcher navigation groups do not create or move it.
+
+Create a human services account for your IRC client with `keelmux ircd account ACCOUNT`. Account credentials are stored in a private local file. Use that file and the returned CA path in a local IRC client that supports SASL and verified TLS. Keep the password in the client's credential store.
 
 ```sh
+keelmux projects create --name "My project" --workspace "$PWD"
+keelmux projects list
 keelmux ircd account alice
-keelmux ircd bind --session SESSION_ID --allow-user alice
+keelmux ircd bind --project PROJECT_ID --session SESSION_ID --allow-user alice
 ```
 
-Each thread gets a deterministic `#keelmux-…` channel derived from its full stable thread identity. Registration is confirmed through the authenticated server API before a binding is accepted. The exact server services account is the sender identity; changing a nickname does not change that identity. Repeat `--allow-user` for each permitted account.
+The registered channel has the form `#km-PROJECT_SLUG-FULL_PROJECT_ID`, with a short readable name and all 128 project identity bits. Bind another session using the same project ID to join the same channel. Each thread gets a distinct `kt-…` services account and matching persistent nickname derived from all 128 stable thread identity bits. The bind response reports `channel_id` and `bot_identity`; display labels do not establish identity. Registration and the exact authenticated account are verified before a binding is accepted. Repeat `--allow-user` for each permitted human account.
 
-Bind prints both the immutable binding ID and registered-channel operation ID before its request. If the response is lost, preserve the same IDs, session and allowlist:
+Only a message starting with `BOT_NICK: text` or `@BOT_NICK text` goes to that bot's inbox. Use the exact lowercase nickname from `bot_identity`. The full original text is preserved. Unaddressed conversation and mentions later in a message do not become thread work; other project channels cannot route to this thread. Replies from this binding appear under this thread's bot identity. An occupied bot nickname is refused without a random replacement.
+
+Project creation prints its immutable retry ID before its request. Preserve the same `--project`, name and workspace after a lost response. Bind prints both the immutable binding ID and registered-channel operation ID. Preserve the same project, session, IDs and allowlist:
 
 ```sh
-keelmux ircd bind --session SESSION_ID --allow-user alice \
+keelmux ircd bind --project PROJECT_ID --session SESSION_ID --allow-user alice \
   --binding ORIGINAL_BINDING_ID --operation ORIGINAL_CHANNEL_OPERATION_ID
 ```
 
-An already attempted channel operation only confirms registration read-only. A lost registration reply cannot authorize another JOIN/REGISTER. If an attempt was consumed before authentication or connection succeeded, the original record can require explicit repair. Retain its IDs and private state; do not delete the journal to force a retry.
+An already attempted project-channel operation only confirms registration read-only. A second thread reuses the project's original registration proof and creates its own claimed account. A lost registration reply cannot authorize another registration. If an attempt was consumed before authentication or connection succeeded, the original record can require explicit repair. Historical shared-bot/per-thread-channel journals are retained and never adopted as project registration. Retain the original IDs and private state; do not delete journals to force a retry.
 
 ## Read and reply
 
@@ -55,7 +61,7 @@ keelmux ircd stop --instance EXECUTION_ID
 keelmux ircd restart --instance EXECUTION_ID
 ```
 
-Restart prints a fresh durable operation ID. Preserve that ID and the original expected instance after a lost response. A stale instance cannot stop its replacement. Accounts and registered channels remain in the owned server database across a verified server restart; live chat connections can have a history gap.
+Restart prints a fresh durable operation ID. Preserve that ID and the original expected instance after a lost response. A stale instance cannot stop its replacement. Project channels, thread accounts and exact nicknames remain in the owned journals and server database across a verified restart; live chat connections can have a history gap.
 
 Closing the switcher or restarting the control daemon preserves a surviving supervised server. Host reboot, lost supervisor authority, foreign listeners and malformed state require explicit recovery. Stop cannot kill an arbitrary process found on the same port.
 
