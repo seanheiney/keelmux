@@ -1,0 +1,143 @@
+{
+  "schema": "keelmux-native-terminal-review/v1",
+  "source_commit": "2397355a6ae9cbd0df742f6df0f8fa5788fe6766",
+  "reviewed_base": "812d6401790e2487e04136330e9d774dad9b3607",
+  "supersedes_base_qualification": true,
+  "review_status": "independent correction review pending",
+  "scope": [
+    "delayed-wrap state through parsed controls",
+    "post-write grapheme cell location",
+    "Prepend + ASCII complete cell content",
+    "conservative ASCII batch guard retained"
+  ],
+  "sha256": {
+    "internal/adapters/nativepty/filter.go": "c7fac861fadbd01321d4ab36977505fa782a47c0356c5ca969b30156e48dcb25",
+    "internal/adapters/nativepty/screen.go": "848fece4dd90ef4669567ba1b90f424034f0d347fa9d61d72ee91f99526a838e",
+    "internal/adapters/nativepty/glyph_state_test.go": "1d61f20a85b1882fe49ae08d913612d011561eb07991051176fbfeb2af9e4aa2",
+    "internal/adapters/nativepty/screen_test.go": "fc0a8a1f111333ed1288660e57f806d599cb25e5da2ead16f250daa9bcb05958",
+    "go.mod": "9bab7d16157a85800240dd2e480e3ad9c3905dcbc05fa4909dcd8bb939b4214c",
+    "go.sum": "1e1f1a6642dff1147d79d8c8d1f8291f3b5842be3542dd747be07ca4137221ee"
+  },
+  "host_container_hashes_identical": true,
+  "unchanged_eight_second_gate": {
+    "path": "internal/adapters/nativepty/screen_test.go",
+    "test": "TestSlowReaderDoesNotBlockNativeOutput",
+    "deadline_seconds": 8,
+    "byte_identical_since": "e182d2c46c035f2cb4ecef4c1ac48a2fe84a8581"
+  },
+  "commands": [
+    "go test -race ./internal/adapters/nativepty ./cmd/keelmux-supervisor -count=3",
+    "go vet ./internal/adapters/nativepty ./cmd/keelmux-supervisor",
+    "go test -race ./internal/adapters/nativepty -run '^$' -bench BenchmarkScreenASCIIBurst -benchtime=1x"
+  ],
+  "results": {
+    "macos_arm64": {
+      "os": "macOS 26.7.1 (25G309)",
+      "go": "go1.26.6 darwin/arm64",
+      "cpu": "Apple M4 Max",
+      "race_count3": "PASS",
+      "race_package_seconds": 22.248,
+      "vet": "PASS",
+      "race_benchmark_2mib_ns": 3010540333,
+      "race_benchmark_bytes_per_op": 284811512,
+      "race_benchmark_allocs_per_op": 2123611
+    },
+    "linux_arm64": {
+      "os": "Linux 6.8.0-100-generic aarch64",
+      "go": "go1.26.6 linux/arm64",
+      "shell": "dash",
+      "race_count3": "PASS",
+      "race_package_seconds": 24.551,
+      "vet": "PASS",
+      "race_benchmark_2mib_ns": 3978994762,
+      "race_benchmark_bytes_per_op": 284784912,
+      "race_benchmark_allocs_per_op": 2123581
+    }
+  },
+  "preserved_base_results": {
+    "source": "812d6401790e2487e04136330e9d774dad9b3607",
+    "macos": {
+      "race_count1": "PASS",
+      "race_package_seconds": 8.736,
+      "vet": "PASS",
+      "race_benchmark_2mib_ns": 3065254125
+    },
+    "linux": {
+      "race_count1": "PASS",
+      "race_package_seconds": 8.231,
+      "vet": "PASS",
+      "race_benchmark_2mib_ns": 4050968451
+    },
+    "verdict": "existing suite passed but new expected-cell checks found remaining defects; base alone was not approved"
+  },
+  "new_regression_fixtures": {
+    "matrix_cases": 1620,
+    "columns": [
+      1,
+      2,
+      7
+    ],
+    "contexts": [
+      "top",
+      "bottom scrolling",
+      "origin mode + active vertical scroll margins"
+    ],
+    "chunk_bytes": [
+      1,
+      2,
+      5,
+      128
+    ],
+    "expected_cells": [
+      "A + combining accent",
+      "AB + combining accent",
+      "Prepend + A + combining accent",
+      "A + ZWJ",
+      "woman + ZWJ + laptop"
+    ],
+    "other_expected_checks": [
+      "ECH/EL/cursor movement cancel wrap",
+      "REP can establish wrap",
+      "restore/backtab/reverse index preserve pinned-emulator wrap",
+      "invalid margins preserve wrap",
+      "resize clears wrap after optional cursor advance"
+    ],
+    "pre_correction_812d_overlay": "FAIL as expected: short-tail location and full Prepend cell assertions"
+  },
+  "linux_isolation": {
+    "image": "golang:1.26.6-bookworm@sha256:116d58cbd88c1297624acc6e967a060012422bacf9930927e23fb719189c6f36",
+    "container_name": "keelmux-native-terminal-review",
+    "network": "none",
+    "read_only_root": true,
+    "uid_gid": "65534:65534",
+    "capabilities": "ALL dropped",
+    "security": "no-new-privileges",
+    "init": true,
+    "host_bind_mounts": [],
+    "source_delivery": "finite git archive over stdin, exact source commit; generated vendor preserved",
+    "work_tmpfs": "exec, private uid/gid ownership, 1600 MiB",
+    "tmp_tmpfs": "exec, mode1777, 256 MiB",
+    "module_network": "disabled; GOFLAGS=-mod=vendor GOPROXY=off GOSUMDB=off",
+    "compile_cache": "public source compile-only cache; no runtime/auth state"
+  },
+  "cleanup": {
+    "container_removed": true,
+    "absence_verified": true,
+    "absence_result": "docker container inspect returned No such container",
+    "pre_removal_process_inventory": [
+      "docker-init",
+      "tail",
+      "ps"
+    ],
+    "runtime_helpers_or_children_present_before_removal": false,
+    "worktree_preserved": "codex/native-terminal-review; no unrelated files modified"
+  },
+  "limitations": [
+    "No hosted GitHub CI rerun is claimed by this receipt.",
+    "Linux is actual isolated arm64 container execution, not a clean VM or amd64 run.",
+    "No provider/model start or model turn was performed by this correction lane.",
+    "The tracker remains tied to the pinned VT implementation; a dependency upgrade must requalify reset/control semantics.",
+    "A two-column glyph in a one-column terminal is intentionally clipped to a blank by the pinned screen.",
+    "No root/shared manifest, entrypoint, or production state changes."
+  ]
+}
