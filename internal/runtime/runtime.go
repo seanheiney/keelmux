@@ -21,3 +21,9 @@ type Backend interface {
 	Stop(context.Context, domain.RuntimeRef) error
 	AttachCommand(domain.RuntimeRef, bool) ([]string, error)
 }
+
+// LinkVerifier verifies an inherited owned-launch nonce against private receipts
+// and live runtime markers. Public inventory IDs alone cannot establish a link.
+type LinkVerifier interface {
+	ValidateLink(context.Context, domain.ID, domain.ID, domain.ID, string) error
+}

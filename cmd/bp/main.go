@@ -124,7 +124,7 @@ func run() error {
 			}
 			return errors.New("no exact managed context; attach intended terminal first")
 		}
-		r := protocol.LinkRequest{SessionID: domain.ID(os.Getenv("BP_SESSION_ID")), ExecutionID: domain.ID(os.Getenv("BP_EXECUTION_ID")), OperationID: domain.ID(os.Getenv("BP_OPERATION_ID")), Off: len(args) > 1 && args[1] == "off"}
+		r := protocol.LinkRequest{SessionID: domain.ID(os.Getenv("BP_SESSION_ID")), ExecutionID: domain.ID(os.Getenv("BP_EXECUTION_ID")), OperationID: domain.ID(os.Getenv("BP_OPERATION_ID")), Token: os.Getenv("BP_LINK_TOKEN"), Off: len(args) > 1 && args[1] == "off"}
 		if r.SessionID == "" || r.ExecutionID == "" || r.OperationID == "" {
 			return errors.New("link requires verified managed context; use bp run, then invoke bp link inside that session")
 		}
