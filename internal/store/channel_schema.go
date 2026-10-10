@@ -13,11 +13,11 @@ import (
 
 var channelDefinitions = []struct{ name, kind, sql string }{
 	{"chat_threads", "table", `CREATE TABLE chat_threads (thread_id TEXT PRIMARY KEY, work_id TEXT NOT NULL, host_id TEXT NOT NULL, next_sequence INTEGER NOT NULL CHECK(next_sequence>0))`},
-	{"channel_bindings", "table", `CREATE TABLE channel_bindings (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id), thread_id TEXT NOT NULL REFERENCES chat_threads(thread_id), provider TEXT NOT NULL, realm_id TEXT NOT NULL, channel_id TEXT NOT NULL, root_id TEXT NOT NULL, active INTEGER NOT NULL CHECK(active IN (0,1)), data BLOB NOT NULL, proof BLOB NOT NULL)`},
-	{"channel_active_endpoint", "index", `CREATE UNIQUE INDEX channel_active_endpoint ON channel_bindings(provider,realm_id,channel_id,root_id) WHERE active=1`},
+	{"channel_bindings", "table", `CREATE TABLE channel_bindings (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id), thread_id TEXT NOT NULL REFERENCES chat_threads(thread_id), provider TEXT NOT NULL, endpoint TEXT NOT NULL, realm_id TEXT NOT NULL, channel_id TEXT NOT NULL, root_id TEXT NOT NULL, active INTEGER NOT NULL CHECK(active IN (0,1)), data BLOB NOT NULL, proof BLOB NOT NULL)`},
+	{"channel_active_endpoint", "index", `CREATE UNIQUE INDEX channel_active_endpoint ON channel_bindings(provider,endpoint,realm_id,channel_id,root_id) WHERE active=1`},
 	{"channel_messages", "table", `CREATE TABLE channel_messages (id TEXT PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES chat_threads(thread_id), sequence INTEGER NOT NULL CHECK(sequence>0), binding_id TEXT NOT NULL REFERENCES channel_bindings(id), remote_id TEXT NOT NULL, data BLOB NOT NULL, UNIQUE(thread_id,sequence))`},
-	{"channel_deliveries", "table", `CREATE TABLE channel_deliveries (id TEXT PRIMARY KEY REFERENCES channel_messages(id), binding_id TEXT NOT NULL REFERENCES channel_bindings(id), state TEXT NOT NULL CHECK(state IN ('queued','attempted','delivered','failed','uncertain')), payload_hash BLOB NOT NULL CHECK(length(payload_hash)=32), data BLOB NOT NULL)`},
-	{"channel_inbox", "table", `CREATE TABLE channel_inbox (provider TEXT NOT NULL, realm_id TEXT NOT NULL, channel_id TEXT NOT NULL, source_id TEXT NOT NULL, binding_id TEXT NOT NULL REFERENCES channel_bindings(id), source_hash BLOB NOT NULL CHECK(length(source_hash)=32), message_id TEXT REFERENCES channel_messages(id), disposition TEXT NOT NULL CHECK(disposition IN ('accepted','self','unallowlisted','before_cutoff')), PRIMARY KEY(provider,realm_id,channel_id,source_id))`},
+	{"channel_deliveries", "table", `CREATE TABLE channel_deliveries (id TEXT PRIMARY KEY REFERENCES channel_messages(id), binding_id TEXT NOT NULL REFERENCES channel_bindings(id), state TEXT NOT NULL CHECK(state IN ('queued','attempted','delivered','failed','uncertain')), payload_hash BLOB NOT NULL CHECK(length(payload_hash)=32), data BLOB NOT NULL, proof BLOB NOT NULL)`},
+	{"channel_inbox", "table", `CREATE TABLE channel_inbox (provider TEXT NOT NULL, endpoint TEXT NOT NULL, realm_id TEXT NOT NULL, channel_id TEXT NOT NULL, source_id TEXT NOT NULL, binding_id TEXT NOT NULL REFERENCES channel_bindings(id), source_hash BLOB NOT NULL CHECK(length(source_hash)=32), identity_hash BLOB NOT NULL CHECK(length(identity_hash)=32), message_id TEXT REFERENCES channel_messages(id), disposition TEXT NOT NULL CHECK(disposition IN ('accepted','self','unallowlisted','before_cutoff')), PRIMARY KEY(provider,endpoint,realm_id,channel_id,source_id))`},
 	{"channel_cursors", "table", `CREATE TABLE channel_cursors (binding_id TEXT PRIMARY KEY REFERENCES channel_bindings(id), value TEXT NOT NULL)`},
 }
 
@@ -46,21 +46,21 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 		}
 	}
 	bindings := map[domain.ID]channels.Binding{}
-	rows, err := db.QueryContext(ctx, "SELECT id,session_id,thread_id,provider,realm_id,channel_id,root_id,active,data,proof FROM channel_bindings")
+	rows, err := db.QueryContext(ctx, "SELECT id,session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data,proof FROM channel_bindings")
 	if err != nil {
 		return err
 	}
 	for rows.Next() {
 		var id, sessionID, threadID domain.ID
-		var provider, realm, channel, root string
+		var provider, endpoint, realm, channel, root string
 		var active int
 		var data, proof []byte
 		var b channels.Binding
 		var e channels.Evidence
-		if err = rows.Scan(&id, &sessionID, &threadID, &provider, &realm, &channel, &root, &active, &data, &proof); err != nil {
+		if err = rows.Scan(&id, &sessionID, &threadID, &provider, &endpoint, &realm, &channel, &root, &active, &data, &proof); err != nil {
 			break
 		}
-		if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || json.Unmarshal(proof, &e) != nil || !bytes.Equal(encoded(e), proof) || !validChannelBindingRow(b, id, sessionID, threadID, provider, realm, channel, root, active) || !e.Matches(b) || len(b.Allowlist) == 0 {
+		if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || json.Unmarshal(proof, &e) != nil || !bytes.Equal(encoded(e), proof) || !validChannelBindingRow(b, id, sessionID, threadID, provider, endpoint, realm, channel, root, active) || !e.Matches(b) || len(b.Allowlist) == 0 {
 			err = repair("invalid immutable channel binding")
 			break
 		}
@@ -139,21 +139,22 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 		}
 	}
 	deliveries := map[domain.ID]channels.Delivery{}
-	rows, err = db.QueryContext(ctx, "SELECT id,binding_id,state,payload_hash,data FROM channel_deliveries")
+	rows, err = db.QueryContext(ctx, "SELECT id,binding_id,state,payload_hash,data,proof FROM channel_deliveries")
 	if err != nil {
 		return err
 	}
 	for rows.Next() {
 		var id, bid domain.ID
 		var state string
-		var hash, data []byte
+		var hash, data, proof []byte
 		var d channels.Delivery
-		if err = rows.Scan(&id, &bid, &state, &hash, &data); err != nil {
+		var e channels.Evidence
+		if err = rows.Scan(&id, &bid, &state, &hash, &data, &proof); err != nil {
 			break
 		}
 		m, mok := messages[id]
 		b, bok := bindings[bid]
-		if json.Unmarshal(data, &d) != nil || !bytes.Equal(encoded(d), data) || !mok || !bok || m.RemoteID != "" || d.ID != id || d.MessageID != id || d.BindingID != bid || m.BindingID != bid || d.State != channels.DeliveryState(state) || !bytes.Equal(hash, d.PayloadHash[:]) || d.PayloadHash != channelPayloadHash(b, m) || !validChannelDelivery(d) || (d.State == channels.Queued && !b.Active) || (d.Code == "binding_disabled" && b.Active) {
+		if json.Unmarshal(data, &d) != nil || !bytes.Equal(encoded(d), data) || json.Unmarshal(proof, &e) != nil || !bytes.Equal(encoded(e), proof) || !mok || !bok || m.RemoteID != "" || d.ID != id || d.MessageID != id || d.BindingID != bid || m.BindingID != bid || d.State != channels.DeliveryState(state) || !bytes.Equal(hash, d.PayloadHash[:]) || d.PayloadHash != channelPayloadHash(b, m) || !validChannelDelivery(d) || !validChannelDeliveryProof(d, b, e) || (d.State == channels.Queued && !b.Active) || (d.Code == "binding_disabled" && b.Active) {
 			err = repair("invalid durable channel delivery")
 			break
 		}
@@ -163,20 +164,20 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 	accepted := map[domain.ID]bool{}
-	rows, err = db.QueryContext(ctx, "SELECT provider,realm_id,channel_id,source_id,binding_id,source_hash,message_id,disposition FROM channel_inbox")
+	rows, err = db.QueryContext(ctx, "SELECT provider,endpoint,realm_id,channel_id,source_id,binding_id,source_hash,identity_hash,message_id,disposition FROM channel_inbox")
 	if err != nil {
 		return err
 	}
 	for rows.Next() {
-		var provider, realm, channel, source, disposition string
+		var provider, endpoint, realm, channel, source, disposition string
 		var bid domain.ID
 		var mid sql.NullString
-		var hash []byte
-		if err = rows.Scan(&provider, &realm, &channel, &source, &bid, &hash, &mid, &disposition); err != nil {
+		var hash, identityHash []byte
+		if err = rows.Scan(&provider, &endpoint, &realm, &channel, &source, &bid, &hash, &identityHash, &mid, &disposition); err != nil {
 			break
 		}
 		b, ok := bindings[bid]
-		if !ok || provider != string(b.Provider) || realm != b.RealmID || channel != b.ChannelID || !channels.ValidID(source) || len(hash) != 32 || ((disposition == "accepted") != mid.Valid) {
+		if !ok || provider != string(b.Provider) || endpoint != b.Endpoint || realm != b.RealmID || channel != b.ChannelID || !channels.ValidID(source) || len(hash) != 32 || len(identityHash) != 32 || ((disposition == "accepted") != mid.Valid) {
 			err = repair("invalid channel source dedup metadata")
 			break
 		}
@@ -184,7 +185,8 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 			m, ok := messages[domain.ID(mid.String)]
 			r := remoteFromMessage(b, m)
 			h := channelSourceHash(r)
-			if !ok || m.BindingID != bid || m.RemoteID != source || m.AuthorID == b.SelfID || !allowedChannelActor(b, m.AuthorID) || !m.CreatedAt.After(b.ActivationCutoff) || !bytes.Equal(hash, h[:]) {
+			ih := channelSourceIdentityHash(r)
+			if !ok || m.BindingID != bid || m.RemoteID != source || m.AuthorID == b.SelfID || !allowedChannelActor(b, m.AuthorID) || !m.CreatedAt.After(b.ActivationCutoff) || !bytes.Equal(hash, h[:]) || !bytes.Equal(identityHash, ih[:]) {
 				err = repair("authored remote message lost original source")
 				break
 			}

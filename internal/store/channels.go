@@ -14,22 +14,22 @@ import (
 	"github.com/seanheiney/keelmux/internal/domain"
 )
 
-func validChannelBindingRow(b channels.Binding, id, sid, tid domain.ID, provider, realm, channel, root string, active int) bool {
+func validChannelBindingRow(b channels.Binding, id, sid, tid domain.ID, provider, endpoint, realm, channel, root string, active int) bool {
 	n, err := channels.NormalizeBinding(b)
-	return err == nil && bytes.Equal(encoded(n), encoded(b)) && b.ID == id && b.SessionID == sid && b.ThreadID == tid && string(b.Provider) == provider && b.RealmID == realm && b.ChannelID == channel && b.RootID == root && (active == 0 || active == 1) && b.Active == (active == 1)
+	return err == nil && bytes.Equal(encoded(n), encoded(b)) && b.ID == id && b.SessionID == sid && b.ThreadID == tid && string(b.Provider) == provider && b.Endpoint == endpoint && b.RealmID == realm && b.ChannelID == channel && b.RootID == root && (active == 0 || active == 1) && b.Active == (active == 1)
 }
 
 func channelBinding(ctx context.Context, q queryer, id domain.ID) (channels.Binding, error) {
 	var b channels.Binding
 	var sid, tid domain.ID
-	var provider, realm, channel, root string
+	var provider, endpoint, realm, channel, root string
 	var active int
 	var data []byte
-	err := q.QueryRowContext(ctx, "SELECT session_id,thread_id,provider,realm_id,channel_id,root_id,active,data FROM channel_bindings WHERE id=?", id).Scan(&sid, &tid, &provider, &realm, &channel, &root, &active, &data)
+	err := q.QueryRowContext(ctx, "SELECT session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data FROM channel_bindings WHERE id=?", id).Scan(&sid, &tid, &provider, &endpoint, &realm, &channel, &root, &active, &data)
 	if err != nil {
 		return b, missing(err)
 	}
-	if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || !validChannelBindingRow(b, id, sid, tid, provider, realm, channel, root, active) {
+	if json.Unmarshal(data, &b) != nil || !bytes.Equal(encoded(b), data) || !validChannelBindingRow(b, id, sid, tid, provider, endpoint, realm, channel, root, active) {
 		return b, repair("invalid immutable channel binding")
 	}
 	return b, nil
@@ -67,15 +67,35 @@ func channelDelivery(ctx context.Context, q queryer, id domain.ID) (channels.Del
 	var d channels.Delivery
 	var bid domain.ID
 	var state string
-	var hash, data []byte
-	err := q.QueryRowContext(ctx, "SELECT binding_id,state,payload_hash,data FROM channel_deliveries WHERE id=?", id).Scan(&bid, &state, &hash, &data)
+	var hash, data, proof []byte
+	var evidence channels.Evidence
+	err := q.QueryRowContext(ctx, "SELECT binding_id,state,payload_hash,data,proof FROM channel_deliveries WHERE id=?", id).Scan(&bid, &state, &hash, &data, &proof)
 	if err != nil {
 		return d, missing(err)
 	}
-	if json.Unmarshal(data, &d) != nil || !bytes.Equal(encoded(d), data) || d.ID != id || d.MessageID != id || d.BindingID != bid || d.State != channels.DeliveryState(state) || !bytes.Equal(hash, d.PayloadHash[:]) || !validChannelDelivery(d) {
+	if json.Unmarshal(data, &d) != nil || !bytes.Equal(encoded(d), data) || json.Unmarshal(proof, &evidence) != nil || !bytes.Equal(encoded(evidence), proof) || d.ID != id || d.MessageID != id || d.BindingID != bid || d.State != channels.DeliveryState(state) || !bytes.Equal(hash, d.PayloadHash[:]) || !validChannelDelivery(d) {
 		return d, repair("invalid durable channel delivery")
 	}
+	b, err := channelBinding(ctx, q, bid)
+	if err != nil || !validChannelDeliveryProof(d, b, evidence) {
+		return d, repair("delivery lost original outcome evidence")
+	}
 	return d, nil
+}
+
+func validChannelDeliveryProof(d channels.Delivery, b channels.Binding, e channels.Evidence) bool {
+	empty := e == (channels.Evidence{})
+	switch d.State {
+	case channels.Queued, channels.Attempted:
+		return empty
+	case channels.Delivered:
+		return e.Matches(b)
+	case channels.Uncertain:
+		return empty || e.Matches(b)
+	case channels.Failed:
+		return e.Matches(b) || (empty && (d.Code == "remote_rejected" || d.Code == "binding_disabled"))
+	}
+	return false
 }
 
 func validChannelDelivery(d channels.Delivery) bool {
@@ -136,14 +156,14 @@ func (s *Store) BindChannel(ctx context.Context, b channels.Binding, proof chann
 		return b, err
 	}
 	var existing domain.ID
-	err = tx.QueryRowContext(ctx, "SELECT id FROM channel_bindings WHERE provider=? AND realm_id=? AND channel_id=? AND root_id=? AND active=1", b.Provider, b.RealmID, b.ChannelID, b.RootID).Scan(&existing)
+	err = tx.QueryRowContext(ctx, "SELECT id FROM channel_bindings WHERE provider=? AND endpoint=? AND realm_id=? AND channel_id=? AND root_id=? AND active=1", b.Provider, b.Endpoint, b.RealmID, b.ChannelID, b.RootID).Scan(&existing)
 	if err == nil {
 		return b, conflict("external channel root already has an active binding")
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return b, err
 	}
-	_, err = tx.ExecContext(ctx, "INSERT INTO channel_bindings VALUES(?,?,?,?,?,?,?,?,?,?)", b.ID, b.SessionID, b.ThreadID, b.Provider, b.RealmID, b.ChannelID, b.RootID, 1, encoded(b), encoded(proof))
+	_, err = tx.ExecContext(ctx, "INSERT INTO channel_bindings VALUES(?,?,?,?,?,?,?,?,?,?,?)", b.ID, b.SessionID, b.ThreadID, b.Provider, b.Endpoint, b.RealmID, b.ChannelID, b.RootID, 1, encoded(b), encoded(proof))
 	if err != nil {
 		return b, err
 	}
@@ -334,7 +354,7 @@ func (s *Store) QueueChannelMessage(ctx context.Context, m channels.Message) (ch
 		return m, channels.Delivery{}, err
 	}
 	d := channels.Delivery{ID: m.ID, MessageID: m.ID, BindingID: b.ID, State: channels.Queued, PayloadHash: channelPayloadHash(b, m), UpdatedAt: time.Now().UTC()}
-	_, err = tx.ExecContext(ctx, "INSERT INTO channel_deliveries VALUES(?,?,?,?,?)", d.ID, d.BindingID, d.State, d.PayloadHash[:], encoded(d))
+	_, err = tx.ExecContext(ctx, "INSERT INTO channel_deliveries VALUES(?,?,?,?,?,?)", d.ID, d.BindingID, d.State, d.PayloadHash[:], encoded(d), encoded(channels.Evidence{}))
 	if err != nil {
 		return m, d, err
 	}
@@ -454,6 +474,9 @@ func (s *Store) FinishChannelDelivery(ctx context.Context, id domain.ID, result 
 			if e := saveChannelDelivery(ctx, tx, d); e != nil {
 				return d, e
 			}
+			if _, e := tx.ExecContext(ctx, "UPDATE channel_deliveries SET proof=? WHERE id=?", encoded(channels.Evidence{}), id); e != nil {
+				return d, e
+			}
 			if e := tx.Commit(); e != nil {
 				return d, e
 			}
@@ -498,6 +521,9 @@ func (s *Store) FinishChannelDelivery(ctx context.Context, id domain.ID, result 
 	if err = saveChannelDelivery(ctx, tx, d); err != nil {
 		return d, err
 	}
+	if _, err = tx.ExecContext(ctx, "UPDATE channel_deliveries SET proof=? WHERE id=?", encoded(result.Evidence), id); err != nil {
+		return d, err
+	}
 	return d, tx.Commit()
 }
 
@@ -509,6 +535,12 @@ func allowedChannelActor(b channels.Binding, actor string) bool {
 func channelSourceHash(m channels.RemoteMessage) [32]byte {
 	// History/live transport provenance can differ for the same authored post.
 	m.Historical = false
+	m.CreatedAt = m.CreatedAt.UTC()
+	return sha256.Sum256(encoded(m))
+}
+
+func channelSourceIdentityHash(m channels.RemoteMessage) [32]byte {
+	m.Text, m.Historical = "", false
 	m.CreatedAt = m.CreatedAt.UTC()
 	return sha256.Sum256(encoded(m))
 }
@@ -549,14 +581,15 @@ func (s *Store) ImportChannelMessages(ctx context.Context, id domain.ID, expecte
 		if !remote.Matches(b) {
 			return 0, conflict("remote message differs from exact channel root or schema")
 		}
-		hash := channelSourceHash(remote)
-		var previous []byte
-		var oldBinding domain.ID
-		err = tx.QueryRowContext(ctx, "SELECT source_hash,binding_id FROM channel_inbox WHERE provider=? AND realm_id=? AND channel_id=? AND source_id=?", b.Provider, b.RealmID, b.ChannelID, remote.ID).Scan(&previous, &oldBinding)
+		hash, identityHash := channelSourceHash(remote), channelSourceIdentityHash(remote)
+		var previousIdentity []byte
+		err = tx.QueryRowContext(ctx, "SELECT identity_hash FROM channel_inbox WHERE provider=? AND endpoint=? AND realm_id=? AND channel_id=? AND source_id=?", b.Provider, b.Endpoint, b.RealmID, b.ChannelID, remote.ID).Scan(&previousIdentity)
 		if err == nil {
-			if !bytes.Equal(previous, hash[:]) {
-				return 0, conflict("external source ID names different immutable content")
+			if !bytes.Equal(previousIdentity, identityHash[:]) {
+				return 0, conflict("external source ID names different immutable author or root")
 			}
+			// Initial authored notes preserve the first snapshot. Changed text
+			// is not an edit projection, delivery, action or new message.
 			continue // Includes another old binding; never retarget a source post.
 		}
 		if !errors.Is(err, sql.ErrNoRows) {
@@ -581,7 +614,7 @@ func (s *Store) ImportChannelMessages(ctx context.Context, id domain.ID, expecte
 			messageID = m.ID
 			added++
 		}
-		if _, err = tx.ExecContext(ctx, "INSERT INTO channel_inbox VALUES(?,?,?,?,?,?,?,?)", b.Provider, b.RealmID, b.ChannelID, remote.ID, b.ID, hash[:], messageID, disposition); err != nil {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO channel_inbox VALUES(?,?,?,?,?,?,?,?,?,?)", b.Provider, b.Endpoint, b.RealmID, b.ChannelID, remote.ID, b.ID, hash[:], identityHash[:], messageID, disposition); err != nil {
 			return 0, err
 		}
 	}
