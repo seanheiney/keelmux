@@ -1,0 +1,102 @@
+{
+  "archives_sha256": {
+    "keelmux_v0.1.0_darwin_amd64.tar.gz": "4e57ab4de689facab53795be5e0c968faa6a2ff2f1a75de88852066719db65dc",
+    "keelmux_v0.1.0_darwin_arm64.tar.gz": "53aaf724e8c245bc89454633e50dfb62644e2727028d3785823017ad71c050cc",
+    "keelmux_v0.1.0_linux_amd64.tar.gz": "e5122ca7d09bd27f053b87431c4bf80192376ec2c136150d343adec611513975",
+    "keelmux_v0.1.0_linux_arm64.tar.gz": "38c04ebb0d2815bebea4f4966e0cbd254412072fe4cf16c0ac6210b083df4aa3"
+  },
+  "checks": [
+    {
+      "command": "go test -race ./...",
+      "name": "full source race",
+      "result": "passed"
+    },
+    {
+      "command": "go vet ./...",
+      "name": "full source vet",
+      "result": "passed"
+    },
+    {
+      "command": "python3 tests/installer_test.py",
+      "name": "installer/packer focused tests",
+      "qualification": "finite version-only shell fixture binaries; no product or provider runtime claim",
+      "result": "passed",
+      "test_count": 14
+    },
+    {
+      "command": "SOURCE_DATE_EPOCH=1791658800 scripts/build-release.sh v0.1.0 /private/tmp/keelmux-release-0be153b",
+      "name": "four actual release archives",
+      "qualification": "cross-build and digest verification only",
+      "result": "passed",
+      "targets": [
+        "darwin/arm64",
+        "darwin/amd64",
+        "linux/amd64",
+        "linux/arm64"
+      ]
+    },
+    {
+      "command": "python3 scripts/install-smoke.py /private/tmp/keelmux-release-0be153b v0.1.0",
+      "coverage": [
+        "download via explicitly enabled loopback HTTP",
+        "archive and manifest file hashes",
+        "install canonical commands and aliases",
+        "loaded versionJSON equals manifest provenance",
+        "same-version reinstall",
+        "owned uninstall",
+        "native auth/state sentinel preservation"
+      ],
+      "name": "actual host installer smoke",
+      "qualification": "darwin/arm64 only; no native sessions/provider/model calls",
+      "result": "passed"
+    },
+    {
+      "command": "SOURCE_DATE_EPOCH=1791658800 scripts/build-release.sh v0.1.0 /private/tmp/keelmux-release-repro-0be153b darwin/arm64; cmp first/archive second/archive",
+      "name": "host archive reproducibility",
+      "qualification": "actual darwin/arm64 archive; other targets not rebuilt twice",
+      "result": "byte-identical"
+    },
+    {
+      "command": "ruby -ryaml YAML.load_file on both .github/workflows/*.yml",
+      "name": "workflow syntax",
+      "qualification": "local parsing only; actionlint and hosted execution not run",
+      "result": "passed"
+    }
+  ],
+  "development_test": false,
+  "environment": {
+    "arch": "arm64",
+    "build": "25G309",
+    "go_version": "go1.26.6",
+    "os": "macOS",
+    "python_version": "3.14.7",
+    "version": "26.7.1"
+  },
+  "independent_gates": "Separate validator and Linux runtime worker received exact archives; their results are recorded separately.",
+  "not_proved": [
+    "hosted CI or attestation execution",
+    "GitHub release/assets publication",
+    "installer from the public one-line HTTPS URL",
+    "darwin/amd64 runtime",
+    "linux/amd64 runtime",
+    "native provider/model calls or auth",
+    "product Codex broker launcher",
+    "SSH/remote host runtime"
+  ],
+  "release_workflow": "Version tag prepares SHA256-attested draft assets only; captain publishes after review.",
+  "schema": 1,
+  "source_clean": true,
+  "source_commit": "0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44",
+  "source_date_epoch": 1791658800,
+  "source_files_sha256": {
+    ".github/workflows/ci.yml": "030f66f89c1a575e80aa19a39821a2a23d3cd5bae3e5f9f5920e222094727582",
+    ".github/workflows/release.yml": "bc926716a47e942ac8dec22ca2873e7f6b69052a9decf5bb0fe176342410316c",
+    "install.sh": "6d3621593492f92573b544311af1113b401f8133deec4b099fd69b74d00a6cb3",
+    "scripts/build-release.sh": "3e9b049e19b1c8b3546e6f8a01a63394589596215911fb594dfde28e4615f572",
+    "scripts/install-smoke.py": "91ce9726f119381aebd34261e517e835fe514a9b7b377254a9584d1bc7fb6bfe",
+    "scripts/pack-release.py": "000e7217114226b6c45e88b7304c1e0a662b90953de442297950370e627add80",
+    "tests/installer_test.py": "35d7eb98a3a9b0a4f388f9ccc92f953ed4b33ad41439e21df98e931780fda9fe"
+  },
+  "status": "passed local packaging gates; unpublished candidate",
+  "version": "v0.1.0"
+}
