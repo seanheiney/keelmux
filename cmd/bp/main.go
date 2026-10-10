@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/seanheiney/agent-backplane/internal/adapters/providers"
 	"github.com/seanheiney/agent-backplane/internal/config"
 	"github.com/seanheiney/agent-backplane/internal/domain"
 	"github.com/seanheiney/agent-backplane/internal/protocol"
@@ -13,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -43,6 +43,19 @@ func run() error {
 	if len(args) > 0 && (args[0] == "help" || args[0] == "--help") {
 		fmt.Print(help)
 		return nil
+	}
+	if len(args) > 0 && args[0] == "setup" {
+		return setupSkills(args[1:])
+	}
+	if len(args) > 0 && args[0] == "skills" {
+		return manageSkills(args[1:])
+	}
+	if len(args) > 0 && args[0] == "providers" {
+		records, err := providers.Discover(context.Background())
+		if err != nil {
+			return err
+		}
+		return printJSON(records)
 	}
 	p, err := config.Resolve(*state)
 	if err != nil {
@@ -79,12 +92,9 @@ func run() error {
 			return errors.New("run needs codex or claude; flags precede provider")
 		}
 		provider := rest[0]
-		if provider != "codex" && provider != "claude" {
-			return errors.New("supported native providers: codex, claude")
-		}
-		binary, err := exec.LookPath(provider)
+		argv, version, err := providers.SupportedLaunch(ctx, provider, rest[1:])
 		if err != nil {
-			return fmt.Errorf("install %s through native instructions: %w", provider, err)
+			return err
 		}
 		if *workspace == "" {
 			*workspace, err = os.Getwd()
@@ -102,11 +112,7 @@ func run() error {
 		if *operation == "" {
 			*operation = string(domain.NewID("op"))
 		}
-		versionCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-		v, _ := exec.CommandContext(versionCtx, binary, "--version").Output()
-		argv := append([]string{binary}, rest[1:]...)
-		r, err := c.Launch(ctx, protocol.LaunchRequest{OperationID: domain.ID(*operation), Name: *name, Workspace: *workspace, Provider: provider, ProviderVersion: strings.TrimSpace(string(v)), Argv: argv})
+		r, err := c.Launch(ctx, protocol.LaunchRequest{OperationID: domain.ID(*operation), Name: *name, Workspace: *workspace, Provider: provider, ProviderVersion: version, Argv: argv})
 		if err != nil {
 			return fmt.Errorf("launch operation %s: %w; retry only with this same --operation", *operation, err)
 		}
@@ -167,7 +173,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		for _, binary := range []string{"tmux", "codex", "claude"} {
+		for _, binary := range []string{"tmux"} {
 			path, e := exec.LookPath(binary)
 			if e != nil {
 				fmt.Println(binary + ": unavailable")
@@ -175,7 +181,14 @@ func run() error {
 				fmt.Println(binary + ": " + path)
 			}
 		}
-		fmt.Println("Private daemon reachable. Account/model, skill loading and semantic controls need separate evidence.")
+		records, err := providers.Discover(ctx)
+		if err != nil {
+			return err
+		}
+		for _, r := range records {
+			fmt.Printf("%s: installed=%t version=%s credentials=%s method=%s native-terminal=%t\n", r.Name, r.Installed, r.Version.Value, r.Auth.State.Value, r.Auth.Method.Value, r.NativeTerminal)
+		}
+		fmt.Println("Private daemon reachable. Native credential status does not establish account identity, model access, quota, or subscription eligibility. Use bp providers for source-qualified details; bp setup previews connection skills.")
 		return nil
 	default:
 		return fmt.Errorf("unknown command %q; bp help", args[0])
@@ -226,4 +239,9 @@ bp inspect SESSION               Inspect capabilities and unknown evidence
 bp stop SESSION [--operation ID]  Stop current execution; preserve ID on retry
 bp reconcile                     Recheck surviving executions
 bp doctor                        Check local binaries and daemon
+bp providers                     Inspect qualified native status without model work
+bp setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
+                                 Preview or install owned connection skills
+bp skills remove --root DIR [--scope user|project] [--providers codex,claude]
+                                 Remove matching owned skill files
 `

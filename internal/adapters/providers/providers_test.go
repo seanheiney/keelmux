@@ -84,7 +84,7 @@ func TestSupportedLaunchPreservesArgvAndRejectsImplicitAuthChanges(t *testing.T)
 	if version != "0.159.0" || !reflect.DeepEqual(argv, append([]string{path}, args...)) {
 		t.Fatal("native args transformed or interpreted as shell")
 	}
-	for _, bad := range [][]string{{"login"}, {"logout"}, {"auth", "login"}, {"update"}, {"bad\x00argv"}} {
+	for _, bad := range [][]string{{"login"}, {"logout"}, {"auth", "login"}, {"update"}, {"--profile", "example", "logout"}, {"--config", "k=v", "login"}, {"--profile=example", "logout"}, {"-ck=v", "login"}, {"bad\x00argv"}} {
 		if _, _, err := SupportedLaunch(context.Background(), "codex", bad); err == nil {
 			t.Fatalf("unsafe native workflow accepted: %v", bad)
 		}
@@ -95,6 +95,19 @@ func TestSupportedLaunchPreservesArgvAndRejectsImplicitAuthChanges(t *testing.T)
 	executable(t, dir, "codex", `printf '%s\n' 'SENSITIVE not a version'`)
 	if _, _, err := SupportedLaunch(context.Background(), "codex", nil); err == nil || strings.Contains(err.Error(), "SENSITIVE") {
 		t.Fatal("invalid version leaked or accepted")
+	}
+}
+
+func TestNativeWorkflowGuardHandlesOptionsAndLiteralPrompts(t *testing.T) {
+	for _, bad := range [][]string{{"setup-token"}, {"--model", "example", "auth", "logout"}, {"--model=example", "setup-token"}, {"--dangerously-skip-permissions", "daemon", "stop"}, {"-p", "prompt"}, {"--bg"}} {
+		if err := validateNativeArgs("claude", bad); err == nil {
+			t.Fatalf("nonterminal or management workflow accepted: %v", bad)
+		}
+	}
+	for _, good := range [][]string{{"--profile", "login"}, {"--model=logout", "ordinary prompt"}, {"--", "login"}, {"resume", "saved-native-id"}, {"please explain logout"}} {
+		if err := validateNativeArgs("codex", good); err != nil {
+			t.Fatalf("literal native argv rejected: %v: %v", good, err)
+		}
 	}
 }
 

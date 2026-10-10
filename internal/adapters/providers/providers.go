@@ -86,17 +86,8 @@ func SupportedLaunch(ctx context.Context, provider string, nativeArgs []string) 
 	if provider != "codex" && provider != "claude" {
 		return nil, "", errors.New("supported native providers: codex, claude; Grok mapping remains unverified")
 	}
-	if len(nativeArgs) > 0 {
-		for _, command := range []string{"login", "logout", "auth", "update", "upgrade", "install"} {
-			if nativeArgs[0] == command {
-				return nil, "", errors.New("native login and installation changes require the provider's separate explicit workflow")
-			}
-		}
-	}
-	for _, arg := range nativeArgs {
-		if strings.ContainsRune(arg, '\x00') {
-			return nil, "", errors.New("native argv contains a NUL byte")
-		}
+	if err := validateNativeArgs(provider, nativeArgs); err != nil {
+		return nil, "", err
 	}
 	path, err := exec.LookPath(provider)
 	if err != nil {
@@ -111,6 +102,54 @@ func SupportedLaunch(ctx context.Context, provider string, nativeArgs []string) 
 		return nil, "", err
 	}
 	return append([]string{path}, nativeArgs...), version, nil
+}
+
+// Locate the effective subcommand after documented value-taking global flags.
+// Unknown flags are forwarded, but never assumed to consume the next token.
+// Management commands belong outside a managed interactive terminal launch.
+func validateNativeArgs(provider string, args []string) error {
+	values := map[string]bool{}
+	blocked := map[string]bool{}
+	var valueFlags, commands string
+	if provider == "codex" {
+		valueFlags = "-c --config --enable --disable --remote --remote-auth-token-env -i --image -m --model --local-provider -p --profile -s --sandbox -C --cd --add-dir -a --ask-for-approval"
+		commands = "agents exec e review login logout auth mcp plugin app-server remote-control app completion update upgrade install doctor sandbox debug apply a queue archive delete migrate-rollouts unarchive cloud exec-server features help"
+	} else {
+		valueFlags = "--add-dir --agent --agents --allowedTools --allowed-tools --append-system-prompt --autocompact --betas --debug-file --disallowedTools --disallowed-tools --effort --fallback-model --file --input-format --json-schema --max-budget-usd --mcp-config --model -n --name --output-format --permission-mode --permission-prompts --plugin-dir --plugin-url --remote-control-session-name-prefix --session-id --setting-sources --settings --system-prompt --system-prompt-snapshot --tools"
+		commands = "agents attach auth login logout auto-mode daemon doctor gateway import install logs mcp plugin plugins purge remote-control respawn rm self-hosted-runner setup-token stop kill ultrareview update upgrade"
+	}
+	for _, flag := range strings.Fields(valueFlags) {
+		values[flag] = true
+	}
+	for _, command := range strings.Fields(commands) {
+		blocked[command] = true
+	}
+	for _, arg := range args {
+		if strings.ContainsRune(arg, '\x00') {
+			return errors.New("native argv contains a NUL byte")
+		}
+	}
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			return nil // The native parser treats following tokens as prompt text.
+		}
+		if provider == "claude" && (arg == "-p" || arg == "--print" || strings.HasPrefix(arg, "--print=") || arg == "--bg" || arg == "--background") {
+			return errors.New("managed launch requires an interactive native terminal; print/background workflows are unsupported")
+		}
+		if values[arg] {
+			i++
+			continue
+		}
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+		if blocked[arg] {
+			return errors.New("native management commands require the provider's separate explicit workflow")
+		}
+		return nil // First positional token is an interactive prompt/resume command.
+	}
+	return nil
 }
 
 func inspectVersion(ctx context.Context, path, provider string) (string, error) {
