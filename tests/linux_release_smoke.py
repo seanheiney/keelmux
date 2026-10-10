@@ -234,8 +234,21 @@ class LinuxAcceptance:
             self.report["checks"].append({"name": name, "result": "pass", "detail": detail})
             print("PASS", name, flush=True)
         except Exception as error:
+            details = {"error": str(error)}
+            if self.terminals:
+                visible = self.terminals[-1].pump(0.1)
+                details["terminal_status_phrases"] = [phrase for phrase in (
+                    "local draft", "Draft saved locally", "Acquiring", "Attach refused",
+                    "Saved selection is unavailable", "prior attachment", "Returned to",
+                    "offline", "already held", "FIXTURE READY") if phrase in visible]
+                if self.args.diagnostics:
+                    private = Path(self.args.diagnostics)
+                    private.mkdir(mode=0o700, parents=True, exist_ok=True)
+                    screen = private / "fixture-screen.txt"
+                    screen.write_text(visible)
+                    screen.chmod(0o600)
             self.report["checks"].append({"name": name, "result": "fail",
-                                         "detail": {"error": str(error)}})
+                                         "detail": details})
             print("FAIL", name, str(error), flush=True)
             raise
 
@@ -430,6 +443,7 @@ class LinuxAcceptance:
         terminal.send("p")
         terminal.send("Linux saved draft café λ")
         terminal.send(b"\x1b")
+        terminal.expect("Draft saved locally")
         terminal.send("\r")
         wait_for(lambda: self.tmux("list-clients", "-F", "#{client_readonly}") == "0")
         self.restart()
@@ -555,6 +569,16 @@ class LinuxAcceptance:
                 self.tmux("kill-server")
             except subprocess.CalledProcessError:
                 errors.append("owned tmux cleanup returned failure")
+        # tmux acknowledges shutdown before its native pane has necessarily
+        # exited. Wait only for the recorded owned process lifetimes.
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            live = [pid for pid, start in self.owned_panes.items()
+                    if (current := process_start(pid)) and current[0] == start
+                    and current[1] != "Z"]
+            if not live:
+                break
+            time.sleep(0.05)
         for pid, start in self.owned_panes.items():
             current = process_start(pid)
             if current and current[0] == start and current[1] != "Z":
@@ -601,6 +625,7 @@ def main():
     parser.add_argument("--archive-sha256", required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--environment", help="captain-supplied owned Docker environment metadata")
+    parser.add_argument("--diagnostics", help="private fixture-only failure screen directory")
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
     LinuxAcceptance(args).run()
