@@ -786,16 +786,24 @@ class Harness:
                 self.record("existing_authority_refuses_second_daemon", self.authority_refusals)
 
     def report(self):
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root, text=True).strip()
-        source = subprocess.check_output(["git", "diff", "--binary", "HEAD", "--", "cmd", "internal",
-                                          "go.mod", "go.sum", "Makefile", "install.sh", "scripts"], cwd=self.root)
+        if self.args.harness_checkout_sha:
+            sha = self.args.harness_checkout_sha
+            source_digest = None
+            provenance = "Caller-supplied revision for a copied standalone harness; exact executed script digest is recorded. No implementation checkout comparison was performed."
+        else:
+            sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root, text=True).strip()
+            source = subprocess.check_output(["git", "diff", "--binary", "HEAD", "--", "cmd", "internal",
+                                              "go.mod", "go.sum", "Makefile", "install.sh", "scripts"], cwd=self.root)
+            source_digest = digest(source)
+            provenance = "Revision and implementation diff read from the actual harness checkout."
         missing = ["installed two-provider native terminal workflow and recovery",
                    "upgrade/downgrade schema compatibility", "public release download",
                    "independent remote host", "authenticated model turns"]
         if not any(g["name"] == "installed_runtime_state_and_sibling_discovery" and g["result"] == "pass" for g in self.results):
             missing.insert(0, "installed runtime state selection and sibling daemon startup")
         return {"schema": 1, "artifact_source_sha": self.args.artifact_source_sha,
-                "harness_checkout_sha": sha, "harness_checkout_implementation_diff_sha256": digest(source),
+                "harness_checkout_sha": sha, "harness_checkout_implementation_diff_sha256": source_digest,
+                "harness_provenance_qualification": provenance,
                 "harness_sha256": digest(Path(__file__).read_bytes()),
                 "installer_sha256": digest(self.args.installer.read_bytes()),
                 "version": self.args.version, "platform": platform.platform(),
@@ -815,11 +823,15 @@ def main():
     parser.add_argument("--version", default="v0.1.0")
     parser.add_argument("--artifact-source-sha", required=True,
                         help="full source commit embedded in this release's version output")
+    parser.add_argument("--harness-checkout-sha",
+                        help="full caller-supplied revision when running a copied standalone harness without git; explicitly qualified in the receipt")
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--runtime", action="store_true", help="also start and stop empty owned packaged daemons; needs tmux")
     args = parser.parse_args()
     need(bool(re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", args.version)), "invalid_version")
     need(bool(re.fullmatch(r"[a-f0-9]{40}", args.artifact_source_sha)), "invalid_artifact_source_sha")
+    need(args.harness_checkout_sha is None or bool(re.fullmatch(r"[a-f0-9]{40}", args.harness_checkout_sha)),
+         "invalid_harness_checkout_sha")
     args.installer, args.assets = args.installer.resolve(), args.assets.resolve()
     harness = Harness(args)
     try:
