@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"unicode/utf8"
 
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/domain"
+	"golang.org/x/sys/unix"
 )
 
 // Version 2 adds addressed channel drafts and immutable outbound intents. Old
@@ -97,16 +99,32 @@ func New() State {
 }
 
 func Load(path string) (State, error) {
-	f, err := os.Open(path)
+	fd, err := unix.Open(path, unix.O_RDONLY|unix.O_CLOEXEC|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0)
 	if errors.Is(err, os.ErrNotExist) {
 		return New(), nil
 	}
 	if err != nil {
 		return State{}, err
 	}
+	f := os.NewFile(uintptr(fd), path)
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return State{}, err
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || !ok || stat.Uid != uint32(os.Geteuid()) {
+		return State{}, errors.New("client place must be an owned regular private (0600) file")
+	}
+	data, err := io.ReadAll(io.LimitReader(f, (4<<20)+1))
+	if err != nil {
+		return State{}, err
+	}
+	if len(data) > 4<<20 || !utf8.Valid(data) {
+		return State{}, errors.New("client place exceeds safe size or has invalid UTF-8")
+	}
 	var s State
-	d := json.NewDecoder(io.LimitReader(f, 4<<20))
+	d := json.NewDecoder(bytes.NewReader(data))
 	var raw json.RawMessage
 	if err := d.Decode(&raw); err != nil {
 		return State{}, fmt.Errorf("read client place: %w", err)
@@ -115,7 +133,7 @@ func Load(path string) (State, error) {
 	if err := d.Decode(&trailing); !errors.Is(err, io.EOF) {
 		return State{}, errors.New("client place has trailing or oversized data")
 	}
-	if err := distinctStateKeys(json.NewDecoder(bytes.NewReader(raw)), 0); err != nil {
+	if err := distinctStateKeys(json.NewDecoder(bytes.NewReader(raw)), 0, true); err != nil {
 		return State{}, fmt.Errorf("read client place: %w", err)
 	}
 	d = json.NewDecoder(bytes.NewReader(raw))
@@ -126,7 +144,13 @@ func Load(path string) (State, error) {
 	if s.Version == 1 {
 		// Only the original schema can migrate. A v1 file carrying new fields
 		// is ambiguous and must not be silently promoted or reset.
-		if len(s.ChannelDrafts) != 0 || s.PendingChannel != nil {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return State{}, err
+		}
+		_, hasDrafts := fields["channel_drafts"]
+		_, hasPending := fields["pending_channel_send"]
+		if hasDrafts || hasPending {
 			return State{}, errors.New("version 1 place contains channel state; repair required")
 		}
 		s.Version = Version

@@ -5,7 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestV1MigrationPreservesNativePlaceGroupsDraftAndLease(t *testing.T) {
@@ -101,6 +105,12 @@ func TestNewUnknownAndAmbiguousV1FieldsRefuseWithoutReset(t *testing.T) {
 		`{"version":2,"client_id":"client","future_authority":{"token":"test"}}`,
 		`{"version":2,"client_id":"client","version":1}`,
 		`{"version":2,"client_id":"client","channel_drafts":[{"thread_id":"t","binding_id":"b","text":"frozen"}],"pending_channel_send":{"message_id":"m","thread_id":"t","binding_id":"b","text":"frozen"},"pending_channel_send":null}`,
+		`{"version":2,"client_id":"client","channel_drafts":[{"thread_id":"t","binding_id":"b","text":"frozen"}],"pending_channel_send":{"message_id":"m","thread_id":"t","binding_id":"b","text":"frozen"},"PENDING_CHANNEL_SEND":null}`,
+		`{"version":2,"client_id":"client","VERSION":1}`,
+		`{"version":2,"client_id":"client","places":{},"CHANNEL_DRAFTS":[]}`,
+		`{"version":1,"client_id":"client","channel_drafts":null}`,
+		`{"version":1,"client_id":"client","channel_drafts":[]}`,
+		`{"version":1,"client_id":"client","pending_channel_send":null}`,
 		`{"version":1,"client_id":"client","channel_drafts":[{"thread_id":"t","binding_id":"b","text":"text"}]}`,
 		`{"version":2,"client_id":"client","pending_channel_send":{"message_id":"m","thread_id":"t","binding_id":"b","text":"frozen"}}`,
 	} {
@@ -112,5 +122,89 @@ func TestNewUnknownAndAmbiguousV1FieldsRefuseWithoutReset(t *testing.T) {
 		if string(after) != raw {
 			t.Fatal("load reset invalid authority")
 		}
+	}
+}
+
+func TestChannelPlaceFiniteUTF8AndOversizeReaderPreservesBytes(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "place.json")
+	valid := `{"version":2,"client_id":"client","places":{}}`
+	for _, raw := range []string{
+		valid + strings.Repeat(" ", (4<<20)-len(valid)) + `{"pending_channel_send":null}`,
+		`{"version":2,"client_id":"client","places":{},"channel_drafts":[{"thread_id":"t","binding_id":"b","text":"` + string([]byte{0xff}) + `"}]}`,
+	} {
+		os.WriteFile(path, []byte(raw), 0600)
+		if _, err := Load(path); err == nil {
+			t.Fatal("oversize/invalid UTF8 accepted as authoritative state")
+		}
+		after, _ := os.ReadFile(path)
+		if string(after) != raw {
+			t.Fatal("refusal modified authority bytes")
+		}
+	}
+}
+
+func TestChannelPlaceAndLockRejectUnsafeFilesWithoutBlocking(t *testing.T) {
+	for _, kind := range []string{"symlink", "fifo", "directory", "permissions"} {
+		t.Run(kind, func(t *testing.T) {
+			root := t.TempDir()
+			path := filepath.Join(root, "place.json")
+			bytes := []byte(`{"version":2,"client_id":"client","places":{}}`)
+			create := func(path string) {
+				switch kind {
+				case "symlink":
+					os.WriteFile(path+"-target", bytes, 0600)
+					if err := os.Symlink(path+"-target", path); err != nil {
+						t.Fatal(err)
+					}
+				case "fifo":
+					if err := unix.Mkfifo(path, 0600); err != nil {
+						t.Fatal(err)
+					}
+				case "directory":
+					os.Mkdir(path, 0700)
+				case "permissions":
+					os.WriteFile(path, bytes, 0644)
+					os.Chmod(path, 0644)
+				}
+			}
+			create(path)
+			create(path + ".lock")
+			start := time.Now()
+			if _, err := Load(path); err == nil {
+				t.Fatal("unsafe state descriptor accepted")
+			}
+			if lock, err := AcquireLock(path); err == nil || lock != nil {
+				t.Fatal("unsafe lock descriptor accepted")
+			}
+			if time.Since(start) > time.Second {
+				t.Fatal("special state/lock blocked caller")
+			}
+			if kind == "symlink" {
+				after, _ := os.ReadFile(path + "-target")
+				if string(after) != string(bytes) {
+					t.Fatal("symlink target modified")
+				}
+			} else if kind == "permissions" {
+				info, _ := os.Stat(path)
+				lockInfo, _ := os.Stat(path + ".lock")
+				if info.Mode().Perm() != 0644 || lockInfo.Mode().Perm() != 0644 {
+					t.Fatal("refusal silently adopted unsafe file")
+				}
+			}
+		})
+	}
+}
+
+func TestPlaceMapIdentityRemainsCaseSensitive(t *testing.T) {
+	s := New()
+	s.Places["GroupA"] = Place{SessionID: "first"}
+	s.Places["groupa"] = Place{SessionID: "second"}
+	path := filepath.Join(t.TempDir(), "place.json")
+	if err := Save(path, s); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(path)
+	if err != nil || !reflect.DeepEqual(s, got) {
+		t.Fatalf("schema case refusal folded stable map identities: %v", err)
 	}
 }
