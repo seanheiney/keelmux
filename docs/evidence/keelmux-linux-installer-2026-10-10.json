@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "artifact_source_sha": "0be153b2ae2fc2ad0d47120287bcdce2f8f3cc44",
+  "harness_checkout_sha": "bdbae07298a9a7cb61916b70c7dbad613150bc97",
+  "harness_checkout_implementation_diff_sha256": null,
+  "harness_provenance_qualification": "Caller-supplied revision for a copied standalone harness; exact executed script digest is recorded. No implementation checkout comparison was performed.",
+  "harness_sha256": "bf6b8b3bdabfdc5fc7eaff8b9c37bf736e64a2cc832d4b9ec8765d0c0ec39c14",
+  "installer_sha256": "6d3621593492f92573b544311af1113b401f8133deec4b099fd69b74d00a6cb3",
+  "version": "v0.1.0",
+  "platform": "Linux-6.8.0-100-generic-aarch64-with-glibc2.36",
+  "archive": "keelmux_v0.1.0_linux_arm64.tar.gz",
+  "model_turns_submitted": 0,
+  "qualification": "Actual release binaries and installer with owned loopback assets and temporary HOME. Preservation uses owned sentinels, not real credentials. Optional runtime starts empty packaged daemons only; no vendor CLI or native model work.",
+  "artifact_source_clean": true,
+  "artifact_development_test": false,
+  "result": "pass",
+  "groups": [
+    {
+      "name": "artifact_identity",
+      "result": "pass",
+      "seconds": 0.25,
+      "archive_sha256": "38c04ebb0d2815bebea4f4966e0cbd254412072fe4cf16c0ac6210b083df4aa3",
+      "target": "linux_arm64",
+      "manifest_source_commit_verified": true,
+      "manifest_file_digests_verified": true
+    },
+    {
+      "name": "http_requires_explicit_test_optin",
+      "result": "pass",
+      "seconds": 0.513,
+      "no_download_without_test_optin": true
+    },
+    {
+      "name": "fresh_install_and_reinstall",
+      "result": "pass",
+      "seconds": 1.963,
+      "installed_executable_sha256": {
+        "keelmux": "cecae75ab819dd602e3387f0a2d4642b4fc76e746bfcda4c68d266f340462aa9",
+        "keelmuxd": "ac54bb2afec3bd78bdf9adff2c853805e628adb7adf45a119d1b28da388c21ef",
+        "keelmux-entry": "8bf55ec506c45703e5f020db49fca2128b27630422b0886f1bb013127db67482",
+        "bp": "cecae75ab819dd602e3387f0a2d4642b4fc76e746bfcda4c68d266f340462aa9",
+        "bpd": "ac54bb2afec3bd78bdf9adff2c853805e628adb7adf45a119d1b28da388c21ef",
+        "bpg": "8bf55ec506c45703e5f020db49fca2128b27630422b0886f1bb013127db67482"
+      },
+      "native_and_shell_sentinels_preserved": true
+    },
+    {
+      "name": "installation_paths_with_spaces",
+      "result": "pass",
+      "seconds": 1.042,
+      "quoted_install_paths": true
+    },
+    {
+      "name": "checksum_mismatch",
+      "result": "pass",
+      "seconds": 1.631,
+      "accepted_install_preserved": true
+    },
+    {
+      "name": "truncated_download",
+      "result": "pass",
+      "seconds": 1.28,
+      "accepted_install_preserved": true
+    },
+    {
+      "name": "missing_checksum",
+      "result": "pass",
+      "seconds": 1.308,
+      "accepted_install_preserved": true
+    },
+    {
+      "name": "missing_archive",
+      "result": "pass",
+      "seconds": 1.276,
+      "accepted_install_preserved": true
+    },
+    {
+      "name": "unowned_collisions",
+      "result": "pass",
+      "seconds": 4.55,
+      "unowned_names_checked": 6,
+      "unowned_symlink_preserved": true,
+      "unowned_path_command_preserved": true
+    },
+    {
+      "name": "verified_archive_boundaries",
+      "result": "pass",
+      "seconds": 14.055,
+      "verified_malformed_archive_cases": 4,
+      "outside_sentinel_preserved": true
+    },
+    {
+      "name": "unsupported_platform",
+      "result": "pass",
+      "seconds": 0.505,
+      "no_download": true
+    },
+    {
+      "name": "concurrent_install",
+      "result": "pass",
+      "seconds": 1.034,
+      "complete_installs": 1,
+      "clean_refusals": 1
+    },
+    {
+      "name": "owned_uninstall_preserves_state",
+      "result": "pass",
+      "seconds": 1.905,
+      "retained_state_and_skill_archive": true,
+      "unowned_replacement_preserved": true
+    },
+    {
+      "name": "readonly_product_information",
+      "result": "pass",
+      "seconds": 1.092,
+      "actual_packaged_command_cases": 18,
+      "state_not_created": true
+    },
+    {
+      "name": "installed_runtime_state_and_sibling_discovery",
+      "result": "pass",
+      "seconds": 6.82,
+      "canonical_and_legacy_cold_starts": 10,
+      "state_precedence_cases": 5,
+      "unsafe_legacy_refusals": 3,
+      "owned_daemons_stopped": true,
+      "native_processes_launched": 0
+    },
+    {
+      "name": "existing_authority_refuses_second_daemon",
+      "result": "pass",
+      "seconds": 1.892,
+      "actual_packaged_cli_digest_preserved": true,
+      "refusals_with_zero_sibling_execs": 5,
+      "healthy_existing_authority_control": true,
+      "missing_socket_positive_exec_count": 1,
+      "qualification": "Actual packaged CLI against private Unix HTTP fixtures and a counted sibling exec wrapper; the positive wrapper starts the actual packaged empty daemon."
+    }
+  ],
+  "missing_evidence": [
+    "installed two-provider native terminal workflow and recovery",
+    "upgrade/downgrade schema compatibility",
+    "public release download",
+    "independent remote host",
+    "authenticated model turns"
+  ]
+}
