@@ -1,0 +1,144 @@
+{
+  "archive_sha256": "1bd97a0917036061e2dcdfc29149c2e252e3bc856282e0956afa2aaaa54dd787",
+  "binary_sha256": {
+    "keelmux": "5aa763694065feda2726747b705af2959ec272b6bd8977f27e61ba532d30267a",
+    "keelmux-supervisor": "7832a7b48f2f2cc633a467f1adfcbd415a43277ede7c1287594dc678f00d4ddb",
+    "keelmuxd": "1998ccde2669f90f7c3131df03014e78feb227538e08d4d7d050d25974cafbe7"
+  },
+  "checks": {
+    "actual_bot_adapter_reconnected": true,
+    "actual_bot_reply_no_duplicate_after_retries_restart": true,
+    "actual_cli_exact_native_fixture_stop": true,
+    "actual_cli_init": true,
+    "actual_cli_ircd_start": true,
+    "actual_cli_stable_thread_registered_bind": true,
+    "actual_control_process_replaced": true,
+    "actual_control_source_identity": true,
+    "actual_daemon_started": true,
+    "actual_human_account_private_ref": true,
+    "actual_ircd_explicit_replacement": true,
+    "actual_keelmux-supervisor_built_diagnostic_bytes_0": true,
+    "actual_keelmux_built_diagnostic_bytes_0": true,
+    "actual_keelmuxd_built_diagnostic_bytes_0": true,
+    "actual_native_fixture_running": true,
+    "actual_private_bp1_ready": true,
+    "actual_scoped_ca_tls_sasl_human_identity": true,
+    "allowlisted_human_durable_inbox": true,
+    "allowlisted_intake_after_control_restart": true,
+    "authenticated_exact_registered_channel_owner": true,
+    "authored_inbox_never_native_input": true,
+    "authored_inbox_persists_control_restart": true,
+    "bot_reply_matching_actual_echo_delivered": true,
+    "exact_authenticated_cleanup": true,
+    "exact_native_process_and_helper_lifetimes_preserved": true,
+    "explicit_cli_bot_reply_durably_queued": true,
+    "fixture_byte_input_sentinel_ready": true,
+    "human_account_readonly_after_ircd_replacement": true,
+    "human_message_matching_actual_echo": true,
+    "human_observed_exact_bot_reply": true,
+    "human_received_same_server_message_id_as_bot_echo": true,
+    "inbox_semantic_dispatch_disabled": true,
+    "input_sentinel_created": true,
+    "lazy_optional_irc": true,
+    "lazy_optional_tmux.sock": true,
+    "lazy_optional_tmux.sock.bp": true,
+    "native_fixture_stable_identity_survives_control_restart": true,
+    "native_ircd_before_control_restart": true,
+    "native_ircd_survives_control_restart": true,
+    "no_tmux_on_control_path": true,
+    "owned_ircd_manager": true,
+    "owned_native_backend": true,
+    "pinned_offline_archive_opened": true,
+    "registered_binding_readonly_reconfirmation": true,
+    "registered_channel_durable_across_ircd_replacement": true,
+    "same_ircd_start_operation_no_replay": true,
+    "same_message_operation_after_restart_no_replay": true,
+    "same_message_operation_same_receipt": true,
+    "stale_stop_preserves_replacement": true,
+    "verified_pinned_offline_runtime": true
+  },
+  "control_instances": [
+    "daemon_924ac5265eae64e843ef62bd1a534728",
+    "daemon_751bfa6a0ef9d61a7c0152b958a2a85b"
+  ],
+  "control_processes": [
+    {
+      "instance": "daemon_924ac5265eae64e843ef62bd1a534728",
+      "pid": 73528,
+      "process_start": "Sat Oct 10 17:13:37 2026"
+    },
+    {
+      "instance": "daemon_751bfa6a0ef9d61a7c0152b958a2a85b",
+      "pid": 73587,
+      "process_start": "Sat Oct 10 17:13:42 2026"
+    }
+  ],
+  "delivered_reply": {
+    "operation": "message_fbe3c13c47d67f53ecac95153ad3988d",
+    "remote_id": "cb3mc9v998kvxum4qnyg6pexxw",
+    "state": "delivered"
+  },
+  "ergo_runtime": {
+    "binary_sha256": "3f1b503515f38997774a66f44e9b32c028ff55a4546fca00f07c944bc9a59569",
+    "source": "63c743a70644f0f19109508ade8580bf37f7d23d",
+    "target": "darwin/arm64",
+    "version": "2.19.1"
+  },
+  "final_stage": "complete",
+  "finished_at": "2026-10-10T21:13:47.769308Z",
+  "fixture_execution": "execution_002b4d1fbb2f64e308f57dbb65e063b7",
+  "go_version": "go1.26.6",
+  "host_target": "darwin/arm64",
+  "ircd_instances": [
+    "execution_e0bb51620931d00382f291306fd954f8",
+    "execution_f3719802d8fd8accdc89ff88cb306025"
+  ],
+  "limitations": [
+    "IRC intake is bounded live coverage; disconnects explicitly report a history gap.",
+    "Delivered proves matching server echo, not reader receipt or model acceptance.",
+    "Registration permission consumed before failed authentication can require manual repair.",
+    "This proof covers the recorded source and host only; package and customer qualification are separate."
+  ],
+  "native_input_bytes": 0,
+  "native_input_sent": false,
+  "owned_native_execution_count": 3,
+  "owned_native_helper_count": 3,
+  "owned_process_proofs": [
+    {
+      "execution_id": "execution_002b4d1fbb2f64e308f57dbb65e063b7",
+      "execution_pid": 73530,
+      "execution_process_start": "darwin:1791666817:814117",
+      "supervisor_pid": 73529,
+      "supervisor_process_start": "darwin:1791666817:505156"
+    },
+    {
+      "execution_id": "execution_e0bb51620931d00382f291306fd954f8",
+      "execution_pid": 73564,
+      "execution_process_start": "darwin:1791666820:227205",
+      "supervisor_pid": 73563,
+      "supervisor_process_start": "darwin:1791666820:210201"
+    },
+    {
+      "execution_id": "execution_f3719802d8fd8accdc89ff88cb306025",
+      "execution_pid": 73658,
+      "execution_process_start": "darwin:1791666826:898877",
+      "supervisor_pid": 73657,
+      "supervisor_process_start": "darwin:1791666826:884550"
+    }
+  ],
+  "passed": true,
+  "production_or_customer_proof": false,
+  "provider_or_model_activity": false,
+  "registered_channel": {
+    "channel": "#keelmux-s6jgxudnkj2q6hwkg2ksewkofmcexbisiky7ix6emtvj5oq5l4ia",
+    "operation": "operation_48d9214521b170107601ee6bb08b7f88",
+    "owner": "keelmux-bot",
+    "registered_at": "2026-10-10T21:13:40.710Z"
+  },
+  "schema": "keelmux-managed-ircd-product/v1",
+  "scope": "isolated owned CLI/API/native/TLS/IRC authored-inbox acceptance",
+  "source_clean": true,
+  "source_commit": "0d1fd5ad8af05fe0d1f531a9a6519206e166721b",
+  "stable_thread": "thread_7fe39b2f08841f9205d0f7c23e1db3da",
+  "started_at": "2026-10-10T21:13:35.368723Z"
+}
