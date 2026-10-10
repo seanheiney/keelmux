@@ -18,6 +18,10 @@ Run `keelmux` to open the remembered switcher. Navigation reads known inventory;
 | `?` | Show contextual help |
 | `q` | Close the switcher; owned sessions keep running |
 
+## Source usage panel
+
+In the feature batch after v0.2.1, press **u** from the switcher to read the local ledger for the captured host/session. The panel preserves navigation; **r** rereads and **Escape** returns. It keeps unknown coverage, manual declarations, model attribution and stale observations visible. No account or money detail is granted by this session view. [Usage guide](usage.md), [source availability](feature-expansion.md).
+
 ## Selected runtime
 
 The selected workspace is followed by a compact **Runtime** line. `native` identifies Keelmux's owned supervisor; `legacy tmux` identifies an existing execution on the optional compatibility adapter. `unknown` means the inventory did not supply a recognized backend. It is never inferred from the session's name, workspace or managed mode.

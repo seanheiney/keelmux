@@ -12,9 +12,9 @@ The center stays the same: actual vendor terminals on user-owned machines, stabl
 
 The current terminal implementation and private entry experiment contribute to these stages. They do not complete every terminal-alpha release gate or the Bouncer MVP. Two local homes are not two independent servers. A local draft is not a chat message. A zero-turn native bootstrap is not authenticated model work.
 
-The 0.2 runtime owns PTYs and foreground services independently of tmux. Its native helper and managed Ergo have actual lifecycle evidence, with final provider/package qualification still active. Existing tmux executions remain an optional compatibility path.
+The 0.2 runtime owns PTYs and foreground services independently of tmux. Its native helper and managed Ergo have exact v0.2.1 installed lifecycle and published-archive evidence. Existing tmux executions remain an optional compatibility path.
 
-The 0.2 channel release adds authored inboxes and explicit replies attached to stable threads. This is useful communication without granting chat senders model or terminal authority. Mattermost is the first real-server qualification target; Slack and IRC retain their declared fixture/capability limits. Structured model dispatch, remote home enrollment and captains remain separate milestones.
+The 0.2 channel release adds authored inboxes and explicit replies attached to stable threads. This is useful communication without granting chat senders model or terminal authority. Owned real Mattermost and managed IRC have the declared v0.2.1 acceptance evidence; Slack retains protocol-fixture coverage. Structured model dispatch, remote home enrollment and captains remain separate milestones.
 
 ## Current Codex work
 

@@ -49,6 +49,10 @@ The current native runtime evidence covers **macOS arm64, Codex 0.159.0 and Clau
 
 A private entry can expose explicitly permitted sessions from multiple execution homes. Its current proof uses two homes on one computer. Keelmux 0.2 adds authored Mattermost/Slack/IRC inboxes, explicit replies and an optional managed Ergo server with project channels and a distinct bot per stable thread. Independent remote enrollment, structured model dispatch, task continuation, usage routing and captains remain on the [roadmap](docs/user/roadmap.md). The experimental Codex broker has controlled zero-turn evidence; it is not an interactive product command or advertised semantic capability.
 
+## Next source features
+
+The [fuller feature batch](docs/user/feature-expansion.md) adds CLI group administration, a contextual usage panel, explicit SSH inventory enrollment and read-only diagnostics. These are source features newer than the published v0.2.1 installer. [Groups](docs/user/groups.md) · [Usage](docs/user/usage.md) · [SSH peers](docs/user/ssh-peers.md) · [Diagnostics](docs/user/diagnostics.md).
+
 ## Operate with confidence
 
 | Need | Guide |

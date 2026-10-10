@@ -2,6 +2,16 @@
 
 Release notes describe implemented behavior and exact evidence. The [roadmap](docs/user/roadmap.md) records the broader product vision separately.
 
+## Unreleased · fuller feature batch
+
+These source features are newer than the published v0.2.1 archives. The one-line installer continues to select v0.2.1 until a new packaged release passes its own qualification.
+
+- Manage optional company/product navigation groups from the CLI: nested collections, stable rename/reparent, overlapping work/thread/session/workspace membership, selection and exact removal. Workers and unsent drafts remain independent of navigation.
+- Inspect source-qualified local usage through the CLI or **u** in the switcher. Atomic manual import keeps declared calls separate from provider observations; coverage, missing measurements, actual-model attribution and freshness remain explicit.
+- Enroll explicit SSH homes with a selected known-host fingerprint and exact principal/session grant. CLI inventory and the private entry expose permitted records without remote installation, daemon startup, runtime attachment or failover.
+- Read-only runtime diagnostics inspect existing private state, saved registry/channel/IRC evidence and an existing owned daemon. Optional version probes require an explicit flag; missing state is not created.
+- Internal Codex primary integration shares common Service reservation, writer and stop fences. The native product launcher and semantic dispatch remain disabled pending native ownership/recovery qualification.
+
 ## 0.2.1 · 2026-10-10
 
 - Independent native PTY/process supervision is the default, with a bundled supervisor and no mandatory tmux. Native attachment, screen recovery and writer ownership survive control-daemon replacement.

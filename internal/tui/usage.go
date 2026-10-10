@@ -82,7 +82,14 @@ func (m *model) usageView() string {
 	if u == nil {
 		return m.render([]viewLine{line("Usage unavailable", warning)}, nil)
 	}
-	body := []viewLine{line("Keelmux / usage · "+u.target.Name, accent), line("Host "+string(u.target.HostID)+" · session "+string(u.target.ID), muted), line("Local observations · last 24 hours · UTC", muted), line("Coverage unknown; totals describe the recorded subset.", warning)}
+	identity := func(label string, id domain.ID) string {
+		text := string(id)
+		if len(label)+len(text) > m.contentWidth() && len(text) > 16 {
+			text = text[:min(8, len(text))] + "…" + text[len(text)-8:]
+		}
+		return label + text
+	}
+	body := []viewLine{line("Keelmux / usage · "+u.target.Name, accent), line(identity("Host ", u.target.HostID), muted), line(identity("Session ", u.target.ID), muted), line("Local observations · last 24 hours · UTC", muted), line("Coverage unknown; totals describe the recorded subset.", warning)}
 	rows := []viewLine{}
 	switch {
 	case u.loading:
