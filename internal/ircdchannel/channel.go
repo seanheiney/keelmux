@@ -174,18 +174,18 @@ func (s *Service) Ensure(parent context.Context, threadID, operationID domain.ID
 	if err != nil {
 		return Route{}, err
 	}
-	if !matchesOperation(op, cfg, channel, threadID) || fresh && (op.ID != operationID || op.State != "attempted") {
+	if !matchesOperation(op, cfg, channel, threadID) || fresh && (op.ID != operationID || op.State != "attempted" || op.RegisteredAt != "") {
 		return Route{}, ErrScope
 	}
 	if !fresh {
-		return s.confirm(ctx, cfg, channel, threadID)
+		return s.confirm(ctx, cfg, channel, threadID, op.ID)
 	}
 	// Permission has now been consumed even if the connection fails before JOIN.
 	// This deliberately leaves an attempted journal for read-only repair.
 	attemptCtx, cancel := context.WithTimeout(ctx, s.timeout)
 	mutationErr := s.register(attemptCtx, cfg, secret, channel)
 	cancel()
-	route, confirmErr := s.confirm(ctx, cfg, channel, threadID)
+	route, confirmErr := s.confirm(ctx, cfg, channel, threadID, op.ID)
 	if confirmErr == nil {
 		return route, nil
 	}
@@ -196,10 +196,10 @@ func (s *Service) Ensure(parent context.Context, threadID, operationID domain.ID
 }
 
 func matchesOperation(op ircd.ChannelOperation, c ircd.Config, channel string, threadID domain.ID) bool {
-	return validOperationID(op.ID) && op.ServerID == c.ID && op.ThreadID == threadID && op.Channel == channel && (op.Owner == "" || op.Owner == c.Account)
+	return validOperationID(op.ID) && op.ServerID == c.ID && op.ThreadID == threadID && op.Channel == channel && op.Owner == c.Account && !op.UpdatedAt.IsZero() && (op.State == "attempted" || op.State == "confirmed")
 }
 
-func (s *Service) confirm(ctx context.Context, cfg ircd.Config, channel string, threadID domain.ID) (Route, error) {
+func (s *Service) confirm(ctx context.Context, cfg ircd.Config, channel string, threadID, originalOperationID domain.ID) (Route, error) {
 	bounded, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 	op, err := s.runtime.ConfirmChannel(bounded, channel, threadID)
@@ -207,7 +207,7 @@ func (s *Service) confirm(ctx context.Context, cfg ircd.Config, channel string, 
 		return Route{}, ErrUncertain
 	}
 	registered, err := time.Parse(time.RFC3339Nano, op.RegisteredAt)
-	if !matchesOperation(op, cfg, channel, threadID) || op.State != "confirmed" || op.Owner != cfg.Account || err != nil || registered.IsZero() || op.UpdatedAt.IsZero() {
+	if !matchesOperation(op, cfg, channel, threadID) || op.ID != originalOperationID || op.State != "confirmed" || err != nil || registered.IsZero() {
 		return Route{}, ErrScope
 	}
 	return Route{ServerID: cfg.ID, ThreadID: threadID, OperationID: op.ID, Endpoint: cfg.Endpoint, RealmID: cfg.RealmID, Account: cfg.Account, CredentialRef: cfg.CredentialRef, CAFile: cfg.CAFile, Channel: channel, RegisteredAt: op.RegisteredAt, ConfirmedAt: op.UpdatedAt}, nil

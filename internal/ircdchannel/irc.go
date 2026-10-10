@@ -254,6 +254,7 @@ func authenticate(ctx context.Context, conn net.Conn, reader *bufio.Reader, nick
 	}
 	available, acked := map[string]string{}, map[string]bool{}
 	requested, authStarted, authSent, accountConfirmed, saslConfirmed := false, false, false, false, false
+	saslTarget := ""
 	for count := 0; count < 512; count++ {
 		m, err := read(reader)
 		if err != nil {
@@ -342,12 +343,23 @@ func authenticate(ctx context.Context, conn net.Conn, reader *bufio.Reader, nick
 			}
 			authSent = true
 		case "900":
-			if !authSent || accountConfirmed || !numericFor(m, nick) || len(m.params) != 4 || m.params[2] != secret.Account || !strings.HasPrefix(m.params[1], nick+"!") || !strings.Contains(m.params[1], "@") {
+			if !authSent || accountConfirmed || len(m.params) != 4 || !numericFor(m, m.params[0]) || m.params[2] != secret.Account {
 				return ErrAuthentication
 			}
+			// Ergo defers assigning the requested nick until registration ends:
+			// its pre-registration 900 has target and mask both "*". Accept
+			// precisely that pair, bind 903 to the same target, and require the
+			// subsequent 001 to confirm our exact requested nick. Mixed or
+			// renamed identities never authorize JOIN.
+			placeholder := m.params[0] == "*" && m.params[1] == "*"
+			exactNick := m.params[0] == nick && strings.HasPrefix(m.params[1], nick+"!") && strings.Contains(m.params[1], "@")
+			if !placeholder && !exactNick {
+				return ErrAuthentication
+			}
+			saslTarget = m.params[0]
 			accountConfirmed = true
 		case "903":
-			if !authSent || !accountConfirmed || saslConfirmed || !numericFor(m, nick) {
+			if !authSent || !accountConfirmed || saslConfirmed || !numericFor(m, saslTarget) {
 				return ErrAuthentication
 			}
 			saslConfirmed = true
