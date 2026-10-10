@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "tested_sha": "498abebbd69f99bff9bb7542bac37a6815d71c5d",
+  "harness_sha256": "00255959715e48e1675f9ef55d3a76157dba4b786f20e537cd3f451c245fe3a6",
+  "native_core_harness_sha256": "4480a541aea72432f8f0f497841f6a4b358d1e3d7d4b80f985f4d64a3301248f",
+  "binary_sha256": {
+    "bp": "3eb78d7ff587097ab4cb2bacd6e99d57eb495413a841aba4356fcedee7082b65",
+    "bpd": "951a4e2ce2e112dd998dfe28045310a7215b72df722df29442e8d5b76163a098",
+    "bpg": "49a6b835913a471d316b4a41a590481a75a7fd4b4e04de971aefac2d2417e08e"
+  },
+  "utc": "2026-10-10T17:56:16Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "kind": "native_programs_through_same_computer_executable_gateway",
+  "model_prompt_submitted": false,
+  "configuration": "owned600 principal+explicit home/session grants; startup reload on restart",
+  "checks": [
+    {
+      "name": "actual native homes through executable entry",
+      "result": "pass",
+      "detail": {
+        "actual_programs": [
+          "codex",
+          "claude"
+        ],
+        "separate_executable_homes": 2,
+        "same_computer": true,
+        "exact_inherited_link_before_exec": true,
+        "native_workspace": "/Volumes/DataSSD1/agent-backplane",
+        "workspace_trust": "existing_native_trust",
+        "login_changes": false,
+        "upgrades": false,
+        "native_skill_invocation": "not_run"
+      }
+    },
+    {
+      "name": "codex native gateway attach/detach/reconnect",
+      "result": "pass",
+      "detail": {
+        "provider": "codex",
+        "native_composer_output_received_via_gateway": true,
+        "unicode_draft_visible_in_native_composer": true,
+        "native_escape_sent": true,
+        "resize": "91x28",
+        "ctrl_g_d_returns_actual_tui": true,
+        "lease_release_confirmed": true,
+        "selection_filter_all_work_group_preserved": true,
+        "tui_reopen_native_reconnect": true,
+        "same_home_execution_pid_pane": true,
+        "native_enter_sent": false,
+        "model_prompt_submitted": false,
+        "authenticated_turn": "not_run",
+        "display_reader": "continuously_pumped_PTY"
+      }
+    },
+    {
+      "name": "claude native gateway attach/detach/reconnect",
+      "result": "pass",
+      "detail": {
+        "provider": "claude",
+        "native_composer_output_received_via_gateway": true,
+        "unicode_draft_visible_in_native_composer": true,
+        "native_escape_sent": true,
+        "resize": "91x28",
+        "ctrl_g_d_returns_actual_tui": true,
+        "lease_release_confirmed": true,
+        "selection_filter_all_work_group_preserved": true,
+        "tui_reopen_native_reconnect": true,
+        "same_home_execution_pid_pane": true,
+        "native_enter_sent": false,
+        "model_prompt_submitted": false,
+        "authenticated_turn": "not_run",
+        "display_reader": "continuously_pumped_PTY"
+      }
+    }
+  ],
+  "missing_evidence": [
+    "independent remote hosts and enrollment/authentication",
+    "native skill instruction loading/invocation",
+    "authenticated model turn and verified effective account/model",
+    "display backpressure stress",
+    "host reboot/native resume"
+  ],
+  "gateway_harness_sha256": "09ebded8b6046468b65c94ad330a63d0a90abf2dc4b83b65f172f7bad8958780",
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "auth_mode": "existing native realm; account/model unknown; no model prompt submitted",
+  "provider_journeys_requested": "all"
+}

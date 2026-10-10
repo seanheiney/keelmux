@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "tested_sha": "498abebbd69f99bff9bb7542bac37a6815d71c5d",
+  "harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "utc": "2026-10-10T17:53:52Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "auth_mode": "existing native realm; effective account/model unknown; no model prompt submitted",
+  "socket": "private owned /tmp/bp-a-*/s/tmux.sock",
+  "checks": [
+    {
+      "name": "codex native launch/link/TUI/reconnect/restart",
+      "kind": "native_program",
+      "result": "fail",
+      "detail": {
+        "error": "condition did not become true within deadline",
+        "runtime_health": [
+          {
+            "provider": "codex",
+            "pane_dead": "0"
+          }
+        ],
+        "writable_client_flags": "0",
+        "terminal_status_phrases": [
+          "Acquiring"
+        ]
+      }
+    }
+  ],
+  "missing_evidence": [
+    "authenticated model turn and verified effective account/model",
+    "native skill invocation and preload",
+    "real independent remote servers",
+    "host reboot/native resume",
+    "cross-provider continuity/model change",
+    "Mattermost/IRC delivery",
+    "independent-user speed/accessibility pilot"
+  ]
+}

@@ -44,3 +44,11 @@ python3 tests/gateway_authority.py --report docs/evidence/gateway-authority.json
 ```
 
 `--only uncertain` and `--only direct` isolate the two restart boundaries. Pre-fix receipts intentionally record both failing reproductions; use a repaired implementation for acceptance. This remains a same-computer policy/transport fixture.
+
+`native_gateway.py` runs the installed native Codex and Claude programs through two executable homes and one executable entry. It waits for the actual native composer through the entry PTY before typing an unsubmitted Unicode draft, tests Escape and resize, detaches with Ctrl-G d back to the actual TUI, and reopens/reconnects to the same home execution. It continuously consumes terminal display output while waiting for detach cleanup.
+
+```sh
+python3 tests/native_gateway.py --native-workspace /path/to/already/trusted/repository --report docs/evidence/native-gateway.json
+```
+
+`--only codex` or `--only claude` isolates one terminal journey; both native homes still launch and link. Startup diagnostics retain only known phrase flags, line shapes and terminal query counts. They contain no raw native screen, launch nonce or credentials. Codex 0.159.0 was observed to use either `›` or `»` for its composer, so both are accepted. This is a readiness predicate for terminal input, not account/model attribution. No Enter is sent in native mode. These checks do not establish native skill invocation, an authenticated model turn, independent remote enrollment, entry crash recovery under native rendering, or display backpressure stress.

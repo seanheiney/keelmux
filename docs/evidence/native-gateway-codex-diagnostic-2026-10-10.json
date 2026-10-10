@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "tested_sha": "498abebbd69f99bff9bb7542bac37a6815d71c5d",
+  "harness_sha256": "22475e0ccb31063ad8efaeb86d59e73989602f76e3be599f922a0dd499c78302",
+  "native_core_harness_sha256": "ecb947840145bc98c1367ff4a394165f8d84fc86cc4d6ff523424c67df379db8",
+  "binary_sha256": {
+    "bp": "3eb78d7ff587097ab4cb2bacd6e99d57eb495413a841aba4356fcedee7082b65",
+    "bpd": "951a4e2ce2e112dd998dfe28045310a7215b72df722df29442e8d5b76163a098",
+    "bpg": "49a6b835913a471d316b4a41a590481a75a7fd4b4e04de971aefac2d2417e08e"
+  },
+  "utc": "2026-10-10T17:54:48Z",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t26.7.1\nBuildVersion:\t\t25G309",
+  "go": "go version go1.26.6 darwin/arm64",
+  "tmux": "tmux 3.7b",
+  "kind": "native_programs_through_same_computer_executable_gateway",
+  "model_prompt_submitted": false,
+  "configuration": "owned600 principal+explicit home/session grants; startup reload on restart",
+  "checks": [
+    {
+      "name": "actual native homes through executable entry",
+      "result": "pass",
+      "detail": {
+        "actual_programs": [
+          "codex",
+          "claude"
+        ],
+        "separate_executable_homes": 2,
+        "same_computer": true,
+        "exact_inherited_link_before_exec": true,
+        "native_workspace": "/Volumes/DataSSD1/agent-backplane",
+        "workspace_trust": "existing_native_trust",
+        "login_changes": false,
+        "upgrades": false,
+        "native_skill_invocation": "not_run"
+      }
+    },
+    {
+      "name": "codex native gateway attach/detach/reconnect",
+      "result": "fail",
+      "detail": {
+        "error": "condition did not become true within deadline",
+        "terminal_status_phrases": [
+          "Waiting for native"
+        ],
+        "saved_pending_lease_present": true,
+        "home_native_client_flags": [
+          "0",
+          ""
+        ]
+      }
+    }
+  ],
+  "missing_evidence": [
+    "independent remote hosts and enrollment/authentication",
+    "native skill instruction loading/invocation",
+    "authenticated model turn and verified effective account/model",
+    "display backpressure stress",
+    "host reboot/native resume"
+  ],
+  "gateway_harness_sha256": "09ebded8b6046468b65c94ad330a63d0a90abf2dc4b83b65f172f7bad8958780",
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "auth_mode": "existing native realm; account/model unknown; no model prompt submitted",
+  "provider_journeys_requested": "codex",
+  "native_startup_diagnostics": [
+    {
+      "provider": "codex",
+      "native_prompt_mark_present": false,
+      "known_startup_phrases": [],
+      "pane_dead": false,
+      "native_output_bytes_received": 9239,
+      "native_nonblank_lines": [
+        {
+          "row": 1,
+          "characters": 26,
+          "alphanumeric_characters": 17,
+          "safe_prompt_glyphs": ">"
+        },
+        {
+          "row": 2,
+          "characters": 38,
+          "alphanumeric_characters": 29,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 4,
+          "characters": 29,
+          "alphanumeric_characters": 21,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 8,
+          "characters": 51,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 9,
+          "characters": 60,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 10,
+          "characters": 62,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 11,
+          "characters": 63,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 12,
+          "characters": 64,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 13,
+          "characters": 64,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 14,
+          "characters": 65,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 15,
+          "characters": 66,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 16,
+          "characters": 66,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 17,
+          "characters": 67,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 18,
+          "characters": 66,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 19,
+          "characters": 66,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 20,
+          "characters": 65,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 21,
+          "characters": 63,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 22,
+          "characters": 60,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 23,
+          "characters": 59,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 24,
+          "characters": 57,
+          "alphanumeric_characters": 0,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 30,
+          "characters": 26,
+          "alphanumeric_characters": 20,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 32,
+          "characters": 60,
+          "alphanumeric_characters": 46,
+          "safe_prompt_glyphs": ""
+        },
+        {
+          "row": 33,
+          "characters": 99,
+          "alphanumeric_characters": 29,
+          "safe_prompt_glyphs": ""
+        }
+      ],
+      "terminal_queries_received": {
+        "b'\\x1b[6n'": 1,
+        "b'\\x1b[?6n'": 0,
+        "b'\\x1b[c'": 1,
+        "b'\\x1b[>c'": 1,
+        "b'\\x1b[?u'": 0,
+        "b'\\x1b]10;?'": 1,
+        "b'\\x1b]11;?'": 2
+      },
+      "ansi_control_sequence_count": 782
+    }
+  ]
+}

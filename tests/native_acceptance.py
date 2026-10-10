@@ -281,9 +281,10 @@ class Acceptance:
         before = s["execution"]["runtime"]
         def composer():
             text = self.pane(s)
-            mark = "›" if provider == "codex" else "❯"
+            # Installed Codex can render its composer with either glyph.
+            marks = ("›", "»") if provider == "codex" else ("❯",)
             setup = any(word in text.lower() for word in ("update now", "do you trust", "trust this", "choose a theme"))
-            return text if mark in text and not setup else None
+            return text if any(mark in text for mark in marks) and not setup else None
         native_text = wait_for(composer)
         assert "Traceback" not in native_text, "native child raised an exception"
         # Never press Enter in native mode. Draft characters are a terminal
