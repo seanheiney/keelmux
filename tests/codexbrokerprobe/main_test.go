@@ -1,11 +1,36 @@
 package main
 
 import (
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestFinalVerdictIncludesErrorsRecordedDuringReaderCleanup(t *testing.T) {
+	trace := &tracedPolicy{resumeAcks: 2}
+	if err := trace.finalError(); err != nil {
+		t.Fatal(err)
+	}
+	trace.outputErrors++ // Recorded after the provisional h.run success.
+	if trace.finalError() == nil {
+		t.Fatal("late source projection failure did not invalidate final success")
+	}
+	trace.outputErrors = 0
+	trace.sourceErrors++ // A lost source can finish without another policy call.
+	if trace.finalError() == nil {
+		t.Fatal("late source loss did not invalidate final success")
+	}
+}
+
+func TestPublicErrorsNeverExposeOpaquePeerReasonsOrPaths(t *testing.T) {
+	for _, value := range []string{"peer close reason private-token", "dial unix /private/tmp/private-path: denied"} {
+		if got := publicErrorKind(errors.New(value)); got != "owned_runtime_failure" {
+			t.Fatalf("opaque error got nonfinite public tag %q", got)
+		}
+	}
+}
 
 // A failed startup peer proof must not turn observed same-user paths into
 // cleanup authority. Test actual socket inodes without spawning native work.

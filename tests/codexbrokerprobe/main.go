@@ -199,7 +199,6 @@ func (h *harness) launch(ctx context.Context, requested string) (*process, error
 					p.stop()
 					return nil, errors.New("upstream Unix peer PID differs from spawned app-server")
 				}
-				p.socketOwned = true
 				// Dial verifies exact owned 0700 parent and 0600 socket. This helper
 				// resolves only the alias created by its live spawned child.
 				c, err := wire.Dial(ctx, actual)
@@ -207,6 +206,12 @@ func (h *harness) launch(ctx context.Context, requested string) (*process, error
 					p.stop()
 					return nil, err
 				}
+				if err := p.live(ctx); err != nil {
+					_ = c.Close()
+					p.stop()
+					return nil, err
+				}
+				p.socketOwned = true
 				_ = c.Close()
 				return p, nil
 			}
@@ -400,13 +405,26 @@ func (p probe) Inspect(ctx context.Context, a cb.AgentBinding) (cb.Quiescence, e
 
 type tracedPolicy struct {
 	cb.Policy
-	mu                                                           sync.Mutex
-	denied, outputErrors, upstreamErrors, turnWrites, resumeAcks int
-	globalSuppressed                                             int
-	methods                                                      map[string]int
-	resumeByConnection                                           map[string]map[string]bool
-	issues                                                       []map[string]any
-	privateState                                                 string
+	mu                                                                         sync.Mutex
+	denied, outputErrors, upstreamErrors, sourceErrors, turnWrites, resumeAcks int
+	globalSuppressed                                                           int
+	methods                                                                    map[string]int
+	resumeByConnection                                                         map[string]map[string]bool
+	issues                                                                     []map[string]any
+	privateState                                                               string
+}
+
+// Call only after all owned channels have closed and joined their readers.
+func (p *tracedPolicy) finalError() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.denied != 0 || p.outputErrors != 0 || p.upstreamErrors != 0 || p.sourceErrors != 0 || p.turnWrites != 0 || len(p.issues) != 0 {
+		return errors.New("native broker policy or RPC error observed")
+	}
+	if p.resumeAcks != 2 {
+		return errors.New("native resume acknowledgement count differs")
+	}
+	return nil
 }
 
 func (p *tracedPolicy) Decode(b []byte) (cb.Frame, error) {
@@ -804,7 +822,8 @@ func (h *harness) native(ctx context.Context, a cb.Authority, relay *cb.Relay, g
 	h.report[fmt.Sprintf("native_view_%d", index+1)] = map[string]any{"composer": composer, "exact_resume_ack": acks == 1 && delivered, "actual_resume_frame_written": delivered, "post_ready_quiet_interval": quietReady, "native_rpc_errors": nativeErrors, "wire_observer_valid": !wireInvalid, "owned_pid_boot_start": true, "unix_peer_pid_matches_spawned_child": peerVerified, "dedicated_endpoint_inode": true, "terminal_input": "device-status replies only", "screen_bytes": len(privateScreen)}
 	h.report[fmt.Sprintf("native_view_%d", index+1)].(map[string]any)["native_ui_loop_detached"] = true
 	if relayFailure != nil {
-		h.report[fmt.Sprintf("native_view_%d", index+1)].(map[string]any)["relay_failure"] = relayFailure.Error()
+		_ = os.WriteFile(filepath.Join(dir, "relay-error.txt"), []byte(relayFailure.Error()), 0600)
+		h.report[fmt.Sprintf("native_view_%d", index+1)].(map[string]any)["relay_failure_kind"] = publicErrorKind(relayFailure)
 	}
 	if err := h.primary.live(ctx); err != nil {
 		return false, errors.New("native disconnect lost primary")
@@ -844,8 +863,14 @@ func (h *harness) closeChannels() {
 	h.mu.Lock()
 	channels := append([]*cb.Channel(nil), h.channels...)
 	h.mu.Unlock()
-	for _, c := range channels {
-		_ = c.Close()
+	for i, c := range channels {
+		if err := c.Close(); err != nil && !errors.Is(err, context.Canceled) {
+			_ = os.WriteFile(filepath.Join(h.state, fmt.Sprintf("source-close-error-%d.txt", i)), []byte(err.Error()), 0600)
+			h.trace.mu.Lock()
+			h.trace.sourceErrors++
+			h.trace.issues = append(h.trace.issues, map[string]any{"stage": "source_close", "kind": publicErrorKind(err)})
+			h.trace.mu.Unlock()
+		}
 	}
 }
 
@@ -1255,13 +1280,32 @@ func (h *harness) run(ctx context.Context) error {
 	}
 	h.report["zero_turns_verified_native_history"] = true
 	h.report["zero_history_source"] = "exact legacy thread/read(includeTurns=true) and complete empty descending turns/list"
-	h.trace.mu.Lock()
-	defer h.trace.mu.Unlock()
-	if h.trace.denied != 0 || h.trace.outputErrors != 0 || h.trace.upstreamErrors != 0 || h.trace.turnWrites != 0 {
-		return errors.New("native broker policy or RPC error observed")
-	}
 	h.report["stage"] = "complete"
 	return nil
+}
+
+func publicErrorKind(err error) string {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "deadline"
+	}
+	if errors.Is(err, context.Canceled) {
+		return "cancelled"
+	}
+	switch err.Error() {
+	case "fresh fixture did not produce durable rollout metadata":
+		return "fixture_rollout_missing"
+	case "owned administrative RPC rejected: thread/items/list":
+		return "admin_empty_items_unsupported"
+	case "native composer or exact projected resume acknowledgement unavailable":
+		return "native_surface_unavailable"
+	case "native broker policy or RPC error observed":
+		return "broker_policy_or_rpc_error"
+	case "native resume acknowledgement count differs":
+		return "native_resume_count_mismatch"
+	default:
+		// Peer close reasons, paths and wrapped wire errors remain private.
+		return "owned_runtime_failure"
+	}
 }
 
 func (h *harness) verifyZeroHistory(ctx context.Context, id string) error {
@@ -1300,8 +1344,14 @@ func main() {
 	if err == nil && (info.Mode().Perm() != 0700 || !info.IsDir() || !filepath.IsAbs(h.state) || filepath.Clean(h.state) != h.state) {
 		err = errors.New("fresh state must be a clean private directory")
 	}
+	stateValid := err == nil
 	if err == nil {
 		err = h.run(ctx)
+	}
+	// h.run's deferred channel Close joins every retained source reader. Late
+	// cleanup errors must participate in this final, authoritative verdict.
+	if err == nil && h.trace != nil {
+		err = h.trace.finalError()
 	}
 	if h.trace != nil {
 		h.trace.mu.Lock()
@@ -1315,6 +1365,7 @@ func main() {
 		h.report["policy_denials"] = h.trace.denied
 		h.report["projection_errors"] = h.trace.outputErrors
 		h.report["upstream_rpc_errors"] = h.trace.upstreamErrors
+		h.report["source_channel_errors"] = h.trace.sourceErrors
 		h.report["resume_acknowledgements"] = h.trace.resumeAcks
 		h.report["global_remote_control_notifications_suppressed"] = h.trace.globalSuppressed
 		h.report["model_turn_writes"] = h.trace.turnWrites
@@ -1322,12 +1373,10 @@ func main() {
 		h.trace.mu.Unlock()
 	}
 	if err != nil {
-		message := strings.ReplaceAll(err.Error(), h.state, "<STATE>")
-		message = strings.ReplaceAll(message, h.binary, "<NATIVE_BINARY>")
-		if h.primary != nil {
-			message = strings.ReplaceAll(message, h.primary.socket, "<UPSTREAM_SOCKET>")
+		if stateValid {
+			_ = os.WriteFile(filepath.Join(h.state, "failure.txt"), []byte(err.Error()), 0600)
 		}
-		h.report["failure"] = message
+		h.report["failure"] = publicErrorKind(err)
 	} else {
 		h.report["passed"] = true
 	}
