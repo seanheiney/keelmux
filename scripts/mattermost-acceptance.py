@@ -307,14 +307,22 @@ class Harness:
         try:
             private(self.state / "daemon-test-private.log", self.run(command, timeout=150))
         finally:
-            # Never extract a provider-controlled tree on the host. Preserve the
-            # whole owned runtime diagnostics as a private opaque tar instead.
+            # Never extract a provider-controlled tree on the host or retain
+            # the copied credentials. Save only finite owned diagnostic files.
             raw = self.run(["docker", "cp", self.ids["runtime"] + ":/tmp/keelmux-fixture", "-"])
-            private(self.state / "daemon-private.tar", raw)
             with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
                 result = [entry for entry in archive.getmembers() if entry.name == "keelmux-fixture/daemon-result.json" and entry.isfile() and entry.size <= 32768]
                 if len(result) == 1:
                     self.receipt["source_daemon_acceptance"] = json.loads(archive.extractfile(result[0]).read())
+                diagnostic = io.BytesIO()
+                names = {"keelmux-fixture/daemon-result.json", "keelmux-fixture/daemon-private.log", "keelmux-fixture/cli-private.log"}
+                with tarfile.open(fileobj=diagnostic, mode="w") as saved:
+                    for entry in archive.getmembers():
+                        if entry.name in names and entry.isfile() and entry.size <= 1 << 20:
+                            data = archive.extractfile(entry).read()
+                            info = tarfile.TarInfo(entry.name); info.size = len(data); info.mode = 0o600
+                            saved.addfile(info, io.BytesIO(data))
+                private(self.state / "daemon-private.tar", diagnostic.getvalue())
         result = self.receipt.get("source_daemon_acceptance", {})
         if not result.get("passed") or result.get("stable_source_commit") != self.receipt["source"]:
             raise Failure("source_daemon_acceptance_failed")
@@ -359,7 +367,10 @@ class Harness:
             except Exception:
                 failures.append("network")
         for path in self.secrets:
-            path.unlink(missing_ok=True)
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                failures.append("host_secret_file")
         self.receipt["cleanup"]["host_secret_files_removed"] = all(not p.exists() for p in self.secrets)
         self.receipt["cleanup"]["failures"] = failures
         if failures:
