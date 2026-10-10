@@ -18,13 +18,25 @@ Run `keelmux` to open the remembered switcher. Navigation reads known inventory;
 | `?` | Show contextual help |
 | `q` | Close the switcher; owned sessions keep running |
 
-After a lost attachment response, the switcher retains the original acquisition identity. Follow its **Enter retry same attach** or **x reconcile/release** action. Do not edit the stored pending token or start a different acquisition to bypass recovery.
+## Selected runtime
+
+The selected workspace is followed by a compact **Runtime** line. `native` identifies Keelmux's owned supervisor; `legacy tmux` identifies an existing execution on the optional compatibility adapter. `unknown` means the inventory did not supply a recognized backend. It is never inferred from the session's name, workspace or managed mode.
+
+The state is the home's last inventory observation. `missing` retains the work without launching a replacement; `uncertain` means the outcome needs inspection. When the connection is offline, **(stale)** marks the retained runtime observation and attachment is unavailable. A missing supervisor does not prove that its child exited. Use `keelmux inspect SESSION_ID` for the exact execution, capabilities and source-qualified evidence, then `keelmux reconcile` when recovery calls for a fresh runtime check. An unavailable legacy execution may need its original tmux installation restored; new native work does not use tmux as a fallback.
+
+Model and account details use independent evidence. Terminal appearance, a running process and a successful attachment cannot verify either identity. Unknown evidence stays unknown.
+
+## Recover a saved attachment
+
+After a lost attachment response, the switcher retains the original acquisition identity. **Saved attach** names that pending work and its saved generation (`g1`, for example). This recovery target can differ from the currently selected row, and a replacement generation does not change it. Long labels may be clipped; the private client state retains the full session, execution, generation and operation IDs.
+
+Follow **Enter retry same attach** or **x reconcile/release** for the saved acquisition. If **lease release pending** appears, **x** retries its exact release. Reconnect with **r** if the connection is offline. Do not edit the pending token, delete the saved intent or acquire different work to bypass recovery. These actions recover attachment authority; they never replay native input. See [recovery boundaries](operations.md#recover-a-session) and [troubleshooting](troubleshooting.md).
 
 ## Native terminal keys
 
 **Ctrl-G d** detaches to the switcher. **Ctrl-G Ctrl-G** sends literal Ctrl-G. Other keys, including Ctrl-C, reach the native CLI. Only the managed input owner changes terminal dimensions.
 
-This release path proves detach and return to the same terminal while its host/runtime survives. Native application exit ends that terminal. Host reboot and native conversation resume are separate unfinished capabilities.
+Published v0.1.0 uses the qualified tmux adapter. Development builds own persistent native PTYs and processes, with optional compatibility for existing tmux work. Detach returns to the same terminal while its host/runtime survives. Native application exit ends that terminal. Host reboot and native conversation resume are separate capabilities; consult the [exact support scope](support-matrix.md) before relying on them.
 
 ## Company and product groups
 

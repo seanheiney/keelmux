@@ -6,6 +6,7 @@ import (
 	"unicode"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 type tone uint8
@@ -114,13 +115,17 @@ func (m *model) inventoryNotice() []viewLine {
 func (m *model) selectionDetails() []viewLine {
 	if s, ok := m.selected(); ok {
 		lines := []viewLine{line("", normal), line(s.Workspace+" / "+string(s.Mode), normal)}
+		lines = append(lines, runtimeLine(s, m.offline != nil))
+		if repair := runtimeRepair(s); repair != "" {
+			lines = append(lines, line(repair, warning))
+		}
 		if m.height >= 16 {
 			lines = append(lines, line("Model: "+evidence(s.Execution.ActualModel)+"  Account: "+evidence(s.Execution.Account), muted))
 		}
 		if m.height >= 20 {
 			lines = append(lines, line("Thread: "+string(s.ThreadID)+"  Generation: "+fmt.Sprint(s.Execution.Generation), muted))
 		}
-		if !s.Capabilities.NativeAttach {
+		if !s.Capabilities.NativeAttach && m.height >= 20 {
 			lines = append(lines, line(capability(s), warning))
 		}
 		return lines
@@ -129,6 +134,50 @@ func (m *model) selectionDetails() []viewLine {
 		return []viewLine{line("", normal), line("Saved selection is unavailable in this view.", warning), line("Its place is retained; choose available work with arrows.", muted)}
 	}
 	return nil
+}
+
+// Inventory names the recorded runtime; attachment capability and liveness are
+// separate observations. A missing/uncertain helper never proves process exit.
+func runtimeLine(s domain.Session, stale bool) viewLine {
+	backend := "unknown"
+	switch s.Execution.Runtime.Backend {
+	case "native":
+		backend = "native"
+	case "tmux":
+		backend = "legacy tmux"
+	}
+	state := s.Execution.State
+	if state == "" {
+		state = "unknown"
+	} else if state == "outcome_uncertain" {
+		state = "uncertain"
+	}
+	style := muted
+	if state != "running" || backend == "unknown" || stale {
+		style = warning
+	}
+	if stale {
+		state += " (stale)"
+	}
+	return line("Runtime: "+backend+" / "+state, style)
+}
+
+func runtimeRepair(s domain.Session) string {
+	switch s.Execution.State {
+	case "outcome_uncertain":
+		return "Outcome unknown; inspect before retry."
+	case "missing":
+		return "Runtime missing; inspect, reconcile."
+	case "stopped", "failed":
+		return "Attach unavailable; inspect this run."
+	}
+	if !s.Capabilities.NativeAttach {
+		if s.Execution.Runtime.Backend == "tmux" {
+			return "Legacy unavailable; inspect tmux."
+		}
+		return "Attach unavailable; inspect this run."
+	}
+	return ""
 }
 
 func (m *model) footerText(text string, style tone) []viewLine {
@@ -148,6 +197,19 @@ func (m *model) switcherFooter() []viewLine {
 	}
 	if m.state.PendingChannel != nil {
 		out = append(out, line("Saved channel reply awaits its exact receipt; c then r checks.", warning))
+	}
+	if p := m.state.Pending; p != nil {
+		// The saved acquisition can address different work from the current
+		// selection. Keep its destination and generation beside recovery, but
+		// never render its private token or runtime locators.
+		target := string(p.SessionID)
+		for _, s := range m.sessions {
+			if s.ID == p.SessionID {
+				target = s.Name
+				break
+			}
+		}
+		out = append(out, line(columns("Saved attach: "+target, fmt.Sprintf("g%d", p.Generation), m.contentWidth()), warning))
 	}
 	if m.status != "" {
 		// Bound transient detail, leaving the action below visible on small

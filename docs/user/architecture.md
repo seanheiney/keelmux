@@ -18,6 +18,14 @@ flowchart LR
 
 New development executions use the bundled native supervisor. Existing tmux executions retain an optional compatibility adapter; there is no fallback launch through tmux. Published v0.1.0 is the historical tmux release. The [runtime decision](../architecture/0002-native-runtime-ownership.md) describes exact ownership, query handling and recovery boundaries.
 
+| Runtime path | Ownership and recovery |
+| --- | --- |
+| Development native | A per-execution supervisor owns the process and terminal lifetime independently of the switcher and control daemon. Reconnect uses a bounded parsed screen snapshot; restoration is qualified per terminal/provider, not a complete native conversation history. |
+| Existing legacy tmux | The recorded tmux adapter remains responsible for that execution. Compatibility is optional, and native-launch failure cannot create a tmux replacement. |
+| Unknown or unavailable | Retain the durable identity and inspect its original authority. Missing supervisor evidence does not establish child exit; uncertainty prevents an automatic replacement. |
+
+The switcher's selected runtime line reads the recorded backend and execution state from inventory. Offline observations are marked stale. It does not discover ownership from terminal text or infer account/model identity from attachment. [Daily use](daily-use.md#selected-runtime) describes this compact view; `keelmux inspect` exposes the underlying qualified evidence.
+
 The entry routes permitted access to the home. It does not move the process, merge credentials or become that home's execution authority. Current entries use explicit private sockets and configuration; independent-server enrollment remains unfinished.
 
 ## Authored channels
@@ -53,6 +61,8 @@ The home persists an operation before attempting runtime effects. Outcomes disti
 
 The serialized service gate and existing `grants` table enforce one cooperating managed writer. A read-only client observes without owning input/size. Release verifies the exact acquisition and detached writer; stale client, token or execution generation is refused. A pending acquisition survives client loss so recovery can refer to its original authority.
 
+The saved acquisition stays bound to its original session, execution, generation, operation and client. Moving the switcher selection or observing a new generation cannot retarget it. Its recovery footer names the saved destination; retry and reconcile/release use the stored request, with tokens kept private. Native input is never replayed by this recovery. See [saved attachment recovery](daily-use.md#recover-a-saved-attachment).
+
 ## Enforcement boundary
 
 This is cooperative control among managed clients, not an OS security sandbox. The same user can reach its own terminal socket, files and native programs outside Keelmux. Separate worktrees do not isolate ports, databases, credentials or arbitrary file writes. Native tool permissions remain native.
@@ -63,7 +73,9 @@ Inventory, drafts, runtime receipts and logs can contain private paths or operat
 
 ## Recovery boundaries
 
-Client detach preserves surviving terminals. Daemon restart reconciles surviving owned processes. Provider/runtime restart and host reboot require separately tested native resume as new attempts. Missing workspace or uncertain external work remains a repair state. Restored screen/history is not proof of a live process or continued model work.
+Client detach preserves surviving terminals. Daemon restart reconciles surviving owned processes. Supervisor loss, provider/runtime restart and host reboot are distinct recovery boundaries; any native resume requires its own tested new attempt. Missing workspace or uncertain external work remains a repair state. Restored screen/history is not proof of a live process or continued model work.
+
+The optional [managed IRC service](managed-irc.md) uses the same native process supervision, with its own pinned Ergo runtime, private local configuration, account/channel operations and exact-instance lifecycle. Server ownership, an authored-message receipt and a model turn remain separate facts. Its actual command guide is generated into the reference site directly from the canonical Markdown; publication and packaged qualification follow the [support matrix](support-matrix.md).
 
 The experimental Codex broker further separates a persistent authoritative app-server from disposable native UI processes. Its grants, receipts and final output gate share the home authority. Unknown replies/callbacks are blockers and unsupported methods are denied. That internal architecture has no product launcher and does not add semantic capability to the released terminal route. See its [contract and prerequisites](../research/CODEX_BROKER_CONTRACT.md).
 

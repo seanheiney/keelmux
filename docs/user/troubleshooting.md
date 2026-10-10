@@ -14,8 +14,12 @@ Start with the selected state and exact session. Preserve operation IDs and draf
 | State ownership/private-mode refusal | Exact selected directory, real owner, mode and symlinks | Inspect and repair the intended directory; do not create a replacement authority to evade the refusal |
 | Unix socket path too long | `--state` path plus socket filename | Choose a shorter owned private path for new state; moving an existing authority needs a reviewed migration |
 | Another writer owns input | Existing managed attachment and exact pending state | Detach it; use a read-only view if appropriate |
-| Attach outcome unknown | Switcher footer and saved pending identity | Retry that exact attachment or use its reconcile/release action; retain tokens privately |
+| Attach outcome unknown | **Saved attach** target and generation, even if another row is selected | Enter retries the original saved acquisition; x reconciles/releases it. Reconnect with r when offline; retain tokens privately |
+| Lease release pending | Original saved acquisition and connection state | x retries its exact release; do not acquire different work or remove private recovery state |
+| Runtime line says `unknown` | Recorded backend in `keelmux inspect SESSION` | Preserve the unknown state; managed mode and a plausible path do not establish ownership |
+| Runtime observation is `(stale)` | Offline connection versus retained inventory | r refreshes/reconnects; a retained running observation does not authorize attachment |
 | Missing runtime | `keelmux inspect SESSION`, then `keelmux reconcile` | Retain the record and inspect native history; no automatic replacement is started |
+| Runtime outcome uncertain | Exact execution and operation receipt | Reconcile the original attempt; a missing helper or reply does not prove child exit or authorize another launch |
 | Lost launch/stop response | Printed operation ID and full original request | Retry only that operation; uncertainty stays explicit until reconciled |
 | Skill missing in native selector | Setup receipt, provider mapping and native reload | Reopen/reload the supported catalogue; installation is not loading |
 | Skill collision or modified bundle | Per-provider setup/removal receipt | Preserve the existing file; resolve ownership or choose the intended scope before applying |
