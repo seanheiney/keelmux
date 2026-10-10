@@ -37,10 +37,24 @@ type ChannelStatus struct {
 	Active           bool              `json:"active"`
 	ActivationCutoff time.Time         `json:"active_since"`
 	SemanticDispatch bool              `json:"semantic_dispatch"`
+	Coverage         string            `json:"coverage"`
+	Intake           string            `json:"intake"`
+	LastCheck        *time.Time        `json:"last_check,omitempty"`
+	LastSuccess      *time.Time        `json:"last_success,omitempty"`
+	MoreHistory      bool              `json:"more_history"`
+	HistoryGap       bool              `json:"history_gap"`
 }
 
 func ProjectChannel(b channels.Binding) ChannelStatus {
-	return ChannelStatus{ID: b.ID, SessionID: b.SessionID, ThreadID: b.ThreadID, Provider: b.Provider, Endpoint: b.Endpoint, RealmID: b.RealmID, SelfID: b.SelfID, ChannelID: b.ChannelID, RootID: b.RootID, Allowlist: append([]string{}, b.Allowlist...), Active: b.Active, ActivationCutoff: b.ActivationCutoff}
+	coverage := "since_activation_snapshots"
+	if b.Provider == channels.IRC {
+		coverage = "live_connection_only"
+	}
+	intake := "idle"
+	if !b.Active {
+		intake = "disabled"
+	}
+	return ChannelStatus{ID: b.ID, SessionID: b.SessionID, ThreadID: b.ThreadID, Provider: b.Provider, Endpoint: b.Endpoint, RealmID: b.RealmID, SelfID: b.SelfID, ChannelID: b.ChannelID, RootID: b.RootID, Allowlist: append([]string{}, b.Allowlist...), Active: b.Active, ActivationCutoff: b.ActivationCutoff, Coverage: coverage, Intake: intake}
 }
 
 type ChannelIDRequest struct {

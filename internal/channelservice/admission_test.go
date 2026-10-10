@@ -51,7 +51,7 @@ func (*refusingProbe) Probe(context.Context, channels.Binding) (channels.Evidenc
 func (f *refusingProbe) Close() error { f.closes.Add(1); return nil }
 
 func TestUncommittedBindingClosesItsTransport(t *testing.T) {
-	old, db, status, _ := serviceFixture(t)
+	_, db, status, _ := serviceFixture(t)
 	b, _, err := db.ChannelBinding(context.Background(), status.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +75,47 @@ func TestUncommittedBindingClosesItsTransport(t *testing.T) {
 	if _, _, err := db.ChannelBinding(context.Background(), r.ID); err == nil {
 		t.Fatal("failed binding left durable routing")
 	}
-	_ = old
+}
+
+func TestIntakeStatusPreservesSuccessAndSuppressesPrivateFailures(t *testing.T) {
+	s, db, b, f := serviceFixture(t)
+	ctx := context.Background()
+	if _, err := s.Sync(ctx, b.ID); err != nil {
+		t.Fatal(err)
+	}
+	bound, _, err := db.ChannelBinding(ctx, b.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := s.status(bound)
+	if first.Intake != "healthy" || first.LastSuccess == nil || first.LastCheck == nil || first.Coverage != "since_activation_snapshots" {
+		t.Fatalf("unqualified success: %+v", first)
+	}
+	f.fetchErr = errors.New("private token or server diagnostic")
+	s.mu.Lock()
+	delete(s.lastFetch, b.ID)
+	s.mu.Unlock()
+	if _, err := s.Sync(ctx, b.ID); err == nil {
+		t.Fatal("failed intake reported success")
+	}
+	next := s.status(bound)
+	if next.Intake != "unavailable" || next.LastCheck == nil || next.LastSuccess == nil || !next.LastSuccess.Equal(*first.LastSuccess) {
+		t.Fatalf("failure erased last success: %+v", next)
+	}
+	r := httptest.NewRequest("GET", "/v1/channels", nil)
+	r.Header.Set("X-Backplane-Protocol", protocol.Version)
+	w := httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 200 || strings.Contains(w.Body.String(), "private token") || !strings.Contains(w.Body.String(), `"intake":"unavailable"`) {
+		t.Fatalf("unsafe intake diagnostics: %d %s", w.Code, w.Body.String())
+	}
+	if err := s.Disable(ctx, b.ID); err != nil {
+		t.Fatal(err)
+	}
+	bound, _, err = db.ChannelBinding(ctx, b.ID)
+	if err != nil || s.status(bound).Intake != "disabled" {
+		t.Fatal("disabled binding appears healthy")
+	}
 }
 
 func TestValidEscapedTextSurvivesBoundedHTTPAdmission(t *testing.T) {

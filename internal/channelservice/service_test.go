@@ -19,9 +19,10 @@ import (
 )
 
 type fixtureAdapter struct {
-	sends  atomic.Int64
-	send   func(context.Context, channels.Binding, channels.Delivery, channels.Message) (channels.SendResult, error)
-	remote []channels.RemoteMessage
+	sends    atomic.Int64
+	send     func(context.Context, channels.Binding, channels.Delivery, channels.Message) (channels.SendResult, error)
+	remote   []channels.RemoteMessage
+	fetchErr error
 }
 
 func proof(b channels.Binding) channels.Evidence {
@@ -38,6 +39,9 @@ func (f *fixtureAdapter) Probe(_ context.Context, b channels.Binding) (channels.
 	return proof(b), nil
 }
 func (f *fixtureAdapter) Fetch(_ context.Context, b channels.Binding, cursor string, _ int) (channels.FetchResult, error) {
+	if f.fetchErr != nil {
+		return channels.FetchResult{}, f.fetchErr
+	}
 	return channels.FetchResult{Messages: f.remote, NextCursor: cursor, Evidence: proof(b)}, nil
 }
 func (f *fixtureAdapter) Send(ctx context.Context, b channels.Binding, d channels.Delivery, m channels.Message) (channels.SendResult, error) {

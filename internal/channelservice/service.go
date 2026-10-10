@@ -26,7 +26,14 @@ type Service struct {
 	adapters  map[domain.ID]channels.Adapter
 	lastFetch map[domain.ID]time.Time
 	lastSend  map[domain.ID]time.Time
+	health    map[domain.ID]intakeHealth
 	wake      chan domain.ID
+}
+
+type intakeHealth struct {
+	state            string
+	checked, success time.Time
+	more, gap        bool
 }
 
 func New(ctx context.Context, db *store.Store, factory Factory) (*Service, error) {
@@ -36,7 +43,39 @@ func New(ctx context.Context, db *store.Store, factory Factory) (*Service, error
 	if _, err := db.RecoverChannelDeliveries(ctx); err != nil {
 		return nil, err
 	}
-	return &Service{db: db, factory: factory, gates: map[domain.ID]chan struct{}{}, adapters: map[domain.ID]channels.Adapter{}, lastFetch: map[domain.ID]time.Time{}, lastSend: map[domain.ID]time.Time{}, wake: make(chan domain.ID, 32)}, nil
+	return &Service{db: db, factory: factory, gates: map[domain.ID]chan struct{}{}, adapters: map[domain.ID]channels.Adapter{}, lastFetch: map[domain.ID]time.Time{}, lastSend: map[domain.ID]time.Time{}, health: map[domain.ID]intakeHealth{}, wake: make(chan domain.ID, 32)}, nil
+}
+
+func (s *Service) status(b channels.Binding) protocol.ChannelStatus {
+	out := protocol.ProjectChannel(b)
+	s.mu.Lock()
+	h := s.health[b.ID]
+	s.mu.Unlock()
+	if b.Active && h.state != "" {
+		out.Intake = h.state
+	}
+	if !h.checked.IsZero() {
+		out.LastCheck = &h.checked
+	}
+	if !h.success.IsZero() {
+		out.LastSuccess = &h.success
+	}
+	out.MoreHistory, out.HistoryGap = h.more, h.gap
+	return out
+}
+
+// Intake observations are finite, transient diagnostics. They neither change
+// immutable routing nor establish model activity, remote delivery or authority.
+func (s *Service) markIntake(id domain.ID, state string, more, gap bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	h := s.health[id]
+	h.state, h.checked, h.more = state, time.Now().UTC(), more
+	h.gap = h.gap || gap
+	if state == "healthy" {
+		h.success = h.checked
+	}
+	s.health[id] = h
 }
 
 func (s *Service) gate(ctx context.Context, id domain.ID) (func(), error) {
@@ -203,7 +242,7 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 		if existing.SessionID != r.SessionID || existing.Provider != r.Provider || existing.Endpoint != r.Endpoint || existing.ChannelID != r.ChannelID || existing.RootID != r.RootID || existing.CredentialRef != r.CredentialRef || !reflect.DeepEqual(existing.Allowlist, r.Allowlist) {
 			return zero, domain.ConflictError{Reason: "binding ID already names a different immutable route"}
 		}
-		return protocol.ProjectChannel(existing), nil
+		return s.status(existing), nil
 	} else if !errors.Is(err, store.ErrNotFound) {
 		return zero, err
 	}
@@ -257,7 +296,7 @@ func (s *Service) Bind(ctx context.Context, r protocol.ChannelBindRequest) (prot
 	}
 	committed = true
 	s.Wake(b.ID)
-	return protocol.ProjectChannel(b), nil
+	return s.status(b), nil
 }
 
 // Disable waits for the same bounded gate as Send. A prior admitted external
@@ -365,13 +404,20 @@ func (s *Service) Sync(ctx context.Context, id domain.ID) (protocol.ChannelSyncR
 	s.mu.Unlock()
 	result, err := a.Fetch(ctx, b, cursor, 15)
 	if err != nil {
+		s.markIntake(id, "unavailable", false, false)
 		return out, errors.New("channel intake unavailable; delivery records remain intact")
 	}
 	if !result.Evidence.Matches(b) || len(result.Messages) > channels.MaxPageSize || !channels.ValidCursor(result.NextCursor) {
+		s.markIntake(id, "unavailable", false, false)
 		return out, channels.ErrInvalid
 	}
 	out.Imported, err = s.db.ImportChannelMessages(ctx, b.ID, cursor, result)
 	out.HasMore = result.HasMore
+	if err == nil {
+		s.markIntake(id, "healthy", result.HasMore, false)
+	} else {
+		s.markIntake(id, "unavailable", false, false)
+	}
 	return out, err
 }
 

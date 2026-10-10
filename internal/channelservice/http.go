@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/domain"
@@ -45,7 +46,7 @@ func request(w http.ResponseWriter, r *http.Request, dst any) bool {
 	// The text bound is in UTF-8 bytes. JSON can escape each byte into six
 	// characters, so bounded valid authored text needs additional wire room.
 	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 128<<10))
-	if err != nil {
+	if err != nil || !utf8.Valid(b) {
 		failed(w, channels.ErrInvalid)
 		return false
 	}
@@ -119,7 +120,7 @@ func (s *Service) Handler() http.Handler {
 		}
 		out := make([]protocol.ChannelStatus, 0, len(bindings))
 		for _, b := range bindings {
-			out = append(out, protocol.ProjectChannel(b))
+			out = append(out, s.status(b))
 		}
 		reply(w, 200, out)
 	})
