@@ -2,6 +2,17 @@
 
 Release notes describe implemented behavior and exact evidence. The [roadmap](docs/user/roadmap.md) records the broader product vision separately.
 
+## Unreleased · 0.2.0 qualification
+
+- Independent native PTY/process supervision is the default, with a bundled supervisor and no mandatory tmux. Native attachment, screen recovery and writer ownership survive control-daemon replacement.
+- Durable authored inboxes and explicit replies support Mattermost, Slack and IRC, with immutable authenticated bindings and exact delivery receipts. Remote notes never inject terminal input or automatically start model work.
+- Managed pinned Ergo uses private TLS/SASL, one registered channel per explicit project and a stable registered bot for every thread. Exact initial addressing selects one inbox; broadcasts and body mentions do not fan out.
+- Explicit project CLI/API and immutable home/workspace thread membership; additive schema 4 migration preserves historical binding JSON and delivery hashes. Older schema binaries refuse the upgraded state.
+- Runtime recovery and authored-channel terminal views, three-size screenshots, canonical operator guides and a generated documentation site.
+- Schema 2 release archives include all four executables. Package qualification verifies public command links, exact loaded bytes, cooperative cancellation and unresolved launch effects before accepting cleanup.
+
+This development scope is under [release qualification #17](https://github.com/seanheiney/keelmux/issues/17). Current exact-source receipts and remaining package/public-delivery gates are in [implementation status](docs/build/STATUS.md). The experimental structured Codex controller has no product launcher or live semantic capability. Published 0.1.0 remains unchanged.
+
 ## 0.1.0
 
 - **Keelmux:** native terminal switching for Codex and Claude Code, with canonical commands and compatible `bp`, `bpd` and `bpg` aliases.

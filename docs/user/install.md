@@ -79,4 +79,4 @@ make check
 ./bin/keelmux version --json
 ```
 
-Keep `keelmux`, `keelmuxd` and `keelmux-entry` beside each other. The build also creates `bp`, `bpd` and `bpg` compatibility links. Cross-compilation establishes a build; it does not establish native provider runtime support.
+Keep `keelmux`, `keelmuxd`, `keelmux-entry` and `keelmux-supervisor` beside each other. The native runtime discovers its matching supervisor from that installed directory. The build also creates `bp`, `bpd` and `bpg` compatibility links. Cross-compilation establishes a build; it does not establish native provider runtime support.
