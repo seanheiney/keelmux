@@ -21,7 +21,7 @@ Provision and control a private pinned Ergo server explicitly:
   keelmux ircd stop --instance EXECUTION_ID
   keelmux ircd restart --instance EXECUTION_ID [--operation OPERATION_ID]
   keelmux ircd account [ACCOUNT]
-  keelmux ircd bind --session SESSION_ID --allow-user SERVICES_ACCOUNT \
+  keelmux ircd bind --project PROJECT_ID --session SESSION_ID --allow-user SERVICES_ACCOUNT \
     [--binding BINDING_ID] [--operation CHANNEL_OPERATION_ID]
 
 Use the exact live instance from status for stop/restart. Start/restart and bind
@@ -31,8 +31,9 @@ intent consumed before unsuccessful authentication can require manual repair.
 
 Init/account expose local connection fields and private credential file paths;
 status excludes those references. Repeat --allow-user for each exact permitted
-services account. A bind creates a deterministic registered channel for the
-session's stable thread, with authored inbox and explicit replies. Native
+services account. Create a project first with keelmux projects create. Each
+project gets one registered IRC channel; each stable thread has its own bot.
+Use "BOT_NICK: text" or "@BOT_NICK text" for its authored inbox. Native
 terminals handle model interaction; semantic dispatch remains unavailable.
 `
 
@@ -151,6 +152,7 @@ func manageIRCD(ctx context.Context, c *protocol.Client, args []string) error {
 	case "bind":
 		fs := flag.NewFlagSet("keelmux ircd bind", flag.ContinueOnError)
 		session := fs.String("session", "", "existing stable Keelmux session ID")
+		project := fs.String("project", "", "explicit durable project ID with the same home and workspace")
 		binding := fs.String("binding", "", "reuse the original immutable binding ID")
 		operation := fs.String("operation", "", "reuse the original registered channel operation ID")
 		var allow allowedUsers
@@ -158,8 +160,8 @@ func manageIRCD(ctx context.Context, c *protocol.Client, args []string) error {
 		if err := fs.Parse(args[1:]); err != nil {
 			return err
 		}
-		if len(fs.Args()) != 0 || !validIRCDID(*session, "session") || *binding != "" && !validIRCDID(*binding, "binding") || *operation != "" && !validIRCDOperation(*operation) || len(allow) == 0 || len(allow) > 256 {
-			return errors.New("ircd bind requires session, allow-user and valid optional binding/operation IDs")
+		if len(fs.Args()) != 0 || !validIRCDID(*project, "project") || !validIRCDID(*session, "session") || *binding != "" && !validIRCDID(*binding, "binding") || *operation != "" && !validIRCDOperation(*operation) || len(allow) == 0 || len(allow) > 256 {
+			return errors.New("ircd bind requires project, session, allow-user and valid optional binding/operation IDs")
 		}
 		seen := map[string]bool{}
 		for _, actor := range allow {
@@ -175,7 +177,7 @@ func manageIRCD(ctx context.Context, c *protocol.Client, args []string) error {
 			*operation = string(domain.NewID("operation"))
 		}
 		fmt.Fprintln(os.Stderr, "IRC binding intent:", *binding, "channel operation:", *operation)
-		out, err := c.BindIRCD(ctx, protocol.IRCDBindRequest{ID: domain.ID(*binding), SessionID: domain.ID(*session), OperationID: domain.ID(*operation), Allowlist: allow})
+		out, err := c.BindIRCD(ctx, protocol.IRCDBindRequest{ID: domain.ID(*binding), ProjectID: domain.ID(*project), SessionID: domain.ID(*session), OperationID: domain.ID(*operation), Allowlist: allow})
 		if err != nil {
 			return fmt.Errorf("IRC binding %s channel operation %s: %w; retry only with these same --binding, --operation and configuration", *binding, *operation, err)
 		}

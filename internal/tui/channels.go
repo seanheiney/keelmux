@@ -39,13 +39,21 @@ type channelReceiptMsg struct {
 }
 
 func wireBinding(b protocol.ChannelStatus) channels.Binding {
-	return channels.Binding{ID: b.ID, ThreadID: b.ThreadID, Provider: b.Provider, Endpoint: b.Endpoint, RealmID: b.RealmID, SelfID: b.SelfID, ChannelID: b.ChannelID, RootID: b.RootID}
+	return channels.Binding{ID: b.ID, ThreadID: b.ThreadID, Provider: b.Provider, Endpoint: b.Endpoint, RealmID: b.RealmID, SelfID: b.SelfID, ChannelID: b.ChannelID, RootID: b.RootID, ProjectID: b.ProjectID, IRCAddressed: b.IRCAddressed}
 }
 func intentMessage(p clientstate.ChannelIntent) channels.Message {
 	return channels.Message{ID: p.MessageID, ThreadID: p.ThreadID, BindingID: p.BindingID, AuthorID: "local-operator", Text: p.Text}
 }
 func validStatus(b protocol.ChannelStatus) bool {
 	if b.SemanticDispatch || (b.Provider != channels.Mattermost && b.Provider != channels.Slack && b.Provider != channels.IRC) {
+		return false
+	}
+	if b.IRCAddressed {
+		nick, err := channels.IRCThreadNick(b.ThreadID)
+		if b.Provider != channels.IRC || !domain.ValidObjectID(b.ProjectID, "project") || err != nil || b.SelfID != nick {
+			return false
+		}
+	} else if b.ProjectID != "" {
 		return false
 	}
 	for _, value := range []string{string(b.ID), string(b.ThreadID), b.Endpoint, b.RealmID, b.SelfID, b.ChannelID} {

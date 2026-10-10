@@ -23,7 +23,7 @@ type localRegistrar struct {
 	service *ircdchannel.Service
 }
 
-func (r *localRegistrar) Ensure(ctx context.Context, thread, operation domain.ID) (ircdchannel.Route, error) {
+func (r *localRegistrar) EnsureProject(ctx context.Context, project ircdchannel.Project, thread, operation domain.ID) (ircdchannel.Route, error) {
 	r.mu.Lock()
 	if r.service == nil {
 		s, e := ircdchannel.New(r.manager)
@@ -35,7 +35,7 @@ func (r *localRegistrar) Ensure(ctx context.Context, thread, operation domain.ID
 	}
 	s := r.service
 	r.mu.Unlock()
-	return s.Ensure(ctx, thread, operation)
+	return s.EnsureProject(ctx, project, thread, operation)
 }
 func (r *localRegistrar) Close() error {
 	r.mu.Lock()

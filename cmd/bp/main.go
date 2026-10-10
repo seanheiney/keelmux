@@ -43,10 +43,12 @@ func run() error {
 		return err
 	}
 	args := fs.Args()
-	if len(args) > 0 && (args[0] == "channels" || args[0] == "ircd") {
+	if len(args) > 0 && (args[0] == "channels" || args[0] == "ircd" || args[0] == "projects") {
 		scopedHelp := channelHelp
 		if args[0] == "ircd" {
 			scopedHelp = ircdHelp
+		} else if args[0] == "projects" {
+			scopedHelp = projectHelp
 		}
 		if len(args) == 2 && (args[1] == "--help" || args[1] == "-h" || args[1] == "help") {
 			fmt.Print(scopedHelp)
@@ -139,6 +141,8 @@ func run() error {
 		return tui.Run(ctx, c, p.Place)
 	}
 	switch args[0] {
+	case "projects":
+		return manageProjects(ctx, c, args[1:])
 	case "ircd":
 		return manageIRCD(ctx, c, args[1:])
 	case "channels":
@@ -350,6 +354,7 @@ keelmux version [--json]              Print release and protocol provenance
 keelmux providers                     Inspect qualified native status without model work
 keelmux channels --help               Bind chat roots, read authored inbox and reply
 keelmux ircd --help                   Provision and manage a private IRC server
+keelmux projects --help               Create and inspect durable project identities
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

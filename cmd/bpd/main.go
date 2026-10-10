@@ -13,6 +13,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/ircd"
 	"github.com/seanheiney/keelmux/internal/ircdservice"
+	"github.com/seanheiney/keelmux/internal/projectservice"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/store"
 	"github.com/seanheiney/keelmux/internal/transport"
@@ -101,6 +102,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	projects, err := projectservice.New(db, host)
+	if err != nil {
+		return err
+	}
 	if err = svc.Reconcile(ctx); err != nil {
 		return fmt.Errorf("startup reconciliation: %w", err)
 	}
@@ -116,6 +121,8 @@ func run() error {
 	mux.Handle("/v1/ircd/", ircService.Handler())
 	mux.Handle("/v1/channels", chat.Handler())
 	mux.Handle("/v1/channels/", chat.Handler())
+	mux.Handle("/v1/projects", projects.Handler())
+	mux.Handle("/v1/projects/", projects.Handler())
 	mux.Handle("/", svc.Handler())
 	l, err := p.Listen()
 	if err != nil {

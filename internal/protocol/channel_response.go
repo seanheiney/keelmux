@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/seanheiney/keelmux/internal/channels"
+	"github.com/seanheiney/keelmux/internal/domain"
 )
 
 // A full history page can contain 100 16 KiB texts escaped six bytes per
@@ -178,7 +179,7 @@ func decodeChannelResponse(raw []byte, out any) error {
 			bound := channels.MaxPageSize
 			if schema.Kind() == reflect.Array {
 				bound = schema.Len()
-			} else if schema.Elem() == reflect.TypeFor[ChannelStatus]() {
+			} else if schema.Elem() == reflect.TypeFor[ChannelStatus]() || schema.Elem() == reflect.TypeFor[domain.Project]() {
 				bound = 128
 			} else if field == "Allowlist" {
 				bound = 256
@@ -202,6 +203,8 @@ func decodeChannelResponse(raw []byte, out any) error {
 			bound := 1024
 			if field == "Text" {
 				bound = channels.MaxTextBytes
+			} else if field == "Workspace" {
+				bound = 4096
 			} else if schema == reflect.TypeFor[string]() && field == "Message" {
 				bound = 4096
 			}

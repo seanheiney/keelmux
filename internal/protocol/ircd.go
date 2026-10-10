@@ -139,12 +139,17 @@ func (c *Client) IRCDAccount(ctx context.Context, account string) (IRCDConnectio
 	return out, nil
 }
 func (c *Client) BindIRCD(ctx context.Context, in IRCDBindRequest) (ChannelStatus, error) {
+	project, err := c.Project(ctx, in.ProjectID)
+	if err != nil {
+		return ChannelStatus{}, err
+	}
 	var out ChannelStatus
-	err := c.callChannel(ctx, "POST", "/v1/ircd/bind", in, &out)
+	err = c.callChannel(ctx, "POST", "/v1/ircd/bind", in, &out)
 	allow := append([]string{}, in.Allowlist...)
 	sort.Strings(allow)
-	channel, channelErr := ircdchannel.ChannelName(out.ThreadID)
-	if err == nil && (out.ID != in.ID || out.SessionID != in.SessionID || out.Provider != channels.IRC || !validIRCDEndpoint(out.Endpoint, out.RealmID) || out.SelfID != "keelmux-bot" || channelErr != nil || out.ChannelID != channel || out.RootID != "" || out.SemanticDispatch || out.ActivationCutoff.IsZero() || !reflect.DeepEqual(out.Allowlist, allow)) {
+	channel, channelErr := ircdchannel.ProjectChannelName(ircdchannel.Project{ID: project.ID, HostID: project.HostID, Name: project.Name, Workspace: project.Workspace})
+	nick, nickErr := channels.IRCThreadNick(out.ThreadID)
+	if err == nil && (out.ID != in.ID || out.SessionID != in.SessionID || out.ProjectID != project.ID || !out.IRCAddressed || out.Provider != channels.IRC || !validIRCDEndpoint(out.Endpoint, out.RealmID) || nickErr != nil || out.SelfID != nick || channelErr != nil || out.ChannelID != channel || out.RootID != "" || out.SemanticDispatch || out.ActivationCutoff.IsZero() || !reflect.DeepEqual(out.Allowlist, allow)) {
 		err = errChannelResponse
 	}
 	if err != nil {
