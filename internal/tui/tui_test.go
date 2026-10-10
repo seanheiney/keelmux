@@ -266,6 +266,15 @@ func TestPlainNarrowViewDoesNotEmitInventoryEscapeSequences(t *testing.T) {
 	}
 }
 
+func TestConnectedEntryExplainsUnreachableExecutionHome(t *testing.T) {
+	m := testModel(t, clientstate.New())
+	m.Update(inventoryMsg{places: []protocol.Place{{HostID: "remote_home", State: "unreachable"}}})
+	view := m.View()
+	if !strings.Contains(view, "execution homes unreachable; entry remains connected") || !strings.Contains(view, "No permitted reachable sessions") || strings.Contains(view, "Launch with bp run") {
+		t.Fatal("connected entry misrepresented execution-home loss")
+	}
+}
+
 // This is process handoff plumbing, not native CLI/terminal-fidelity proof.
 type handoffModel struct{ m *model }
 

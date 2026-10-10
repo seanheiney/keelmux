@@ -50,6 +50,11 @@ type LinkRequest struct {
 type Inventory struct {
 	Version  string           `json:"version"`
 	Sessions []domain.Session `json:"sessions"`
+	Places   []Place          `json:"places,omitempty"`
+}
+type Place struct {
+	HostID domain.ID `json:"host_id"`
+	State  string    `json:"state"`
 }
 type LaunchResponse struct {
 	Session   domain.Session   `json:"session"`
@@ -105,9 +110,16 @@ func (c *Client) Call(ctx context.Context, method, path string, in, out any) err
 	return json.NewDecoder(res.Body).Decode(out)
 }
 func (c *Client) List(ctx context.Context) ([]domain.Session, error) {
+	v, err := c.Directory(ctx)
+	return v.Sessions, err
+}
+func (c *Client) Directory(ctx context.Context) (Inventory, error) {
 	var v Inventory
 	err := c.Call(ctx, "GET", "/v1/sessions", nil, &v)
-	return v.Sessions, err
+	if err == nil && v.Version != Version {
+		err = fmt.Errorf("inventory protocol differs from %s", Version)
+	}
+	return v, err
 }
 func (c *Client) Launch(ctx context.Context, r LaunchRequest) (LaunchResponse, error) {
 	var v LaunchResponse

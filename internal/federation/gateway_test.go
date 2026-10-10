@@ -35,6 +35,12 @@ func TestScopedOneEntryAndRevocation(t *testing.T) {
 		if s.ID == hidden.ID {
 			t.Fatal("private metadata leaked")
 		}
+		if s.Capabilities.Stop || s.Capabilities.SemanticPrompt || s.Capabilities.NativeResume {
+			t.Fatal("entry advertised an unexposed home mutation")
+		}
+	}
+	if !a.Capabilities.Stop {
+		t.Fatal("directory projection changed the home capability")
 	}
 	_ = g.SetGrant(Grant{"human", "host_a", nil})
 	d, err = g.Directory(context.Background(), "human")

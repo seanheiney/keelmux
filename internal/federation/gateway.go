@@ -203,6 +203,10 @@ func (g *Gateway) Directory(ctx context.Context, principal string) (Directory, e
 					// Terminal locators belong to the home and never become a
 					// downstream route. Clients address stable work/execution IDs.
 					s.Execution.Runtime = domain.RuntimeRef{}
+					s.Capabilities.Stop = false
+					s.Capabilities.SemanticPrompt = false
+					s.Capabilities.NativeResume = false
+					s.Capabilities.Explanation = "This entry permits native terminal attachment; management and native credentials remain at the execution home."
 					out.Sessions = append(out.Sessions, s)
 				}
 			}

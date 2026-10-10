@@ -8,6 +8,8 @@ import (
 	"github.com/seanheiney/agent-backplane/internal/config"
 	"github.com/seanheiney/agent-backplane/internal/daemon"
 	"github.com/seanheiney/agent-backplane/internal/store"
+	"github.com/seanheiney/agent-backplane/internal/transport"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -66,12 +68,29 @@ func run() error {
 	if err = svc.Reconcile(ctx); err != nil {
 		return fmt.Errorf("startup reconciliation: %w", err)
 	}
+	terminal, err := transport.NewHost(svc, db, host)
+	if err != nil {
+		return err
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/v1/terminal", terminal.Handler())
+	mux.Handle("/", svc.Handler())
 	l, err := p.Listen()
 	if err != nil {
 		return err
 	}
 	defer l.Close()
-	srv := &http.Server{Handler: svc.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 25 * time.Second, MaxHeaderBytes: 16 << 10}
+	srv := &http.Server{Handler: mux, BaseContext: func(net.Listener) context.Context { return ctx }, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 25 * time.Second, MaxHeaderBytes: 16 << 10}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case failure := <-terminal.Failures:
+				fmt.Fprintln(os.Stderr, "bpd: terminal cleanup requires repair:", failure)
+			}
+		}
+	}()
 	go func() {
 		<-ctx.Done()
 		stop, c := context.WithTimeout(context.Background(), 5*time.Second)

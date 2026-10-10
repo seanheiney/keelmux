@@ -32,6 +32,7 @@ func printJSON(v any) error {
 func run() error {
 	fs := flag.NewFlagSet("bp", flag.ContinueOnError)
 	state := fs.String("state", "", "private state directory")
+	entry := fs.String("entry", "", "private entry socket; do not start a local daemon")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		return err
 	}
@@ -57,6 +58,9 @@ func run() error {
 		}
 		return printJSON(records)
 	}
+	if len(args) > 0 && args[0] == "drive" {
+		return driveNative(*entry, args[1:])
+	}
 	p, err := config.Resolve(*state)
 	if err != nil {
 		return err
@@ -64,15 +68,37 @@ func run() error {
 	if err = p.Ensure(); err != nil {
 		return err
 	}
-	c := protocol.NewClient(p.Control)
+	socket := p.Control
+	if *entry != "" {
+		if !filepath.IsAbs(*entry) {
+			return errors.New("entry socket must be an explicit absolute path")
+		}
+		socket = *entry
+	}
+	c := protocol.NewClient(socket)
 	ctx := context.Background()
-	if err = ensureDaemon(ctx, c, p); err != nil {
-		return err
+	if *entry == "" {
+		if err = ensureDaemon(ctx, c, p); err != nil {
+			return err
+		}
+	} else {
+		if _, err := c.Directory(ctx); err != nil {
+			return fmt.Errorf("entry unavailable: %w", err)
+		}
+		if len(args) > 0 && (args[0] == "run" || args[0] == "stop" || args[0] == "link" || args[0] == "reconcile") {
+			return errors.New("this entry supports permitted inventory and native attachment; run management commands at the execution home")
+		}
 	}
 	if len(args) == 0 {
 		return tui.Run(ctx, c, p.Place)
 	}
 	switch args[0] {
+	case "directory":
+		directory, err := c.Directory(ctx)
+		if err != nil {
+			return err
+		}
+		return printJSON(directory)
 	case "list":
 		s, err := c.List(ctx)
 		if err != nil {
@@ -173,6 +199,10 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		if *entry != "" {
+			fmt.Println("Private entry reachable. Use bp directory for execution-home availability; native credentials remain at each home.")
+			return nil
+		}
 		for _, binary := range []string{"tmux"} {
 			path, e := exec.LookPath(binary)
 			if e != nil {
@@ -231,8 +261,11 @@ func ensureDaemon(ctx context.Context, c *protocol.Client, p config.Paths) error
 
 const help = `Agent Backplane — native terminal switcher
 bp [--state DIR]                 Open remembered work
+bp --state CLIENTDIR --entry SOCKET
+                                 Open permitted work through a private entry
 bp run [--name NAME] [--workspace PATH] [--operation ID] codex|claude [native args]
 bp list                          Inspect registered work as JSON
+bp directory                     Inspect home availability and permitted inventory
 bp attach SESSION [--read-only]   Enter native terminal; Ctrl-G d returns
 bp link [status|off]              Link exact inherited managed context
 bp inspect SESSION               Inspect capabilities and unknown evidence

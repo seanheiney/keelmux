@@ -56,6 +56,7 @@ func Run(ctx context.Context, client *protocol.Client, statePath string) error {
 type inventoryMsg struct {
 	sessions []domain.Session
 	err      error
+	places   []protocol.Place
 }
 type pollMsg struct{}
 type attachMsg struct {
@@ -80,6 +81,7 @@ type model struct {
 	statePath            string
 	state                clientstate.State
 	sessions             []domain.Session
+	places               []protocol.Place
 	loaded               bool
 	inventoryInitialized bool
 	offline              error
@@ -112,7 +114,10 @@ func (m *model) Init() tea.Cmd {
 }
 
 func (m *model) fetch() tea.Cmd {
-	return func() tea.Msg { s, err := m.client.List(m.ctx); return inventoryMsg{s, err} }
+	return func() tea.Msg {
+		d, err := m.client.Directory(m.ctx)
+		return inventoryMsg{sessions: d.Sessions, err: err, places: d.Places}
+	}
 }
 func poll() tea.Cmd { return tea.Tick(2*time.Second, func(time.Time) tea.Msg { return pollMsg{} }) }
 func (m *model) save() bool {
@@ -215,6 +220,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			initial := !m.inventoryInitialized
 			m.inventoryInitialized = true
 			m.sessions = msg.sessions
+			m.places = msg.places
 			sort.SliceStable(m.sessions, func(i, j int) bool {
 				if m.sessions[i].Name == m.sessions[j].Name {
 					return m.sessions[i].ID < m.sessions[j].ID
@@ -594,6 +600,15 @@ func (m *model) View() string {
 	p := m.place()
 	rows := m.visible()
 	lines := []string{"BACKPLANE / " + m.groupName(), fmt.Sprintf("%d in view / %d total   g groups", len(rows), len(m.sessions)), "Search / " + p.Filter}
+	unreachable := 0
+	for _, home := range m.places {
+		if home.State != "reachable" {
+			unreachable++
+		}
+	}
+	if unreachable > 0 {
+		lines = append(lines, fmt.Sprintf("%d execution homes unreachable; entry remains connected.", unreachable))
+	}
 	if m.searching {
 		lines[2] += "_"
 	}
@@ -603,7 +618,11 @@ func (m *model) View() string {
 		lines = append(lines, "OFFLINE / last observed inventory", "Reconnect with r. Attach is unavailable.")
 	} else if len(rows) == 0 {
 		if len(m.sessions) == 0 {
-			lines = append(lines, "No sessions yet.", "Launch with bp run codex or bp run claude.")
+			if len(m.places) > 0 {
+				lines = append(lines, "No permitted reachable sessions.", "Use bp directory to inspect execution homes.")
+			} else {
+				lines = append(lines, "No sessions yet.", "Launch with bp run codex or bp run claude.")
+			}
 		} else {
 			lines = append(lines, "No matching work in this group.", "Esc clears search; g opens All work.")
 		}
@@ -628,7 +647,7 @@ func (m *model) View() string {
 	}
 	status := m.status
 	if m.offline != nil {
-		status = "Daemon offline: " + m.offline.Error()
+		status = "Connection offline: " + m.offline.Error()
 	}
 	help := "Enter attach  v read-only  / search  g groups  p draft  q quit"
 	if m.busy {
