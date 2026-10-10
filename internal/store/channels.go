@@ -56,11 +56,7 @@ func validChannelMessage(m channels.Message) bool {
 }
 
 func channelPayloadHash(b channels.Binding, m channels.Message) [32]byte {
-	return sha256.Sum256(encoded(struct {
-		BindingID, MessageID                               domain.ID
-		Provider                                           channels.Provider
-		Endpoint, Realm, Self, Channel, Root, Author, Text string
-	}{b.ID, m.ID, b.Provider, b.Endpoint, b.RealmID, b.SelfID, b.ChannelID, b.RootID, m.AuthorID, m.Text}))
+	return channels.PayloadHash(b, m)
 }
 
 func channelDelivery(ctx context.Context, q queryer, id domain.ID) (channels.Delivery, error) {
