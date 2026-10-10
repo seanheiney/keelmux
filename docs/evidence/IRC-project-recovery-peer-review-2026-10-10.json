@@ -1,0 +1,59 @@
+{
+  "verdict": "PASS; original P1 recovery finding closed for frozen correction",
+  "commit": "66a5d687e0d4317383c522a1039eacd634d23777",
+  "working_tree_head_observed": "79c0ce6627d5322b80849a6638f4256d84f06742",
+  "head_difference": "Only evidence documents; audited production files exact-match frozen correction",
+  "commands": [
+    {
+      "command": "go test -overlay=/absolute/owned/overlay.json ./internal/ircd -run ^TestAuditRecovery -count=1 -v -timeout=20s",
+      "result": "PASS",
+      "duration_seconds": 3.984
+    },
+    {
+      "command": "go test ./internal/ircd -run ^TestThread\\(ClaimRequiresOriginalAccountAuthority\\|FreshPermissionAndReadOnlyLostACK\\|NamespaceCannotBeCreatedByGenericAccounts\\)$ -count=1 -timeout=20s",
+      "result": "PASS",
+      "duration_seconds": 2.314
+    }
+  ],
+  "independent_cases": {
+    "rejections": 28,
+    "intact_recovery": 4,
+    "claim_states": [
+      "confirmed",
+      "attempted after lost registration ACK",
+      "legacy-confirmed without pins",
+      "legacy-claimed without pins"
+    ],
+    "authority_loss_or_replacement": [
+      "directory loss",
+      "credential loss",
+      "journal loss",
+      "replacement prepared pair",
+      "original credentials with prepared journal",
+      "replacement attempted pair",
+      "replacement confirmed pair"
+    ]
+  },
+  "observations": [
+    "Registration count stays exactly 1 for every retry",
+    "Missing directory is never recreated",
+    "Rejected retry leaves claim, credential, and account journal bytes unchanged",
+    "Every missing or prepared authority case returns ErrRepair before any API call",
+    "Pinned new claims reject replacement attempted or confirmed credentials before API calls",
+    "Three unpinned legacy cases can perform read-only status/auth checks; absent remote account returns ErrUncertain with no registration or local mutation",
+    "Four intact recovery cases retain exact credential bytes and original registered incarnation, and pin the recovered claim"
+  ],
+  "scope": "No network/provider/model activity or source edits; only config/runtime/API methods replaced by fixture. Production account/thread/storage code extracted unchanged from frozen Git commit.",
+  "fixture_sha256": "783bda6992a5edd8b3a7836b616a362cfe635bd553cf0ff44fe20b1ea90be7b6",
+  "production_source_sha256": {
+    "commit": "66a5d687e0d4317383c522a1039eacd634d23777",
+    "sha256": {
+      "internal/ircd/config.go": "beddb4642c517169957c4c749250f63546b962d251f50ea13c2e77bda236a82e",
+      "internal/ircd/lifecycle.go": "709b4e9d95ea306648f7ee9cdf3ba3ff914cb60a2c10bbb70dc36e35cb08ea7e",
+      "internal/ircd/api.go": "e653151face53d07c09f0dcf38588b9faed641eef3911a7bf74c1ead22d0226f",
+      "internal/ircd/accounts.go": "90289640ab4f5819a243eab92c36612c21edfbd7b1e2539f8b2d91358be5e15c",
+      "internal/ircd/thread_accounts.go": "d6c9efef1e5ff585090b1c1b8f41d32d5b278da3a24df7713552347bace26d24",
+      "internal/ircd/storage.go": "7b2e6a8f568fa147d88e20fb2d6c809d3269ab82cf1e23fc4dcc39a13fddcf88"
+    }
+  }
+}

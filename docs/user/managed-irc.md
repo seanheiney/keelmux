@@ -42,7 +42,7 @@ keelmux ircd bind --project PROJECT_ID --session SESSION_ID --allow-user alice \
   --binding ORIGINAL_BINDING_ID --operation ORIGINAL_CHANNEL_OPERATION_ID
 ```
 
-An already attempted project-channel operation only confirms registration read-only. A second thread reuses the project's original registration proof and creates its own claimed account. A lost registration reply cannot authorize another registration. If an attempt was consumed before authentication or connection succeeded, the original record can require explicit repair. Historical shared-bot/per-thread-channel journals are retained and never adopted as project registration. Retain the original IDs and private state; do not delete journals to force a retry.
+An already attempted project-channel operation only confirms registration read-only. A second thread reuses the project's original registration proof and creates its own claimed account. A lost registration reply cannot authorize another registration. Each retained thread claim requires its original private credential and account journal; missing files or replacement prepared credentials are refused before account IO. The claim pins the credential digest and confirmed account incarnation. If an attempt was consumed before authentication or connection succeeded, the original record can require explicit repair. Historical shared-bot/per-thread-channel journals are retained and never adopted as project registration. Retain the original IDs and private state; do not delete journals to force a retry.
 
 ## Read and reply
 

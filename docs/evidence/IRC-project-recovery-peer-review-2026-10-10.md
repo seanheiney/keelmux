@@ -1,0 +1,7 @@
+# Independent project IRC account recovery review
+
+The previously reproduced registration-replay defect is closed at frozen correction `66a5d687e0d4317383c522a1039eacd634d23777`. The reviewer exercised unchanged production account, thread-claim and storage code with local configuration, runtime and API fixtures. [Finite results and source digests](IRC-project-recovery-peer-review-2026-10-10.json) record the exact scope.
+
+All 28 rejection cases and four intact recovery cases passed. Missing directories, credentials or journals and substituted prepared account authority are refused before account IO; the original registration count remains one and existing authority bytes are preserved. Pinned claims also refuse substituted attempted/confirmed credentials. Historical unpinned records can perform read-only authentication reconciliation; an absent remote account returns uncertainty without recreating credentials or registering again. Intact original credentials and registered incarnation survive lost acknowledgements.
+
+Focused production regressions also passed. There is no remaining actionable recovery finding in this bounded review. The reviewer performed no network activity, provider/model activity or repository edits. Whole-product live TLS/IRC evidence is recorded separately in the [152-check receipt](irc-project-product-66a5d68.md); final captain source, package and customer qualification remain separate gates.
