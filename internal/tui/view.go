@@ -146,6 +146,9 @@ func (m *model) switcherFooter() []viewLine {
 		// status; a stale inventory never becomes permission to attach.
 		out = append(out, line("Connection offline; r reconnects. Attach unavailable.", warning))
 	}
+	if m.state.PendingChannel != nil {
+		out = append(out, line("Saved channel reply awaits its exact receipt; c then r checks.", warning))
+	}
 	if m.status != "" {
 		// Bound transient detail, leaving the action below visible on small
 		// terminals. The complete status is retained in the model.
@@ -186,11 +189,11 @@ func (m *model) switcherFooter() []viewLine {
 		}
 		out = append(out, m.footerText(action, accent)...)
 		if m.width >= 72 {
-			out = append(out, line("↑/↓ select  g groups  p draft  r refresh  ? help  q quit", muted))
+			out = append(out, line("↑/↓ select  c inbox  g groups  p draft  r refresh  q quit", muted))
 		} else if m.width >= 38 {
-			out = append(out, line("g groups  p draft  r refresh  q quit", muted))
+			out = append(out, line("c inbox  g groups  p draft  q quit", muted))
 		} else {
-			out = append(out, line("g groups  r  q quit", muted))
+			out = append(out, line("c inbox  g groups  q quit", muted))
 		}
 	}
 	return out
@@ -204,6 +207,8 @@ func (m *model) View() string {
 		return m.render([]viewLine{line("Keelmux / new group", accent), line("Groups are optional local navigation.", muted), line("", normal), line("Name: "+m.input+"_", normal)}, []viewLine{line(m.status, warning), line("Enter create  Esc cancel", accent)})
 	case "draft":
 		return m.draftView()
+	case "channels", "channelbinding", "channelreply", "channelhelp":
+		return m.channelView()
 	}
 	body := append(m.heading(), m.inventoryNotice()...)
 	rows, p := m.visible(), m.place()

@@ -2,6 +2,7 @@
 package clientstate
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,11 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
+	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/domain"
 )
 
-const Version = 1
+// Version 2 adds addressed channel drafts and immutable outbound intents. Old
+// clients reject v2 rather than decoding unknown fields and erasing an intent.
+const Version = 2
 
 // The empty group ID means All work. References overlap without cloning work.
 type Reference struct {
@@ -59,15 +64,32 @@ type Attachment struct {
 	Token       string    `json:"token,omitempty"`
 }
 
+type ChannelDraft struct {
+	ThreadID  domain.ID `json:"thread_id"`
+	BindingID domain.ID `json:"binding_id"`
+	Text      string    `json:"text"`
+}
+
+// ChannelIntent is the exact local queue request. Editing/navigation must never
+// retarget or replace it while acknowledgement remains unknown.
+type ChannelIntent struct {
+	MessageID domain.ID `json:"message_id"`
+	BindingID domain.ID `json:"binding_id"`
+	ThreadID  domain.ID `json:"thread_id"`
+	Text      string    `json:"text"`
+}
+
 type State struct {
-	Version       int                 `json:"version"`
-	ClientID      string              `json:"client_id"`
-	ActiveGroup   domain.ID           `json:"active_group,omitempty"`
-	PreviousGroup domain.ID           `json:"previous_group,omitempty"`
-	Groups        []Group             `json:"groups,omitempty"`
-	Places        map[domain.ID]Place `json:"places"`
-	Drafts        []Draft             `json:"drafts,omitempty"`
-	Pending       *Attachment         `json:"pending_attachment,omitempty"`
+	Version        int                 `json:"version"`
+	ClientID       string              `json:"client_id"`
+	ActiveGroup    domain.ID           `json:"active_group,omitempty"`
+	PreviousGroup  domain.ID           `json:"previous_group,omitempty"`
+	Groups         []Group             `json:"groups,omitempty"`
+	Places         map[domain.ID]Place `json:"places"`
+	Drafts         []Draft             `json:"drafts,omitempty"`
+	Pending        *Attachment         `json:"pending_attachment,omitempty"`
+	ChannelDrafts  []ChannelDraft      `json:"channel_drafts,omitempty"`
+	PendingChannel *ChannelIntent      `json:"pending_channel_send,omitempty"`
 }
 
 func New() State {
@@ -85,12 +107,29 @@ func Load(path string) (State, error) {
 	defer f.Close()
 	var s State
 	d := json.NewDecoder(io.LimitReader(f, 4<<20))
-	if err := d.Decode(&s); err != nil {
+	var raw json.RawMessage
+	if err := d.Decode(&raw); err != nil {
 		return State{}, fmt.Errorf("read client place: %w", err)
 	}
 	var trailing any
 	if err := d.Decode(&trailing); !errors.Is(err, io.EOF) {
 		return State{}, errors.New("client place has trailing or oversized data")
+	}
+	if err := distinctStateKeys(json.NewDecoder(bytes.NewReader(raw)), 0); err != nil {
+		return State{}, fmt.Errorf("read client place: %w", err)
+	}
+	d = json.NewDecoder(bytes.NewReader(raw))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&s); err != nil {
+		return State{}, fmt.Errorf("read client place: %w", err)
+	}
+	if s.Version == 1 {
+		// Only the original schema can migrate. A v1 file carrying new fields
+		// is ambiguous and must not be silently promoted or reset.
+		if len(s.ChannelDrafts) != 0 || s.PendingChannel != nil {
+			return State{}, errors.New("version 1 place contains channel state; repair required")
+		}
+		s.Version = Version
 	}
 	if err := s.Validate(); err != nil {
 		return State{}, err
@@ -143,6 +182,23 @@ func (s State) Validate() error {
 	for _, d := range s.Drafts {
 		if d.ThreadID == "" || d.RecipientID == "" {
 			return errors.New("draft is missing thread or recipient")
+		}
+	}
+	seenDrafts := map[[2]domain.ID]bool{}
+	for _, d := range s.ChannelDrafts {
+		key := [2]domain.ID{d.ThreadID, d.BindingID}
+		if !validChannelDraft(d) || seenDrafts[key] {
+			return errors.New("invalid or duplicate addressed channel draft")
+		}
+		seenDrafts[key] = true
+	}
+	if p := s.PendingChannel; p != nil {
+		if !channels.ValidID(string(p.MessageID)) || !channels.ValidID(string(p.BindingID)) || !channels.ValidID(string(p.ThreadID)) || !channels.ValidText(p.Text) {
+			return errors.New("invalid immutable channel send intent")
+		}
+		d, ok := s.ChannelDraft(p.ThreadID, p.BindingID)
+		if !ok || d.Text != p.Text {
+			return errors.New("pending channel intent differs from its frozen draft")
 		}
 	}
 	return nil
@@ -354,4 +410,34 @@ func (s *State) SetDraft(d Draft) {
 		}
 	}
 	s.Drafts = append(s.Drafts, d)
+}
+
+func (s State) ChannelDraft(thread, binding domain.ID) (ChannelDraft, bool) {
+	for _, d := range s.ChannelDrafts {
+		if d.ThreadID == thread && d.BindingID == binding {
+			return d, true
+		}
+	}
+	return ChannelDraft{}, false
+}
+
+func (s *State) SetChannelDraft(d ChannelDraft) error {
+	if !validChannelDraft(d) {
+		return errors.New("invalid addressed channel draft")
+	}
+	if p := s.PendingChannel; p != nil && p.ThreadID == d.ThreadID && p.BindingID == d.BindingID && p.Text != d.Text {
+		return errors.New("channel draft is frozen until its exact intent is acknowledged")
+	}
+	for i, old := range s.ChannelDrafts {
+		if old.ThreadID == d.ThreadID && old.BindingID == d.BindingID {
+			s.ChannelDrafts[i] = d
+			return nil
+		}
+	}
+	s.ChannelDrafts = append(s.ChannelDrafts, d)
+	return nil
+}
+
+func validChannelDraft(d ChannelDraft) bool {
+	return channels.ValidID(string(d.ThreadID)) && channels.ValidID(string(d.BindingID)) && len(d.Text) <= channels.MaxTextBytes && utf8.ValidString(d.Text) && !strings.ContainsRune(d.Text, 0)
 }

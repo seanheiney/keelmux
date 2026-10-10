@@ -12,6 +12,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/clientstate"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
@@ -94,22 +95,39 @@ type model struct {
 	status               string
 	deleting             domain.ID
 	color                bool
+	channelThread        domain.ID
+	channelEpoch         uint64
+	channelBindings      []protocol.ChannelStatus
+	channelMessages      []channels.Message
+	channelBinding       *protocol.ChannelStatus
+	channelIndex         int
+	channelScroll        int
+	channelNoteOffset    int
+	channelDraft         clientstate.ChannelDraft
+	channelLoading       bool
+	channelSending       bool
+	channelError         string
+	channelReceipts      map[domain.ID]channels.Delivery
 }
 
 func newModel(ctx context.Context, client *protocol.Client, path string, s clientstate.State) *model {
-	return &model{ctx: ctx, client: client, statePath: path, state: s, width: 80, height: 24, color: os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb" && os.Getenv("NO_COLOR") == ""}
+	return &model{ctx: ctx, client: client, statePath: path, state: s, width: 80, height: 24, color: os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb" && os.Getenv("NO_COLOR") == "", channelReceipts: map[domain.ID]channels.Delivery{}}
 }
 
 func (m *model) Init() tea.Cmd {
+	var recovery tea.Cmd
+	if m.state.PendingChannel != nil {
+		recovery = m.channelReceiptCommand(*m.state.PendingChannel, false, false)
+	}
 	if m.state.Pending != nil && m.state.Pending.Token != "" {
 		m.busy = true
 		m.status = "Reconciling the prior attachment; observing until its lease is released."
-		return tea.Batch(m.fetch(), m.releaseCommand(request(*m.state.Pending), nil))
+		return tea.Batch(m.fetch(), m.releaseCommand(request(*m.state.Pending), nil), recovery)
 	}
 	if m.state.Pending != nil {
 		m.status = "Prior attach outcome unknown. Enter retries its exact target; x reconciles cancellation."
 	}
-	return m.fetch()
+	return tea.Batch(m.fetch(), recovery)
 }
 
 func (m *model) fetch() tea.Cmd {
@@ -211,6 +229,12 @@ func (m *model) move(delta int) {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case channelSnapshotMsg:
+		return m, m.acceptChannelSnapshot(msg)
+	case channelSendMsg:
+		return m, m.acceptChannelSend(msg)
+	case channelReceiptMsg:
+		return m, m.acceptChannelReceipt(msg)
 	case tea.WindowSizeMsg:
 		m.width, m.height = max(1, msg.Width), max(1, msg.Height)
 		m.keepVisible()
@@ -293,6 +317,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.busy {
 			return m, nil
 		}
+		if strings.HasPrefix(m.screen, "channel") {
+			return m, m.channelKey(msg)
+		}
 		if m.screen == "draft" {
 			return m, m.draftKey(msg)
 		}
@@ -370,8 +397,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.draft = clientstate.Draft{ThreadID: s.ThreadID, RecipientID: s.LaneID, ExecutionID: s.Execution.ID, Generation: s.Execution.Generation}
 				}
 			}
+		case "c":
+			return m, m.openChannels()
 		case "?":
-			m.status = "Enter owns native input; v observes read-only. Groups and drafts are local. No semantic prompt route is available."
+			m.status = "Enter owns native input; v observes. c opens authored notes. Native drafts and channel replies stay separate."
 		}
 	}
 	return m, nil
