@@ -25,7 +25,9 @@ jobs:
           cache: true
       - name: Race and vet
         run: |
-          go test -race ./...
+          # Tests build real helper executables. Keep cold recursive compilation
+          # from competing with another package's unchanged runtime deadlines.
+          go test -race -p 1 ./...
           go vet ./...
       - name: Pinned UI source and unchanged upstream tests
         run: |

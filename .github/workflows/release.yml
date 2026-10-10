@@ -35,7 +35,9 @@ jobs:
           test -z "$(git status --porcelain)"
       - name: Source and installer gates
         run: |
-          go test -race ./...
+          # Preserve every race assertion and deadline with one package's owned
+          # runtime gate at a time on the finite hosted runner.
+          go test -race -p 1 ./...
           go vet ./...
           python3 tests/installer_test.py
           python3 tests/native_package_acceptance_test.py -v
