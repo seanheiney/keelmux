@@ -65,6 +65,22 @@ func TestDriveNativeKeysAndTerminalRestoration(t *testing.T) {
 			if err := server.WriteFrame(Frame{Output, []byte("Native 🛠\r\n")}); err != nil {
 				t.Fatal(err)
 			}
+			// Wait for the visible frame before simulating a user's detach.
+			// A transport write alone does not mean the display has drained it;
+			// racing local cancellation tests a different, unclaimed guarantee.
+			for {
+				visible, err := os.ReadFile(output.Name())
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(visible) == "Native 🛠\r\n" {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatal("native output was not displayed before input")
+				}
+				time.Sleep(time.Millisecond)
+			}
 			keys := []byte("Native 🛠\x03\x1b\x07\x07")
 			if !readOnly {
 				if _, err := master.Write(keys); err != nil {
