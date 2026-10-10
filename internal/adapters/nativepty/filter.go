@@ -30,6 +30,18 @@ func (s *terminalScreen) initFilter() {
 		// Positioning/erasure operations terminate the streaming grapheme tail.
 		// SGR and queries preserve delayed wrap, as real terminals do.
 		preserveWrap := len(sequence) > 2 && strings.ContainsRune("mnctp", rune(sequence[len(sequence)-1]))
+		// Character-set selection/shifts, nonmoving controls, and a tab at
+		// the right edge leave delayed wrap intact. Clearing only our shadow flag
+		// makes the next ASCII batch calculate its tail one column too far.
+		if len(sequence) == 1 && strings.ContainsRune("\x00\a\t\x0e\x0f\x7f", rune(sequence[0])) {
+			preserveWrap = true
+		} else if len(sequence) == 3 && sequence[0] == 0x1b && strings.ContainsRune("()*+", rune(sequence[1])) {
+			preserveWrap = true
+		} else if len(sequence) == 2 && sequence[0] == 0x1b && strings.ContainsRune("78=><HNOno|}~", rune(sequence[1])) {
+			preserveWrap = true
+		} else if len(sequence) > 2 && sequence[0] == 0x1b && sequence[1] == ']' {
+			preserveWrap = true
+		}
 		s.glyph = ""
 		if before != after || !preserveWrap {
 			s.pendingWrap = false

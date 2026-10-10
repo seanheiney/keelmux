@@ -19,6 +19,9 @@ func TestASCIIBatchMatchesBytewise(t *testing.T) {
 		"before\x1b\r]52;c;forbidden\aafter\x9d52;c;blocked\x9cmore\x9b6n",
 		"a\x1bPprivate-ascii\x1b\\b\x1b_ASCII-APC\x1b\\c\x1b[1;31mred",
 		"🙂abc❤️def👩\u200d💻ghi👍🏽jkl",
+		"1234567\x1b(BABC\u0301",
+		"1234567\x0fABC\u0301",
+		"1234567\tABC\u0301",
 	}
 	for index, text := range cases {
 		t.Run(fmt.Sprint(index), func(t *testing.T) {
@@ -49,6 +52,29 @@ func TestASCIIBatchMatchesBytewise(t *testing.T) {
 						t.Fatalf("batch changed screen/cursor/modes: %q versus %q", got, wantSnapshot)
 					}
 				})
+			}
+		})
+	}
+}
+
+func TestASCIITailAfterWrapPreservingControls(t *testing.T) {
+	for _, control := range []string{"\x1b(B", "\x0f", "\x0e", "\t", "\a", "\x00", "\x7f", "\x1b7", "\x1bH", "\x1b]0;title\a"} {
+		t.Run(fmt.Sprintf("%q", control), func(t *testing.T) {
+			for _, chunk := range []int{1, 2, 5, 64} {
+				s := newTerminalScreen(7, 4)
+				input := []byte("1234567" + control + "ABC\u0301")
+				for offset := 0; offset < len(input); offset += chunk {
+					s.process(input[offset:min(offset+chunk, len(input))])
+				}
+				for x, want := range []string{"A", "B", "C\u0301", " "} {
+					if got := s.emulator.CellAt(x, 1); got == nil || got.Content != want {
+						t.Fatalf("chunk %d cell (%d,1): got %+v, want %q", chunk, x, got, want)
+					}
+				}
+				if pos := s.emulator.CursorPosition(); pos.X != 3 || pos.Y != 1 || s.pendingWrap {
+					t.Fatalf("chunk %d cursor=%+v pendingWrap=%v", chunk, pos, s.pendingWrap)
+				}
+				s.close()
 			}
 		})
 	}
