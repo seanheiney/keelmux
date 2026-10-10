@@ -197,10 +197,16 @@ func (c *Channel) readUpstream() {
 		}
 		frame, err := c.relay.policy.Decode(raw)
 		if err != nil {
-			// Preserve the actual malformed source without inventing a native
-			// request ID. The authority retains a bounded digest when these
-			// bytes are not JSON and never makes this quarantine actionable.
-			if retainErr := c.quarantine(nil, raw); retainErr != nil {
+			// Hash the original bytes before generic JSON canonicalization can
+			// collapse duplicate keys. A malformed envelope has no trustworthy
+			// native request ID and this bounded evidence is never actionable.
+			digest := sha256.Sum256(raw)
+			evidence, _ := json.Marshal(struct {
+				Quarantine string `json:"quarantine"`
+				Bytes      int    `json:"bytes"`
+				SHA256     string `json:"sha256"`
+			}{"malformed owned upstream frame", len(raw), fmt.Sprintf("%x", digest)})
+			if retainErr := c.quarantine(nil, evidence); retainErr != nil {
 				c.finish(retainErr)
 				return
 			}
