@@ -12,7 +12,6 @@ import platform
 import re
 import shlex
 import shutil
-import signal
 import socket
 import stat
 import struct
@@ -168,6 +167,8 @@ class Harness:
         self.results = []
         self.manifest = None
         self.cleanups = []
+        self.stale_daemon_instance_refused = False
+        self.exact_instance_daemon_stops = 0
         self.target = platform.system().lower() + "_" + {
             "arm64": "arm64", "aarch64": "arm64", "x86_64": "amd64"
         }.get(platform.machine().lower(), platform.machine().lower())
@@ -562,7 +563,14 @@ class Harness:
 
     def process_identity(self, pid):
         env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
-        started = subprocess.check_output(["/bin/ps", "-p", str(pid), "-o", "lstart="], env=env).strip()
+        if platform.system() == "Linux":
+            raw = Path("/proc/%d/stat" % pid).read_text()
+            fields = raw[raw.rfind(")") + 2:].split()
+            need(len(fields) > 19 and fields[19].isdigit(), "daemon_kernel_start_unavailable")
+            boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+            started = ("linux:" + boot + ":ticks:" + fields[19]).encode()
+        else:
+            started = subprocess.check_output(["/bin/ps", "-p", str(pid), "-o", "lstart="], env=env).strip()
         command = subprocess.check_output(["/bin/ps", "-p", str(pid), "-o", "command="], env=env).strip()
         return started, command
 
@@ -574,26 +582,86 @@ class Harness:
         pid = self.peer_pid(path)
         started, command = self.process_identity(pid)
         package = (bindir / "keelmux").resolve().parent
+        canonical = CANONICAL if self.manifest["schema"] == 2 else CANONICAL[:3]
+        digests = {}
+        for name in canonical:
+            binary = package / name
+            info_binary = binary.lstat()
+            need(stat.S_ISREG(info_binary.st_mode) and not binary.is_symlink() and
+                 info_binary.st_uid == os.geteuid(), "daemon_package_binary_not_owned_regular")
+            digests[name] = digest(binary.read_bytes())
+            need(digests[name] == self.manifest["files"][name],
+                 "daemon_package_binary_digest_changed")
+        if platform.system() == "Linux":
+            need(digest(Path("/proc/%d/exe" % pid).read_bytes()) == digests["keelmuxd"],
+                 "live_daemon_executable_differs_from_package")
+        cli = package / "keelmux"
         candidates = {str(package / n) for n in ("keelmuxd", "bpd")}
         candidates.update(str(bindir / n) for n in ("keelmuxd", "bpd"))
         need(command.decode() in {p + " --state " + str(state) for p in candidates},
              "socket_peer_not_owned_installed_daemon")
-        receipt = (path, info.st_dev, info.st_ino, pid, started, command)
+        env = {"HOME": str(self.state), "PATH": str(self.tools) + ":/usr/bin:/bin",
+               "LC_ALL": "C", "TERM": "xterm-256color"}
+        result = self.run([str(cli), "--state", str(state), "daemon", "status"], env)
+        need(result.returncode == 0, "daemon_instance_status_failed")
+        observed = json.loads(result.stdout)
+        status = observed.get("daemon", {})
+        instance = status.get("instance", "")
+        need(observed.get("running") is True and status.get("pid") == pid
+             and status.get("protocol") == "bp/1"
+             and re.fullmatch(r"daemon_[a-f0-9]{32}", instance),
+             "daemon_instance_does_not_match_verified_peer")
+        current = path.lstat()
+        need((current.st_dev, current.st_ino) == (info.st_dev, info.st_ino)
+             and self.peer_pid(path) == pid
+             and self.process_identity(pid) == (started, command),
+             "daemon_identity_changed_during_instance_capture")
+        receipt = (path, info.st_dev, info.st_ino, pid, started, command,
+                   cli, instance, digests, env)
         self.cleanups.append(receipt)
+        if not self.stale_daemon_instance_refused:
+            # A valid but different nonce must not stop the verified live daemon.
+            wrong = instance[:7] + ("1" if instance[7] == "0" else "0") + instance[8:]
+            refused = self.run([str(cli), "--state", str(state), "daemon", "stop",
+                                "--instance", wrong], env)
+            need(refused.returncode != 0, "stale_daemon_instance_stop_accepted")
+            current = path.lstat()
+            need((current.st_dev, current.st_ino) == (info.st_dev, info.st_ino)
+                 and self.peer_pid(path) == pid
+                 and self.process_identity(pid) == (started, command),
+                 "stale_daemon_instance_stop_changed_authority")
+            self.stale_daemon_instance_refused = True
         return receipt
 
     def stop_daemon(self, receipt):
-        path, device, inode, pid, started, command = receipt
+        path, device, inode, pid, started, command, cli, instance, digests, env = receipt
         info = path.lstat()
-        need(info.st_dev == device and info.st_ino == inode and self.peer_pid(path) == pid,
+        need(stat.S_ISSOCK(info.st_mode) and info.st_uid == os.geteuid()
+             and stat.S_IMODE(info.st_mode) == 0o600
+             and info.st_dev == device and info.st_ino == inode and self.peer_pid(path) == pid,
              "daemon_cleanup_socket_proof_changed")
         need(self.process_identity(pid) == (started, command), "daemon_cleanup_process_proof_changed")
-        os.kill(pid, signal.SIGTERM)
+        for name, expected in digests.items():
+            binary = cli.parent / name
+            info_binary = binary.lstat()
+            need(stat.S_ISREG(info_binary.st_mode) and not binary.is_symlink()
+                 and info_binary.st_uid == os.geteuid()
+                 and digest(binary.read_bytes()) == expected,
+                 "daemon_cleanup_binary_proof_changed")
+        if platform.system() == "Linux":
+            need(digest(Path("/proc/%d/exe" % pid).read_bytes()) == digests["keelmuxd"],
+                 "daemon_cleanup_live_executable_changed")
+        # Only the live server can accept its original immutable instance nonce.
+        # Never turn a persisted PID or a prior observation into signal authority.
+        result = self.run([str(cli), "--state", str(path.parent), "daemon", "stop",
+                           "--instance", instance], env, timeout=15)
+        need(result.returncode == 0, "exact_daemon_instance_stop_refused")
+        self.exact_instance_daemon_stops += 1
         deadline = time.monotonic() + 6
         while time.monotonic() < deadline:
             try:
                 current = self.process_identity(pid)
-            except subprocess.CalledProcessError:
+            except (subprocess.CalledProcessError, FileNotFoundError, ProcessLookupError):
                 self.cleanups.remove(receipt)
                 return
             if current != (started, command):
@@ -699,6 +767,8 @@ class Harness:
         need(not (self.state / "tmux-invoked").exists(), "native_package_invoked_tmux")
         return {"canonical_and_legacy_cold_starts": 10, "state_precedence_cases": 5,
                 "unsafe_legacy_refusals": 3, "owned_daemons_stopped": True,
+                "stale_instance_stop_refused": self.stale_daemon_instance_refused,
+                "cleanup_uses_exact_instance_cli": True, "saved_pid_signals": 0,
                 "native_processes_launched": 0}
 
     def readonly_information(self):
@@ -842,7 +912,10 @@ class Harness:
                 "forbidden_tmux_invocations_observed": (self.state / "tmux-invoked").exists(),
                 "artifact_source_clean": self.manifest.get("source_clean") if self.manifest else None,
                 "artifact_development_test": self.manifest.get("development_test") if self.manifest else None,
-                "result": "pass" if self.results and all(r["result"] == "pass" for r in self.results) and not (self.state / "tmux-invoked").exists() else "fail",
+                "result": "pass" if self.results and all(r["result"] == "pass" for r in self.results) and not self.cleanups and not (self.state / "tmux-invoked").exists() else "fail",
+                "daemon_cleanup": {"pending_verified_receipts": len(self.cleanups),
+                                   "exact_instance_cli_stops": self.exact_instance_daemon_stops,
+                                   "saved_pid_signals": 0},
                 "groups": self.results,
                 "missing_evidence": missing}
 
