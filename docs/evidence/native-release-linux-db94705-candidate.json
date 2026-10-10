@@ -1,0 +1,1075 @@
+{
+  "schema": 1,
+  "assembled_utc": "2026-10-10T21:29:32.557878+00:00",
+  "result": "pass",
+  "scope": "Pre-final clean schema2 candidate: local installed archive on Linux arm64; generic authored terminal fixture only. Separate schema1 installer/empty-daemon compatibility checks on macOS arm64 and Linux arm64.",
+  "candidate_source_sha": "db947051f79dadb45d538604b29a174ffce82056",
+  "candidate_version": "v0.2.0",
+  "candidate_archive_sha256": "68553a9f47c697e2bd346b4b79ff069a8820850f9f342e98f112e990313db1c9",
+  "candidate_go_version": "go1.26.6",
+  "installer_harness_source_sha": "503b024855c2b59e629944cfd13e4f4616d55982",
+  "harness_source_qualification": "The native fixture and install-smoke script are exact candidate Git-object bytes. Installer acceptance is an explicitly separate committed 503b024 harness. No binaries were rebuilt and no fake clean checkout was introduced.",
+  "image_provenance": {
+    "base": "python@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e",
+    "native_fixture": {
+      "image": "keelmux-native-linux-fixture@sha256:096fcabef171b957632013ea1e7d87a7d0e507d16ff7ba85bbd4c589bd363d96",
+      "manifest": "sha256:5e52c2cde51ddfda0d4789efcdd8e9366e328b67eac80f481035c48038f2b6a7",
+      "config": "sha256:a4efc1e3717d7d92b28b0898eb6b6c376912a6f19b0decdbc334f870dde90c64",
+      "platform": "linux/arm64",
+      "purpose": "Owned fixture only; public signed Debian curl/procps packages added, no tmux installed",
+      "dockerfile": "FROM python@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e\nRUN apt-get update && apt-get install -y --no-install-recommends curl procps && rm -rf /var/lib/apt/lists/*\nLABEL org.keelmux.purpose=\"owned native Linux release validation only\"\n",
+      "dockerfile_sha256": "954f9fa9c3d2efea4f272a0a562949c5c5315a9fe3bd99c9a23b7d278e6774bd",
+      "build_log_sha256": "0b0e98a9a0b9e978cbe2094d76333c79a78f57a70b1f3bfe98dcc565e3da3e07"
+    },
+    "schema1_fixture": {
+      "image": "keelmux-schema1-linux-fixture@sha256:81a3dbb6753d62fe38fec8c5866ddae23b4b908b85f160a7dbc402fe0be5d07c",
+      "manifest": "sha256:8264f2b867d49a57d76e1be35012a455c77bab273947903d53ae2810457952b0",
+      "config": "sha256:745973903fa51bddedc8bbe88e371259f446ac6d60c4951cd5b4278c03270796",
+      "platform": "linux/arm64",
+      "purpose": "Separate owned legacy installer fixture only; public curl/procps/tmux packages, no tmux session launched",
+      "dockerfile": "FROM python@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e\nRUN apt-get update && apt-get install -y --no-install-recommends curl procps tmux && rm -rf /var/lib/apt/lists/*\nLABEL org.keelmux.purpose=\"owned schema1 compatibility validation only\"\n",
+      "dockerfile_sha256": "973912d98757edb0c777197dc38e0622b5fea82bca610eafa38f9fedc37178d0",
+      "build_log_sha256": "75fce7449cb666a5b9b0411c72acdd7d8df22271dab40c7b1177e439dd3a8493"
+    }
+  },
+  "linux_environment": {
+    "kernel": "6.8.0-100-generic",
+    "architecture": "aarch64",
+    "distribution": "Debian 13.7 (trixie)",
+    "python": "3.11.16",
+    "uid": 65534,
+    "gid": 65534,
+    "packages": {
+      "curl": "8.14.1-2+deb13u5",
+      "libcurl4t64": "8.14.1-2+deb13u5",
+      "procps": "2:4.0.4-9",
+      "libproc2-0": "2:4.0.4-9",
+      "libc6": "2.41-12+deb13u4"
+    },
+    "schema1_only_tmux": {
+      "version": "3.5a",
+      "package": "3.5a-3",
+      "binary_sha256": "0ad19f45a67c8b35b98dd5a7171e939b93b2879990d4ec04393f8131965650a4"
+    },
+    "curl_binary_sha256": "dde469b054c9c15a94a0229bd191a4ad5bcb9319d960bbbcb001d3ae13157215",
+    "ps_binary_sha256": "388a50620b101a212cee94b180d867240a142a397c9270ff3d6c5244fd979023"
+  },
+  "container_controls": {
+    "probe": {
+      "id": "ea54174a1128b05e377ce7c37282ee1c5d97733c03ed8f411afc39af225efc27",
+      "name": "/keelmux-native-linux-prep-4c26565",
+      "image_id": "sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e",
+      "user": "65534:65534",
+      "init": true,
+      "network": "none",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges"
+      ],
+      "tmpfs": {
+        "/tmp": "rw,exec,mode=1777,size=256m",
+        "/work": "rw,exec,mode=0700,uid=65534,gid=65534,size=1500m"
+      },
+      "mounts": [],
+      "restart_policy": {
+        "Name": "no",
+        "MaximumRetryCount": 0
+      }
+    },
+    "candidate": {
+      "id": "eca508481ed07f3705e0f59e0de1316c4bd3db024efe417a4012b010b19b9fc8",
+      "name": "/keelmux-native-candidate-db94705",
+      "image_id": "sha256:096fcabef171b957632013ea1e7d87a7d0e507d16ff7ba85bbd4c589bd363d96",
+      "user": "65534:65534",
+      "init": true,
+      "network": "none",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges"
+      ],
+      "tmpfs": {
+        "/tmp": "rw,exec,mode=1777,size=512m",
+        "/work": "rw,exec,mode=0700,uid=65534,gid=65534,size=2000m"
+      },
+      "mounts": [],
+      "restart_policy": {
+        "Name": "no",
+        "MaximumRetryCount": 0
+      }
+    },
+    "schema1": {
+      "id": "7306590a98960a44fb546255dcc4eed6a74f0aef47e5447030821b46deddf8bc",
+      "name": "/keelmux-schema1-compat-60b8bc7",
+      "image_id": "sha256:81a3dbb6753d62fe38fec8c5866ddae23b4b908b85f160a7dbc402fe0be5d07c",
+      "user": "65534:65534",
+      "init": true,
+      "network": "none",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges"
+      ],
+      "tmpfs": {
+        "/tmp": "rw,exec,mode=1777,size=256m",
+        "/work": "rw,exec,mode=0700,uid=65534,gid=65534,size=1600m"
+      },
+      "mounts": [],
+      "restart_policy": {
+        "Name": "no",
+        "MaximumRetryCount": 0
+      }
+    }
+  },
+  "schema1_retry_controls": {
+    "id": "de594560b0191368fc7da6ed26e6be9c84e4daa7334565cdf79a8882be6a63df",
+    "name": "/keelmux-schema1-compat-retry-60b8bc7",
+    "image_id": "sha256:81a3dbb6753d62fe38fec8c5866ddae23b4b908b85f160a7dbc402fe0be5d07c",
+    "user": "65534:65534",
+    "init": true,
+    "network": "none",
+    "readonly_rootfs": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_opt": [
+      "no-new-privileges"
+    ],
+    "tmpfs": {
+      "/tmp": "rw,exec,mode=1777,size=1024m",
+      "/work": "rw,exec,mode=0700,uid=65534,gid=65534,size=2000m"
+    },
+    "mounts": [],
+    "restart_policy": {
+      "Name": "no",
+      "MaximumRetryCount": 0
+    }
+  },
+  "native_fixture": {
+    "schema": 1,
+    "tested_source_sha": "db947051f79dadb45d538604b29a174ffce82056",
+    "archive_sha256": "68553a9f47c697e2bd346b4b79ff069a8820850f9f342e98f112e990313db1c9",
+    "harness_sha256": "253cec5dc0cf873a0f8b18941453f671e217fe0d5c39b7387532e3a8b2d78d96",
+    "utc": "2026-10-10T21:19:26Z",
+    "platform": "Linux-6.8.0-100-generic-aarch64-with-glibc2.41",
+    "kernel": "6.8.0-100-generic",
+    "machine": "aarch64",
+    "python": "3.11.16",
+    "effective_uid": 65534,
+    "effective_gid": 65534,
+    "runtime": "native supervisor; tmux invocation denied and counted",
+    "kind": "Linux_packaged_terminal_fixture",
+    "provider_programs": "authored raw terminal fixture only",
+    "model_turn_submitted": false,
+    "native_auth_copied": false,
+    "checks": [
+      {
+        "name": "release archive provenance and executable identity",
+        "result": "pass",
+        "detail": {
+          "checksum_pinned_archive": true,
+          "all_binary_manifest_digests": true,
+          "clean_source_manifest": true,
+          "canonical_and_alias_versions_match": true,
+          "archive_schema": 2,
+          "internal_supervisor_digest_verified": true
+        }
+      },
+      {
+        "name": "owned launch/link and dropped launch acknowledgement",
+        "result": "pass",
+        "detail": {
+          "actual_packaged_daemon_and_native_supervisor": true,
+          "exact_inherited_link": true,
+          "forged_link_refused": true,
+          "dropped_reply_retry_exact_identity": true,
+          "same_session_thread_execution_child_and_supervisor_after_daemon_SIGKILL": true
+        }
+      },
+      {
+        "name": "CLI raw controls, readonly view, detach and reconnect",
+        "result": "pass",
+        "detail": {
+          "actual_cli_attach_detach_reconnect": true,
+          "raw_Unicode_Escape_CtrlC_literal_prefix": true,
+          "resize": "76x23",
+          "readonly_input_and_writer_size_preserved": true
+        }
+      },
+      {
+        "name": "TUI and daemon crash recovery with saved place and draft",
+        "result": "pass",
+        "detail": {
+          "actual_packaged_TUI": true,
+          "daemon_SIGKILL_while_attached": true,
+          "TUI_SIGKILL_and_saved_grant_release": true,
+          "same_selected_work_and_local_draft_after_reconnect": true
+        }
+      },
+      {
+        "name": "lost attach acknowledgement and one cooperating writer",
+        "result": "pass",
+        "detail": {
+          "dropped_attach_reply_and_restart_exact_grant": true,
+          "forged_release_and_reused_retired_operation_refused": true,
+          "concurrent_contenders": 2,
+          "writer_grants": 1
+        }
+      },
+      {
+        "name": "lost stop acknowledgement and stale generation",
+        "result": "pass",
+        "detail": {
+          "stale_generation_refused": true,
+          "dropped_stop_reply_idempotent_across_restart": true,
+          "operation_target_conflict_refused": true
+        }
+      },
+      {
+        "name": "durable private host registry and journal",
+        "result": "pass",
+        "detail": {
+          "persisted_host_identity": true,
+          "second_daemon_refused": true,
+          "events": 26,
+          "threads": 2,
+          "contiguous_per_thread": true,
+          "private_authority_and_client_state_modes": true,
+          "native_auth_realm_untouched": true,
+          "daemon_status_without_autostart": true,
+          "forged_and_stale_instance_stop_refused": true,
+          "daemon_stop_preserves_native_fixture": true,
+          "packaged_daemon_restart_count": 11,
+          "restart_preserves_exact_work_runtime_and_writer_grant": true
+        }
+      },
+      {
+        "name": "native authority/socket loss is unknown and never replayed",
+        "result": "pass",
+        "detail": {
+          "owned_unavailable_paths": [
+            "socket",
+            "authority_receipt"
+          ],
+          "unavailable_is_unknown_not_dead": true,
+          "launch_retry_and_daemon_restart_do_not_replay": true,
+          "restored_exact_authority_reconciles_same_live_execution": true,
+          "tmux_invocations": 0
+        }
+      }
+    ],
+    "missing_evidence": [
+      "Linux native Codex and Claude programs and authenticated model turns",
+      "native skill invocation and verified account/model entitlement",
+      "independent remote servers and SSH lifecycle",
+      "host reboot/native conversation resume",
+      "installer execution on Linux",
+      "Linux amd64 runtime (arm64 runtime only)",
+      "independent-user accessibility/speed pilot"
+    ],
+    "container_environment": {
+      "schema": 1,
+      "scope": "Owned local clean candidate Linuxarm64 archive acceptance; generic authored fixture only; no provider/model turns",
+      "candidate_source_sha": "db947051f79dadb45d538604b29a174ffce82056",
+      "base_image": "python@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e",
+      "fixture_image": "keelmux-native-linux-fixture@sha256:096fcabef171b957632013ea1e7d87a7d0e507d16ff7ba85bbd4c589bd363d96",
+      "container_id": "eca508481ed07f3705e0f59e0de1316c4bd3db024efe417a4012b010b19b9fc8",
+      "uid_gid": "65534:65534",
+      "network": "none",
+      "init": true,
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges"
+      ],
+      "host_mounts": [],
+      "executing_candidate_archive_sha256": "68553a9f47c697e2bd346b4b79ff069a8820850f9f342e98f112e990313db1c9",
+      "copied_public_file_sha256": {
+        "src/install.sh": "e57d63a7ad7cc79445d87da5e0e2dd10b1076f4bbc599b46917b1e7d94c45040",
+        "src/scripts/install-smoke.py": "01d1f6462684094c007b3263fff7c22380651756bc8ff121274b4dc0dce14b37",
+        "src/tests/linux_release_smoke.py": "253cec5dc0cf873a0f8b18941453f671e217fe0d5c39b7387532e3a8b2d78d96",
+        "assets/keelmux_v0.2.0_linux_amd64.tar.gz": "2810e31aa981e48bbd8ec89687eb9c6ccac0605a76dac7528291cb590ad72720",
+        "assets/keelmux_v0.2.0_darwin_arm64.tar.gz": "1acde713b8fc8cd70f1260c5fb213f9e371d99d01f6b273d9272da6a5bf8d155",
+        "assets/keelmux_v0.2.0_darwin_amd64.tar.gz": "9b1e6eb39c32436fd9bbda1b2e43701de75bc735fd00d8d9f2027e7ecc2783e5",
+        "assets/SHA256SUMS": "1351f8ad1e38bd32cad5eafbd3ec43377cb0e2df650fe7ae13849ab42bb0f111",
+        "assets/keelmux_v0.2.0_linux_arm64.tar.gz": "68553a9f47c697e2bd346b4b79ff069a8820850f9f342e98f112e990313db1c9"
+      }
+    },
+    "release": {
+      "aliases": {
+        "bp": "keelmux",
+        "bpd": "keelmuxd",
+        "bpg": "keelmux-entry"
+      },
+      "arch": "arm64",
+      "built_at": "2026-10-10T21:16:49Z",
+      "commit": "db947051f79dadb45d538604b29a174ffce82056",
+      "development_test": false,
+      "files": {
+        "LICENSE": "901e05e6fcd7fb304f28703f4b20c17e9c393e98035748538e09321eb559de42",
+        "README.md": "3f0c43d0c3faadedab2001894d42f4177b46eba301961b22f5ea74a9b0e5eb08",
+        "keelmux": "d824eb1f07a41ca8ceae25a2566f1a3405a6950bcb6e07b95d3fecb3e0d748f9",
+        "keelmux-entry": "bcd07be9933c8cf08a5a18f92250770ab887167941dc53a2dee17355af56086b",
+        "keelmux-supervisor": "a8b30a4bfd2d9ebb2e540e9e3cc4df17ab6c9d5edb95b9c61b0f0fbbcdf78876",
+        "keelmuxd": "571cccc808551660fdd60c4da71926f7820950b382824df4a64665402d47e442"
+      },
+      "go_version": "go1.26.6",
+      "os": "linux",
+      "product": "Keelmux",
+      "schema": 2,
+      "source_clean": true,
+      "version": "v0.2.0"
+    },
+    "executable_buildinfo": {
+      "name": "Keelmux",
+      "version": "v0.2.0",
+      "commit": "db947051f79dadb45d538604b29a174ffce82056",
+      "built_at": "2026-10-10T21:16:49Z",
+      "protocol": "bp/1",
+      "go_version": "go1.26.6",
+      "os": "linux",
+      "arch": "arm64"
+    },
+    "binary_sha256": {
+      "keelmux": "d824eb1f07a41ca8ceae25a2566f1a3405a6950bcb6e07b95d3fecb3e0d748f9",
+      "keelmuxd": "571cccc808551660fdd60c4da71926f7820950b382824df4a64665402d47e442",
+      "keelmux-entry": "bcd07be9933c8cf08a5a18f92250770ab887167941dc53a2dee17355af56086b",
+      "keelmux-supervisor": "a8b30a4bfd2d9ebb2e540e9e3cc4df17ab6c9d5edb95b9c61b0f0fbbcdf78876"
+    },
+    "cleanup": {
+      "owned_terminal_clients_reaped": true,
+      "owned_daemons_reaped": true,
+      "owned_children_and_supervisors_not_live": true,
+      "native_stop_uses_verified_socket_authority": true,
+      "owned_temp_removed": true,
+      "errors": []
+    },
+    "result": "pass"
+  },
+  "installer_candidate": {
+    "schema": 1,
+    "artifact_source_sha": "db947051f79dadb45d538604b29a174ffce82056",
+    "harness_checkout_sha": "503b024855c2b59e629944cfd13e4f4616d55982",
+    "harness_checkout_implementation_diff_sha256": null,
+    "harness_provenance_qualification": "Caller-supplied revision for a copied standalone harness; exact executed script digest is recorded. No implementation checkout comparison was performed.",
+    "harness_sha256": "809c50e416379061a47cd43346436199cf5cefcc9e60fca34f002516e6c1dfd2",
+    "installer_sha256": "e57d63a7ad7cc79445d87da5e0e2dd10b1076f4bbc599b46917b1e7d94c45040",
+    "version": "v0.2.0",
+    "platform": "Linux-6.8.0-100-generic-aarch64-with-glibc2.41",
+    "archive": "keelmux_v0.2.0_linux_arm64.tar.gz",
+    "model_turns_submitted": 0,
+    "qualification": "Actual release binaries and installer with owned loopback assets and temporary HOME. Preservation uses owned sentinels, not real credentials. Optional runtime starts empty packaged daemons only; no vendor CLI or native model work.",
+    "archive_schema": 2,
+    "forbidden_tmux_invocations_observed": false,
+    "artifact_source_clean": true,
+    "artifact_development_test": false,
+    "result": "pass",
+    "daemon_cleanup": {
+      "pending_verified_receipts": 0,
+      "exact_instance_cli_stops": 11,
+      "saved_pid_signals": 0
+    },
+    "groups": [
+      {
+        "name": "artifact_identity",
+        "result": "pass",
+        "seconds": 0.337,
+        "archive_schema": 2,
+        "archive_sha256": "68553a9f47c697e2bd346b4b79ff069a8820850f9f342e98f112e990313db1c9",
+        "target": "linux_arm64",
+        "manifest_source_commit_verified": true,
+        "manifest_file_digests_verified": true
+      },
+      {
+        "name": "http_requires_explicit_test_optin",
+        "result": "pass",
+        "seconds": 0.507,
+        "no_download_without_test_optin": true
+      },
+      {
+        "name": "fresh_install_and_reinstall",
+        "result": "pass",
+        "seconds": 3.845,
+        "installed_executable_sha256": {
+          "keelmux": "d824eb1f07a41ca8ceae25a2566f1a3405a6950bcb6e07b95d3fecb3e0d748f9",
+          "keelmuxd": "571cccc808551660fdd60c4da71926f7820950b382824df4a64665402d47e442",
+          "keelmux-entry": "bcd07be9933c8cf08a5a18f92250770ab887167941dc53a2dee17355af56086b",
+          "bp": "d824eb1f07a41ca8ceae25a2566f1a3405a6950bcb6e07b95d3fecb3e0d748f9",
+          "bpd": "571cccc808551660fdd60c4da71926f7820950b382824df4a64665402d47e442",
+          "bpg": "bcd07be9933c8cf08a5a18f92250770ab887167941dc53a2dee17355af56086b",
+          "keelmux-supervisor": "a8b30a4bfd2d9ebb2e540e9e3cc4df17ab6c9d5edb95b9c61b0f0fbbcdf78876"
+        },
+        "native_and_shell_sentinels_preserved": true
+      },
+      {
+        "name": "installation_paths_with_spaces",
+        "result": "pass",
+        "seconds": 1.028,
+        "quoted_install_paths": true
+      },
+      {
+        "name": "checksum_mismatch",
+        "result": "pass",
+        "seconds": 1.513,
+        "accepted_install_preserved": true
+      },
+      {
+        "name": "truncated_download",
+        "result": "pass",
+        "seconds": 1.432,
+        "accepted_install_preserved": true
+      },
+      {
+        "name": "missing_checksum",
+        "result": "pass",
+        "seconds": 1.463,
+        "accepted_install_preserved": true
+      },
+      {
+        "name": "missing_archive",
+        "result": "pass",
+        "seconds": 1.368,
+        "accepted_install_preserved": true
+      },
+      {
+        "name": "unowned_collisions",
+        "result": "pass",
+        "seconds": 4.524,
+        "unowned_names_checked": 6,
+        "unowned_symlink_preserved": true,
+        "unowned_path_command_preserved": true
+      },
+      {
+        "name": "verified_archive_boundaries",
+        "result": "pass",
+        "seconds": 21.471,
+        "verified_malformed_archive_cases": 4,
+        "outside_sentinel_preserved": true
+      },
+      {
+        "name": "unsupported_platform",
+        "result": "pass",
+        "seconds": 0.503,
+        "no_download": true
+      },
+      {
+        "name": "concurrent_install",
+        "result": "pass",
+        "seconds": 1.026,
+        "complete_installs": 1,
+        "clean_refusals": 1
+      },
+      {
+        "name": "owned_uninstall_preserves_state",
+        "result": "pass",
+        "seconds": 1.897,
+        "retained_state_and_skill_archive": true,
+        "unowned_replacement_preserved": true
+      },
+      {
+        "name": "readonly_product_information",
+        "result": "pass",
+        "seconds": 1.073,
+        "actual_packaged_command_cases": 18,
+        "state_not_created": true
+      },
+      {
+        "name": "installed_runtime_state_and_sibling_discovery",
+        "result": "pass",
+        "seconds": 7.256,
+        "canonical_and_legacy_cold_starts": 10,
+        "state_precedence_cases": 5,
+        "unsafe_legacy_refusals": 3,
+        "owned_daemons_stopped": true,
+        "stale_instance_stop_refused": true,
+        "cleanup_uses_exact_instance_cli": true,
+        "saved_pid_signals": 0,
+        "native_processes_launched": 0
+      },
+      {
+        "name": "existing_authority_refuses_second_daemon",
+        "result": "pass",
+        "seconds": 2.48,
+        "actual_packaged_cli_digest_preserved": true,
+        "refusals_with_zero_sibling_execs": 5,
+        "healthy_existing_authority_control": true,
+        "missing_socket_positive_exec_count": 1,
+        "qualification": "Actual packaged CLI against private Unix HTTP fixtures and a counted sibling exec wrapper; the positive wrapper starts the actual packaged empty daemon."
+      }
+    ],
+    "missing_evidence": [
+      "installed two-provider native terminal workflow and recovery",
+      "upgrade/downgrade schema compatibility",
+      "public release download",
+      "independent remote host",
+      "authenticated model turns"
+    ]
+  },
+  "loaded_binary_install_smoke": {
+    "receipt_origin": "Captured actual exit-zero tool stdout; stored after execution without rerunning",
+    "report": {
+      "passed": true,
+      "version": "v0.2.0",
+      "os": "linux",
+      "arch": "arm64",
+      "commit": "db947051f79dadb45d538604b29a174ffce82056",
+      "source_clean": true,
+      "development_test": false,
+      "archive_schema": 2,
+      "loaded_canonical_sha256": {
+        "keelmux": "d824eb1f07a41ca8ceae25a2566f1a3405a6950bcb6e07b95d3fecb3e0d748f9",
+        "keelmuxd": "571cccc808551660fdd60c4da71926f7820950b382824df4a64665402d47e442",
+        "keelmux-entry": "bcd07be9933c8cf08a5a18f92250770ab887167941dc53a2dee17355af56086b",
+        "keelmux-supervisor": "a8b30a4bfd2d9ebb2e540e9e3cc4df17ab6c9d5edb95b9c61b0f0fbbcdf78876"
+      },
+      "supervisor_is_internal_sibling": true,
+      "coverage": "actual archive install/reinstall/version/uninstall; no sessions or providers"
+    }
+  },
+  "schema1_compatibility": {
+    "qualification": "Current candidate installer/harness consumes original clean v0.1.0 archives. Fresh install/reinstall/uninstall and empty-daemon lifecycle only; this does not prove a live state migration or downgrade.",
+    "macos": {
+      "schema": 1,
+      "artifact_source_sha": "60b8bc705b2636b087bf2fd872e976aa466ad3e9",
+      "harness_checkout_sha": "503b024855c2b59e629944cfd13e4f4616d55982",
+      "harness_checkout_implementation_diff_sha256": null,
+      "harness_provenance_qualification": "Caller-supplied revision for a copied standalone harness; exact executed script digest is recorded. No implementation checkout comparison was performed.",
+      "harness_sha256": "809c50e416379061a47cd43346436199cf5cefcc9e60fca34f002516e6c1dfd2",
+      "installer_sha256": "e57d63a7ad7cc79445d87da5e0e2dd10b1076f4bbc599b46917b1e7d94c45040",
+      "version": "v0.1.0",
+      "platform": "macOS-26.7.1-arm64-arm-64bit-Mach-O",
+      "archive": "keelmux_v0.1.0_darwin_arm64.tar.gz",
+      "model_turns_submitted": 0,
+      "qualification": "Actual release binaries and installer with owned loopback assets and temporary HOME. Preservation uses owned sentinels, not real credentials. Optional runtime starts empty packaged daemons only; no vendor CLI or native model work.",
+      "archive_schema": 1,
+      "forbidden_tmux_invocations_observed": false,
+      "artifact_source_clean": true,
+      "artifact_development_test": false,
+      "result": "pass",
+      "daemon_cleanup": {
+        "pending_verified_receipts": 0,
+        "exact_instance_cli_stops": 11,
+        "saved_pid_signals": 0
+      },
+      "groups": [
+        {
+          "name": "artifact_identity",
+          "result": "pass",
+          "seconds": 0.101,
+          "archive_schema": 1,
+          "archive_sha256": "63bbee14e22d7468feb6f6971b48626b409e07e131b78d7941440d8bd5995243",
+          "target": "darwin_arm64",
+          "manifest_source_commit_verified": true,
+          "manifest_file_digests_verified": true
+        },
+        {
+          "name": "http_requires_explicit_test_optin",
+          "result": "pass",
+          "seconds": 0.507,
+          "no_download_without_test_optin": true
+        },
+        {
+          "name": "fresh_install_and_reinstall",
+          "result": "pass",
+          "seconds": 3.066,
+          "installed_executable_sha256": {
+            "keelmux": "3cea0b364487a3eda6a8301d367fc09048c6ce4ae536add4259471e1dc1cc65e",
+            "keelmuxd": "920eb021fb62b85efab71f63ab1134d8ebf7213687133a5ba044646568d4a669",
+            "keelmux-entry": "00a969c7f8d57f6286ee2033142c1eece77907a80c064397ad55635dda1df224",
+            "bp": "3cea0b364487a3eda6a8301d367fc09048c6ce4ae536add4259471e1dc1cc65e",
+            "bpd": "920eb021fb62b85efab71f63ab1134d8ebf7213687133a5ba044646568d4a669",
+            "bpg": "00a969c7f8d57f6286ee2033142c1eece77907a80c064397ad55635dda1df224"
+          },
+          "native_and_shell_sentinels_preserved": true
+        },
+        {
+          "name": "installation_paths_with_spaces",
+          "result": "pass",
+          "seconds": 1.602,
+          "quoted_install_paths": true
+        },
+        {
+          "name": "checksum_mismatch",
+          "result": "pass",
+          "seconds": 1.992,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "truncated_download",
+          "result": "pass",
+          "seconds": 1.85,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "missing_checksum",
+          "result": "pass",
+          "seconds": 1.83,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "missing_archive",
+          "result": "pass",
+          "seconds": 1.833,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "unowned_collisions",
+          "result": "pass",
+          "seconds": 4.546,
+          "unowned_names_checked": 6,
+          "unowned_symlink_preserved": true,
+          "unowned_path_command_preserved": true
+        },
+        {
+          "name": "verified_archive_boundaries",
+          "result": "pass",
+          "seconds": 12.726,
+          "verified_malformed_archive_cases": 4,
+          "outside_sentinel_preserved": true
+        },
+        {
+          "name": "unsupported_platform",
+          "result": "pass",
+          "seconds": 0.509,
+          "no_download": true
+        },
+        {
+          "name": "concurrent_install",
+          "result": "pass",
+          "seconds": 1.621,
+          "complete_installs": 1,
+          "clean_refusals": 1
+        },
+        {
+          "name": "owned_uninstall_preserves_state",
+          "result": "pass",
+          "seconds": 2.995,
+          "retained_state_and_skill_archive": true,
+          "unowned_replacement_preserved": true
+        },
+        {
+          "name": "readonly_product_information",
+          "result": "pass",
+          "seconds": 1.285,
+          "actual_packaged_command_cases": 18,
+          "state_not_created": true
+        },
+        {
+          "name": "installed_runtime_state_and_sibling_discovery",
+          "result": "pass",
+          "seconds": 9.075,
+          "canonical_and_legacy_cold_starts": 10,
+          "state_precedence_cases": 5,
+          "unsafe_legacy_refusals": 3,
+          "owned_daemons_stopped": true,
+          "stale_instance_stop_refused": true,
+          "cleanup_uses_exact_instance_cli": true,
+          "saved_pid_signals": 0,
+          "native_processes_launched": 0
+        },
+        {
+          "name": "existing_authority_refuses_second_daemon",
+          "result": "pass",
+          "seconds": 4.508,
+          "actual_packaged_cli_digest_preserved": true,
+          "refusals_with_zero_sibling_execs": 5,
+          "healthy_existing_authority_control": true,
+          "missing_socket_positive_exec_count": 1,
+          "qualification": "Actual packaged CLI against private Unix HTTP fixtures and a counted sibling exec wrapper; the positive wrapper starts the actual packaged empty daemon."
+        }
+      ],
+      "missing_evidence": [
+        "installed two-provider native terminal workflow and recovery",
+        "upgrade/downgrade schema compatibility",
+        "public release download",
+        "independent remote host",
+        "authenticated model turns"
+      ]
+    },
+    "linux": {
+      "schema": 1,
+      "artifact_source_sha": "60b8bc705b2636b087bf2fd872e976aa466ad3e9",
+      "harness_checkout_sha": "503b024855c2b59e629944cfd13e4f4616d55982",
+      "harness_checkout_implementation_diff_sha256": null,
+      "harness_provenance_qualification": "Caller-supplied revision for a copied standalone harness; exact executed script digest is recorded. No implementation checkout comparison was performed.",
+      "harness_sha256": "809c50e416379061a47cd43346436199cf5cefcc9e60fca34f002516e6c1dfd2",
+      "installer_sha256": "e57d63a7ad7cc79445d87da5e0e2dd10b1076f4bbc599b46917b1e7d94c45040",
+      "version": "v0.1.0",
+      "platform": "Linux-6.8.0-100-generic-aarch64-with-glibc2.41",
+      "archive": "keelmux_v0.1.0_linux_arm64.tar.gz",
+      "model_turns_submitted": 0,
+      "qualification": "Actual release binaries and installer with owned loopback assets and temporary HOME. Preservation uses owned sentinels, not real credentials. Optional runtime starts empty packaged daemons only; no vendor CLI or native model work.",
+      "archive_schema": 1,
+      "forbidden_tmux_invocations_observed": false,
+      "artifact_source_clean": true,
+      "artifact_development_test": false,
+      "result": "pass",
+      "daemon_cleanup": {
+        "pending_verified_receipts": 0,
+        "exact_instance_cli_stops": 11,
+        "saved_pid_signals": 0
+      },
+      "groups": [
+        {
+          "name": "artifact_identity",
+          "result": "pass",
+          "seconds": 0.23,
+          "archive_schema": 1,
+          "archive_sha256": "f4b9f8af79ff28bcb6d119297776821243704d051f73ecf0111b45824b88711a",
+          "target": "linux_arm64",
+          "manifest_source_commit_verified": true,
+          "manifest_file_digests_verified": true
+        },
+        {
+          "name": "http_requires_explicit_test_optin",
+          "result": "pass",
+          "seconds": 0.506,
+          "no_download_without_test_optin": true
+        },
+        {
+          "name": "fresh_install_and_reinstall",
+          "result": "pass",
+          "seconds": 1.742,
+          "installed_executable_sha256": {
+            "keelmux": "7954a8e0a5017cb61f6f19897a2f22f003d8e57feac0c60437bf76567340e792",
+            "keelmuxd": "601192dcd61071bef8568ad31af152609bf6aa9f9ce88ead34be3bda51933095",
+            "keelmux-entry": "7ea5ca49fc447e7c79c4feb67a07adb4913a3c81fba12f1dd6275ed625aa1fe2",
+            "bp": "7954a8e0a5017cb61f6f19897a2f22f003d8e57feac0c60437bf76567340e792",
+            "bpd": "601192dcd61071bef8568ad31af152609bf6aa9f9ce88ead34be3bda51933095",
+            "bpg": "7ea5ca49fc447e7c79c4feb67a07adb4913a3c81fba12f1dd6275ed625aa1fe2"
+          },
+          "native_and_shell_sentinels_preserved": true
+        },
+        {
+          "name": "installation_paths_with_spaces",
+          "result": "pass",
+          "seconds": 1.037,
+          "quoted_install_paths": true
+        },
+        {
+          "name": "checksum_mismatch",
+          "result": "pass",
+          "seconds": 1.209,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "truncated_download",
+          "result": "pass",
+          "seconds": 1.216,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "missing_checksum",
+          "result": "pass",
+          "seconds": 1.219,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "missing_archive",
+          "result": "pass",
+          "seconds": 1.167,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "unowned_collisions",
+          "result": "pass",
+          "seconds": 4.527,
+          "unowned_names_checked": 6,
+          "unowned_symlink_preserved": true,
+          "unowned_path_command_preserved": true
+        },
+        {
+          "name": "verified_archive_boundaries",
+          "result": "pass",
+          "seconds": 14.548,
+          "verified_malformed_archive_cases": 4,
+          "outside_sentinel_preserved": true
+        },
+        {
+          "name": "unsupported_platform",
+          "result": "pass",
+          "seconds": 0.501,
+          "no_download": true
+        },
+        {
+          "name": "concurrent_install",
+          "result": "pass",
+          "seconds": 1.025,
+          "complete_installs": 1,
+          "clean_refusals": 1
+        },
+        {
+          "name": "owned_uninstall_preserves_state",
+          "result": "pass",
+          "seconds": 1.714,
+          "retained_state_and_skill_archive": true,
+          "unowned_replacement_preserved": true
+        },
+        {
+          "name": "readonly_product_information",
+          "result": "pass",
+          "seconds": 1.099,
+          "actual_packaged_command_cases": 18,
+          "state_not_created": true
+        },
+        {
+          "name": "installed_runtime_state_and_sibling_discovery",
+          "result": "pass",
+          "seconds": 7.187,
+          "canonical_and_legacy_cold_starts": 10,
+          "state_precedence_cases": 5,
+          "unsafe_legacy_refusals": 3,
+          "owned_daemons_stopped": true,
+          "stale_instance_stop_refused": true,
+          "cleanup_uses_exact_instance_cli": true,
+          "saved_pid_signals": 0,
+          "native_processes_launched": 0
+        },
+        {
+          "name": "existing_authority_refuses_second_daemon",
+          "result": "pass",
+          "seconds": 1.986,
+          "actual_packaged_cli_digest_preserved": true,
+          "refusals_with_zero_sibling_execs": 5,
+          "healthy_existing_authority_control": true,
+          "missing_socket_positive_exec_count": 1,
+          "qualification": "Actual packaged CLI against private Unix HTTP fixtures and a counted sibling exec wrapper; the positive wrapper starts the actual packaged empty daemon."
+        }
+      ],
+      "missing_evidence": [
+        "installed two-provider native terminal workflow and recovery",
+        "upgrade/downgrade schema compatibility",
+        "public release download",
+        "independent remote host",
+        "authenticated model turns"
+      ]
+    }
+  },
+  "first_schema1_linux_fixture_attempt": {
+    "result": "fail",
+    "cause": "Owned /tmp tmpfs was limited to 256 MiB; later extraction could not write complete binaries. Corrected only the fixture capacity to 1024 MiB for the successful repeat with unchanged image, source and assets.",
+    "extract_diagnostic": "tar: keelmuxd: Cannot write: No space left on device\ntar: Exiting with failure status due to previous errors\nKeelmux: Could not extract reviewed release.\n",
+    "original_report": {
+      "schema": 1,
+      "artifact_source_sha": "60b8bc705b2636b087bf2fd872e976aa466ad3e9",
+      "harness_checkout_sha": "503b024855c2b59e629944cfd13e4f4616d55982",
+      "harness_checkout_implementation_diff_sha256": null,
+      "harness_provenance_qualification": "Caller-supplied revision for a copied standalone harness; exact executed script digest is recorded. No implementation checkout comparison was performed.",
+      "harness_sha256": "809c50e416379061a47cd43346436199cf5cefcc9e60fca34f002516e6c1dfd2",
+      "installer_sha256": "e57d63a7ad7cc79445d87da5e0e2dd10b1076f4bbc599b46917b1e7d94c45040",
+      "version": "v0.1.0",
+      "platform": "Linux-6.8.0-100-generic-aarch64-with-glibc2.41",
+      "archive": "keelmux_v0.1.0_linux_arm64.tar.gz",
+      "model_turns_submitted": 0,
+      "qualification": "Actual release binaries and installer with owned loopback assets and temporary HOME. Preservation uses owned sentinels, not real credentials. Optional runtime starts empty packaged daemons only; no vendor CLI or native model work.",
+      "archive_schema": 1,
+      "forbidden_tmux_invocations_observed": false,
+      "artifact_source_clean": true,
+      "artifact_development_test": false,
+      "result": "fail",
+      "daemon_cleanup": {
+        "pending_verified_receipts": 0,
+        "exact_instance_cli_stops": 0,
+        "saved_pid_signals": 0
+      },
+      "groups": [
+        {
+          "name": "artifact_identity",
+          "result": "pass",
+          "seconds": 0.237,
+          "archive_schema": 1,
+          "archive_sha256": "f4b9f8af79ff28bcb6d119297776821243704d051f73ecf0111b45824b88711a",
+          "target": "linux_arm64",
+          "manifest_source_commit_verified": true,
+          "manifest_file_digests_verified": true
+        },
+        {
+          "name": "http_requires_explicit_test_optin",
+          "result": "pass",
+          "seconds": 0.507,
+          "no_download_without_test_optin": true
+        },
+        {
+          "name": "fresh_install_and_reinstall",
+          "result": "pass",
+          "seconds": 1.837,
+          "installed_executable_sha256": {
+            "keelmux": "7954a8e0a5017cb61f6f19897a2f22f003d8e57feac0c60437bf76567340e792",
+            "keelmuxd": "601192dcd61071bef8568ad31af152609bf6aa9f9ce88ead34be3bda51933095",
+            "keelmux-entry": "7ea5ca49fc447e7c79c4feb67a07adb4913a3c81fba12f1dd6275ed625aa1fe2",
+            "bp": "7954a8e0a5017cb61f6f19897a2f22f003d8e57feac0c60437bf76567340e792",
+            "bpd": "601192dcd61071bef8568ad31af152609bf6aa9f9ce88ead34be3bda51933095",
+            "bpg": "7ea5ca49fc447e7c79c4feb67a07adb4913a3c81fba12f1dd6275ed625aa1fe2"
+          },
+          "native_and_shell_sentinels_preserved": true
+        },
+        {
+          "name": "installation_paths_with_spaces",
+          "result": "pass",
+          "seconds": 1.033,
+          "quoted_install_paths": true
+        },
+        {
+          "name": "checksum_mismatch",
+          "result": "pass",
+          "seconds": 1.315,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "truncated_download",
+          "result": "pass",
+          "seconds": 1.183,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "missing_checksum",
+          "result": "pass",
+          "seconds": 1.334,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "missing_archive",
+          "result": "pass",
+          "seconds": 1.163,
+          "accepted_install_preserved": true
+        },
+        {
+          "name": "unowned_collisions",
+          "result": "pass",
+          "seconds": 4.527,
+          "unowned_names_checked": 6,
+          "unowned_symlink_preserved": true,
+          "unowned_path_command_preserved": true
+        },
+        {
+          "name": "verified_archive_boundaries",
+          "result": "pass",
+          "seconds": 16.013,
+          "verified_malformed_archive_cases": 4,
+          "outside_sentinel_preserved": true
+        },
+        {
+          "name": "unsupported_platform",
+          "result": "pass",
+          "seconds": 0.506,
+          "no_download": true
+        },
+        {
+          "name": "concurrent_install",
+          "result": "pass",
+          "seconds": 1.033,
+          "complete_installs": 1,
+          "clean_refusals": 1
+        },
+        {
+          "name": "owned_uninstall_preserves_state",
+          "result": "fail",
+          "failure": "uninstall_baseline_failed",
+          "seconds": 1.052
+        },
+        {
+          "name": "readonly_product_information",
+          "result": "fail",
+          "failure": "readonly_package_install_failed",
+          "seconds": 1.062
+        },
+        {
+          "name": "installed_runtime_state_and_sibling_discovery",
+          "result": "fail",
+          "failure": "runtime_package_install_failed",
+          "seconds": 1.028
+        },
+        {
+          "name": "existing_authority_refuses_second_daemon",
+          "result": "fail",
+          "failure": "authority_package_install_failed",
+          "seconds": 1.042
+        }
+      ],
+      "missing_evidence": [
+        "installed runtime state selection and sibling daemon startup",
+        "installed two-provider native terminal workflow and recovery",
+        "upgrade/downgrade schema compatibility",
+        "public release download",
+        "independent remote host",
+        "authenticated model turns"
+      ]
+    },
+    "cleanup": {
+      "container_id": "7306590a98960a44fb546255dcc4eed6a74f0aef47e5447030821b46deddf8bc",
+      "process_scan": "    PID    PPID COMMAND\n      1       0 /sbin/docker-init -- /usr/bin/tail -f /dev/null\n      7       1 /usr/bin/tail -f /dev/null\n   4462       0 ps -eo pid,ppid,args\n",
+      "no_daemon_started": true,
+      "pending_verified_receipts": 0,
+      "removed": true,
+      "inspect_not_found": true
+    }
+  },
+  "fixture_build_diagnostic": {
+    "result": "first_attempt_failed_then_corrected",
+    "cause": "BuildKit resolved the local derivative image name as a nonexistent registry repository. Rebuilt the separate schema1 fixture from the original pinned official Python image with explicit public Debian packages. No product binary rebuild.",
+    "first_build_log_sha256": "a6232857bf3fe17732a24e07d9ed2e01eccd37ba40bf829d076d1731ed31b0c4"
+  },
+  "cleanup": {
+    "candidate_containers": [
+      {
+        "container_id": "ea54174a1128b05e377ce7c37282ee1c5d97733c03ed8f411afc39af225efc27",
+        "stopped": true,
+        "removed": true,
+        "inspect_not_found": true
+      },
+      {
+        "container_id": "eca508481ed07f3705e0f59e0de1316c4bd3db024efe417a4012b010b19b9fc8",
+        "stopped": true,
+        "removed": true,
+        "inspect_not_found": true
+      }
+    ],
+    "schema1_retry_container": {
+      "container_id": "de594560b0191368fc7da6ed26e6be9c84e4daa7334565cdf79a8882be6a63df",
+      "process_scan": "    PID    PPID COMMAND\n      1       0 /sbin/docker-init -- /usr/bin/tail -f /dev/null\n      7       1 /usr/bin/tail -f /dev/null\n   5696       0 ps -eo pid,ppid,args\n",
+      "no_daemon_helper_child_or_tmux_process_remained": true,
+      "harness_private_temp_removed": true,
+      "exact_instance_cli_stops": 11,
+      "saved_pid_signals": 0,
+      "removed": true,
+      "inspect_not_found": true
+    },
+    "macos": {
+      "harness_private_temp_removed": true,
+      "private_temp_path_not_disclosed_in_public_receipt": true,
+      "exact_instance_cli_stops": 11,
+      "saved_pid_signals": 0
+    },
+    "all_owned_containers_removed": true,
+    "authored_fixture_and_helpers_stopped_by_verified_authority": true,
+    "installer_saved_pid_signals": 0,
+    "credential_or_native_auth_files_copied": false,
+    "production_mounts_or_configuration_changes": false
+  },
+  "commands": {
+    "native": "python3 /work/src/tests/linux_release_smoke.py --archive /work/assets/keelmux_v0.2.0_linux_arm64.tar.gz --archive-sha256 68553a9f47c697e2bd346b4b79ff069a8820850f9f342e98f112e990313db1c9 --source-sha db947051f79dadb45d538604b29a174ffce82056 --daemon-lifecycle --environment /work/environment.json --diagnostics /work/private/native-candidate --report /work/reports/native-candidate.json",
+    "installer": "python3 /work/src/tests/release_acceptance.py --installer /work/src/install.sh --assets /work/assets --version v0.2.0 --artifact-source-sha db947051f79dadb45d538604b29a174ffce82056 --harness-checkout-sha 503b024855c2b59e629944cfd13e4f4616d55982 --runtime --report /work/reports/installer-candidate.json",
+    "install_smoke": "python3 /work/src/scripts/install-smoke.py /work/assets v0.2.0",
+    "schema1_linux": "python3 /work/src/tests/release_acceptance.py --installer /work/src/install.sh --assets /work/assets --version v0.1.0 --artifact-source-sha 60b8bc705b2636b087bf2fd872e976aa466ad3e9 --harness-checkout-sha 503b024855c2b59e629944cfd13e4f4616d55982 --runtime --report /work/reports/legacy-schema1-linux.json",
+    "schema1_macos": "python3 tests/release_acceptance.py --installer OWNED_CANDIDATE_INSTALLER --assets ORIGINAL_60B8_ASSETS --version v0.1.0 --artifact-source-sha 60b8bc705b2636b087bf2fd872e976aa466ad3e9 --harness-checkout-sha 503b024855c2b59e629944cfd13e4f4616d55982 --runtime --report OWNED_REPORT"
+  },
+  "remaining_evidence": [
+    "Final release source/archive rerun after pending integrated changes",
+    "Native Codex/Claude programs and authenticated model turns on Linux",
+    "Linux amd64 runtime",
+    "Anonymous hosted final release one-line download",
+    "Host reboot and native conversation resume",
+    "Independent remote host/SSH lifecycle",
+    "Live schema upgrade/downgrade or persisted state migration",
+    "Independent user accessibility and performance pilot"
+  ]
+}
