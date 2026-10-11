@@ -21,6 +21,12 @@ import (
 func (s *Service) RetryLaunch(ctx context.Context, id domain.ID) (protocol.LaunchResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.retryLaunchByIDLocked(ctx, id)
+}
+
+// Both retry entry points use the same original-intent and lifetime checks.
+// The caller holds s.mu; this path never creates a new operation.
+func (s *Service) retryLaunchByIDLocked(ctx context.Context, id domain.ID) (protocol.LaunchResponse, error) {
 	var out protocol.LaunchResponse
 	if id == "" || len(id) > protocol.MaxControlRequestBytes {
 		return out, invalid("launch retry requires a bounded operation ID")
@@ -44,6 +50,13 @@ func (s *Service) RetryLaunch(ctx context.Context, id domain.ID) (protocol.Launc
 	if err != nil {
 		return out, err
 	}
+	indexedSession, generation, err := s.store.OperationBinding(ctx, id)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return out, err
+		}
+		return out, conflict("stored launch lifetime is unreadable; repair the original record")
+	}
 	v, err := s.store.Session(ctx, prior.SessionID)
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -51,8 +64,8 @@ func (s *Service) RetryLaunch(ctx context.Context, id domain.ID) (protocol.Launc
 		}
 		return out, conflict("stored launch session is unreadable; repair the original record")
 	}
-	if v.ID != prior.SessionID || v.HostID != s.hostID || v.Execution.ID != prior.ExecutionID ||
-		v.Execution.Generation == 0 || v.WorkID == "" || v.ThreadID == "" || v.LaneID == "" || v.Mode != domain.Managed ||
+	if v.ID != prior.SessionID || indexedSession != prior.SessionID || v.HostID != s.hostID || v.Execution.ID != prior.ExecutionID ||
+		generation == 0 || v.Execution.Generation != generation || v.WorkID == "" || v.ThreadID == "" || v.LaneID == "" || v.Mode != domain.Managed ||
 		v.Name != in.Name || v.Workspace != in.Workspace || v.Execution.Provider != in.Provider || v.Execution.ProviderVersion != in.ProviderVersion ||
 		!sameLaunchLibrary(v.Library, in.Library) {
 		return out, conflict("stored launch request and home session bindings disagree; repair the original record")

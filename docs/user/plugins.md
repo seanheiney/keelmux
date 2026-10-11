@@ -1,8 +1,8 @@
 # Reusable capabilities
 
-Keep one versioned pack of skills, Markdown rules and MCP tools, then select it for several native agent harnesses. A profile pins exact pack bytes and remembers individual switches. Press **l** in the terminal switcher to inspect the local default profile and toggle a pack.
+Keep one versioned pack of skills, Markdown rules and MCP tools, then select it for several native agent harnesses. A profile pins exact pack bytes and remembers individual switches. Press **l** in the terminal switcher to inspect the local library and toggle a pack. Press **p** to choose a saved profile; the library shows the profile and revision you are editing. Browsing profiles never changes a running session.
 
-Press **Tab** in the library to inspect that pack's component switches; **Enter** toggles the selected skill, rule or tool. Component preferences remain saved while the whole pack is off.
+Press **Tab** in the library to inspect that pack's component switches; **Enter** toggles the selected skill, rule or tool. Component preferences remain saved while the whole pack is off. An inactive row distinguishes that saved preference from the pack's effective gate. A different unselected revision does not borrow the selected revision's preferences.
 
 **Development source:** these commands are being qualified on the reusable-capabilities branch. Published v0.2.1 does not include them. Saving a selection, applying native files, native loading, tool health and tool invocation are separate observations.
 
@@ -13,8 +13,8 @@ Import its bundled declaration and switch its MCP component on or off:
 ```sh
 keelmux plugins import --builtin headroom
 keelmux plugins on headroom
-keelmux plugins off --component tool/mcp headroom
-keelmux plugins on --component tool/mcp headroom
+keelmux tools off headroom/mcp
+keelmux tools on headroom/mcp
 keelmux profiles show default
 ```
 
@@ -37,12 +37,22 @@ Preview creates nothing. It lists generated files, structured launch arguments, 
 
 Launch checks the matching applied receipt and records the profile revision, resolution digest and application digest on the session. It refuses stale, edited, incompatible or partially mapped applications. It never silently applies files. A native CLI may still combine user, parent, managed or environment-selected configuration; its trust and permission controls remain authoritative.
 
+An interrupted launch can be retried from its original recorded intent:
+
+```sh
+keelmux run --operation ORIGINAL_OPERATION_ID
+```
+
+This operation-only form accepts no workspace, provider or profile overrides and does not inspect today's provider version or saved selections. A recorded intent may be attempted once; an attempted or uncertain intent is reconciled against its exact runtime. A completed retry returns the original result. Missing operations refuse without creating a launch. Retrying after a profile toggle therefore retains the original snapshot; use a new operation for a deliberately changed launch.
+
 To turn Headroom off for this workspace, save the switch and apply again:
 
 ```sh
 keelmux plugins off headroom
 keelmux plugins apply --harness claude --workspace /path/to/project
 ```
+
+Use `tools off --profile review headroom/mcp` to disable only its MCP component in a named profile. `tools on` restores that component preference without changing the pinned version or enabling a disabled pack. These shortcuts use the same guarded selection API as `plugins on/off --component tool/mcp headroom`; neither runs Headroom nor applies native files.
 
 To remove this application's unchanged owned files, use `plugins clear --harness claude --workspace /path/to/project`. This preserves other native files and does not stop a running harness. Edited owned content causes a refusal. `plugins recover` explicitly finishes a valid interrupted application; ordinary status and preview never recover it implicitly.
 

@@ -204,7 +204,7 @@ func buildMapping(ctx context.Context, reg library.Registry, r library.Resolutio
 			}
 		}
 		if t.Harness == "grok" {
-			fmt.Fprintf(&index, "- %s: read the immutable skill instructions at %s when that capability is needed.\n", a.Asset.ID, canonical(filepath.Join(t.Workspace, root, "SKILL.md")))
+			fmt.Fprintf(&index, "- %s: read the applied skill instructions at %s when that capability is needed.\n", a.Asset.ID, canonical(filepath.Join(t.Workspace, root, "SKILL.md")))
 		}
 	}
 	for _, a := range r.Rules {

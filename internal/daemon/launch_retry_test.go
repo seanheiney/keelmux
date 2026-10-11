@@ -428,6 +428,49 @@ func TestRetryLaunchUnreadableStoredMetadataIsSanitized(t *testing.T) {
 	}
 }
 
+func TestRetryLaunchEveryOutcomeRefusesDifferentIndexedLifetime(t *testing.T) {
+	for _, outcome := range []domain.Outcome{domain.Recorded, domain.Attempted, domain.Uncertain, domain.Completed, domain.Failed} {
+		for _, mutation := range []string{"session-generation", "indexed-generation", "indexed-session"} {
+			for _, entry := range []string{"operation-only", "exact-payload"} {
+				t.Run(string(outcome)+"/"+mutation+"/"+entry, func(t *testing.T) {
+					e := setup(t)
+					in := e.launchRequest("lifetime-original")
+					op, v := recordRetryLaunch(t, e, in)
+					changedOp := op
+					changedOp.Outcome = outcome
+					rewriteRetryFixture(t, e, "UPDATE operations SET data=? WHERE id=?", payload(changedOp), op.ID)
+					switch mutation {
+					case "session-generation":
+						v.Execution.Generation++
+						rewriteRetryFixture(t, e, "UPDATE sessions SET data=? WHERE id=?", payload(v), v.ID)
+					case "indexed-generation":
+						rewriteRetryFixture(t, e, "UPDATE operations SET generation=generation+1 WHERE id=?", op.ID)
+					case "indexed-session":
+						otherRequest := e.launchRequest("other-lifetime")
+						otherRequest.Name = "Other"
+						_, other := recordRetryLaunch(t, e, otherRequest)
+						rewriteRetryFixture(t, e, "UPDATE operations SET session_id=? WHERE id=?", other.ID, op.ID)
+					}
+					before := retryFixtureState(t, e, op)
+					var err error
+					if entry == "operation-only" {
+						_, err = e.service.RetryLaunch(context.Background(), op.ID)
+					} else {
+						_, err = e.service.Launch(context.Background(), in)
+					}
+					assertConflict(t, err)
+					if !reflect.DeepEqual(before, retryFixtureState(t, e, op)) {
+						t.Fatal("refused lifetime changed durable state")
+					}
+					if launches, stops := e.backend.counts(); launches != 0 || stops != 0 {
+						t.Fatal("different original lifetime reached runtime", launches, stops)
+					}
+				})
+			}
+		}
+	}
+}
+
 func TestRetryLaunchLegacyOriginalAndFailedTerminalCompatibility(t *testing.T) {
 	for _, failed := range []bool{false, true} {
 		t.Run(map[bool]string{false: "legacy-completed", true: "legacy-failed"}[failed], func(t *testing.T) {

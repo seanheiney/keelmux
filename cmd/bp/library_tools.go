@@ -53,7 +53,7 @@ func toolsCommand(ctx context.Context, state, entry string, args []string, diagn
 	health, workspace, timeout := false, "", 5*time.Second
 	if args[0] == "check" {
 		fs.BoolVar(&health, "health", false, "explicitly start this stdio server")
-		fs.StringVar(&workspace, "workspace", "", "existing owned working directory for health")
+		fs.StringVar(&workspace, "workspace", "", "existing working directory selected for explicit health")
 		fs.DurationVar(&timeout, "timeout", 5*time.Second, "bounded health timeout (maximum 15s)")
 	}
 	if err := fs.Parse(args[1:]); err != nil {
