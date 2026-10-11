@@ -90,15 +90,19 @@ func TestSlowViewerBurstTracksCompleteUnicodeTail(t *testing.T) {
 	marker := filepath.Join(b.state, "burst-tracked")
 	spec := testSpec(`stty -echo; IFS= read -r line; stty raw -echo; head -c 2097152 /dev/zero | tr '\000' x; printf '\r\nDONE-e\314\201\033[6n'; answer=$(dd bs=1 count=7 2>/dev/null); printf '%s' "$answer" > "$1.pending"; mv "$1.pending" "$1"; exec sleep 30`)
 	spec.Argv = append(spec.Argv, "test", marker)
+	diagnostic := prepareCapacityFixture(t, b, marker, &spec)
 	ref := launchTest(t, b, spec, false)
 	slow := openWriter(t, b, ref)
 	if err := slow.WriteInput([]byte("burst\n")); err != nil {
 		t.Fatal(err)
 	}
 	started := time.Now()
+	diagnostic.begin(started)
+	defer diagnostic.collect(t, b, ref)
 	deadline := started.Add(8 * time.Second)
 	for {
 		data, err := os.ReadFile(marker)
+		diagnostic.poll()
 		if err == nil {
 			if string(data) != "\x1b[24;7R" {
 				t.Fatalf("full burst tail cursor reply %q", data)
@@ -106,6 +110,7 @@ func TestSlowViewerBurstTracksCompleteUnicodeTail(t *testing.T) {
 			break
 		}
 		if time.Now().After(deadline) {
+			diagnostic.failed = true
 			t.Fatal("unread viewer blocked full native burst and tracked Unicode tail")
 		}
 		time.Sleep(10 * time.Millisecond)

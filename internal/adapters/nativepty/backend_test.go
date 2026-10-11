@@ -40,6 +40,7 @@ func TestMain(m *testing.M) {
 	if helperRace {
 		args = append(args, "-race")
 	}
+	args = append(args, capacityHelperBuildArgs()...)
 	args = append(args, "../../../cmd/keelmux-supervisor")
 	cmd := exec.Command("go", args...)
 	if out, err := cmd.CombinedOutput(); err != nil {

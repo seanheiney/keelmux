@@ -75,6 +75,7 @@ type supervisor struct {
 	exited   bool
 	done     chan struct{}
 	inputMu  sync.Mutex
+	capacity *capacityDiagnostics
 }
 
 // Serve is the installed helper entrypoint. Launch credentials arrive only over
@@ -156,6 +157,11 @@ func Serve(state string, execution domain.ID, input io.Reader) error {
 	cmd.Dir = message.Spec.Session.Workspace
 	cmd.Env = message.Env
 	s := &supervisor{b: b, r: r, cmd: cmd, listener: listener, ring: outputRing{limit: message.HistoryBytes}, clients: map[*attachment]bool{}, done: make(chan struct{})}
+	capacity := startCapacityDiagnostics(b.state, execution)
+	if capacity != nil {
+		defer capacity.close()
+	}
+	s.capacity = capacity
 	var output io.ReadCloser
 	if r.Mode == "pty" {
 		s.terminal, err = pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
@@ -218,21 +224,28 @@ func Serve(state string, execution domain.ID, input io.Reader) error {
 		defer drain.Done()
 		buffer := make([]byte, maxInput)
 		for {
+			readStarted := s.capacity.started()
 			n, err := readTerminal(context.Background(), outputFD, buffer)
+			s.capacity.readDone(n, readStarted, err)
 			if n > 0 {
 				s.mu.Lock()
 				visible := buffer[:n]
 				var replies []byte
+				screenStarted := s.capacity.started()
 				if s.screen != nil {
 					visible, replies = s.screen.process(buffer[:n])
 				}
+				screenNS := s.capacity.elapsed(screenStarted)
 				s.ring.append(visible)
 				s.notifyLocked()
 				s.mu.Unlock()
+				s.capacity.screenDone(n, len(replies), screenNS)
 				if len(replies) > 0 {
+					replyStarted := s.capacity.started()
 					s.inputMu.Lock()
-					_ = writePTY(s.terminal, replies)
+					replyErr := writePTY(s.terminal, replies)
 					s.inputMu.Unlock()
+					s.capacity.replyDone(len(replies), replyStarted, replyErr)
 				}
 			}
 			if err != nil {
