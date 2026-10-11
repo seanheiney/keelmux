@@ -228,13 +228,48 @@ func TestStdioDisconnectCannotCompleteOrReplayBootstrap(t *testing.T) {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatal("disconnect attempt not uncertain", e)
+			r, receiptErr := b.readReceipt(ref.Runtime.ExecutionID)
+			state, stateErr := b.readStdio(r)
+			t.Fatalf("disconnect attempt not uncertain: observed_bootstrap=%s observed_continuity=%s observed_pending=%v observed_seq=%d durable_bootstrap=%s durable_continuity=%s durable_pending=%v durable_seq=%d methods=%v retained_error=%v receipt_error=%v state_error=%v", o.Snapshot.Bootstrap, o.Snapshot.Continuity, o.Snapshot.Pending, o.Snapshot.Cursor.Seq, state.Bootstrap, state.Continuity, state.Pending, state.Cursor.Seq, stdioMethods(t, spec), e, receiptErr, stateErr)
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 	_, _ = b.BootstrapStdioOnce(context.Background(), ref)
 	if got := stdioMethods(t, spec); len(got) != 1 || got[0] != "initialize" {
 		t.Fatal("unsent steps replayed", got)
+	}
+}
+
+func TestStdioBootstrapAttemptInvalidatesUnsentSnapshot(t *testing.T) {
+	b, spec := testStdio(t, "pause_init")
+	ref := launchStdioFixture(t, b, spec)
+	from := ps.Genesis(ref.ChannelIncarnation)
+	first, e := b.RetainedStdio(context.Background(), ref, from)
+	if e != nil || first.Snapshot.Bootstrap != ps.BootstrapUnsent {
+		t.Fatal("initial unsent snapshot unavailable", e)
+	}
+	c, r, e := b.stdioConnect(context.Background(), ref)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer c.Close()
+	if e = writeStdioMessage(c, stdioRequest{Op: "stdio_bootstrap", Version: ps.Version, Auth: r.Auth, Ref: r.Ref, Channel: &ref}); e != nil {
+		t.Fatal(e)
+	}
+	waitStdioFile(t, filepath.Join(spec.Environment.Home, "init-received"))
+	during, e := b.RetainedStdio(context.Background(), ref, from)
+	if e != nil || during.Through != from || during.Snapshot.Bootstrap != ps.BootstrapAttempted {
+		t.Fatalf("sent initialize reused unsent snapshot: bootstrap=%s seq=%d error=%v", during.Snapshot.Bootstrap, during.Through.Seq, e)
+	}
+	if e = os.WriteFile(filepath.Join(spec.Environment.Home, "release-init"), []byte("yes"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	var reply stdioResponse
+	if e = readStdioMessage(c, &reply); e != nil || reply.Error != "" || reply.Observation == nil || reply.Observation.Snapshot.Bootstrap != ps.BootstrapComplete {
+		t.Fatal("bootstrap final reply unavailable", e, reply.Error)
+	}
+	if len(stdioMethods(t, spec)) != 3 {
+		t.Fatal("unexpected bootstrap methods")
 	}
 }
 func TestStdioGrantlessCallbackStickyAfterAckAndReconnect(t *testing.T) {
@@ -656,6 +691,98 @@ func TestStdioConsumedReplyDoesNotRearmRequest(t *testing.T) {
 	if e != nil || !stored.Pending {
 		t.Fatal("duplicate blocker not durable", e)
 	}
+}
+
+// The receiver faults before bootstrap finishes, and a daemon reads that exact
+// cursor between those two transitions. The final correlation fault is already
+// covered by the broken gap and therefore cannot advance the cursor again.
+func TestStdioBootstrapCompletionInvalidatesSameCursorSnapshot(t *testing.T) {
+	for _, completion := range []ps.BootstrapState{ps.BootstrapUncertain, ps.BootstrapComplete} {
+		t.Run(string(completion), func(t *testing.T) {
+			s := testStdioReceiver(t)
+			from := s.state.Cursor
+			var outcome error
+			if completion == ps.BootstrapUncertain {
+				s.fault(ps.ReasonTimeout)
+				outcome = ps.ErrUncertain
+			} else {
+				if e := s.appendLocked(ps.EventResult, ps.ReasonNone, ps.NativeID{Kind: "string", Text: "final-response"}, []byte("{\"id\":\"final-response\",\"result\":null}\n")); e != nil {
+					t.Fatal(e)
+				}
+			}
+			first, e := s.observation(from)
+			if e != nil || first.Snapshot.Bootstrap != ps.BootstrapAttempted {
+				t.Fatal("intermediate attempt snapshot unavailable", e)
+			}
+			if e = s.finishBootstrap(outcome); !errors.Is(e, outcome) {
+				t.Fatal(e)
+			}
+			durable, e := s.b.readStdio(s.r)
+			if e != nil || durable.Bootstrap != completion {
+				t.Fatal("final bootstrap transition not durable", e)
+			}
+			final, e := s.observation(from)
+			if e != nil || final.Through != first.Through || final.Snapshot.Bootstrap != completion || final.Snapshot.Pending != (completion == ps.BootstrapUncertain) {
+				t.Fatalf("same-cursor snapshot remained stale: first=%s final=%s durable=%s continuity=%s error=%v", first.Snapshot.Bootstrap, final.Snapshot.Bootstrap, durable.Bootstrap, final.Snapshot.Continuity, e)
+			}
+			if e = s.bootstrap(context.Background()); e != nil || len(s.state.Steps) != 0 || len(s.state.Records) != 1 {
+				t.Fatal("finished bootstrap replayed a step or frame", e)
+			}
+		})
+	}
+}
+
+func TestStdioStoppedAttemptCannotRepublishCachedQuiescence(t *testing.T) {
+	s := readyStdioReceiver(t)
+	q := ps.Quiescence{Cursor: s.state.Cursor, SnapshotSHA256: s.state.Snapshot.SnapshotSHA256}
+	if !s.quiescentLocked(q) {
+		t.Fatal("positive pre-stop cut refused")
+	}
+	// Persist exactly the helper's pre-signal intent. No process is signaled;
+	// this models an uncertain attempted stop with its original child alive.
+	if e := s.recordStopAttemptLocked(domain.NewID("stop")); e != nil {
+		t.Fatal(e)
+	}
+	final, e := s.observation(s.state.Cursor)
+	if s.quiescentLocked(q) || e != nil || final.Snapshot.Idle || final.Snapshot.ExactLoadedThread || !final.Snapshot.ProcessAlive {
+		t.Fatalf("stop intent reused ready cut: idle=%v exact_thread=%v alive=%v error=%v", final.Snapshot.Idle, final.Snapshot.ExactLoadedThread, final.Snapshot.ProcessAlive, e)
+	}
+}
+
+func TestStdioExitInvalidatesSameCursorLivenessSnapshot(t *testing.T) {
+	s := readyStdioReceiver(t)
+	from := s.state.Cursor
+	first, e := s.observation(from)
+	if e != nil || !first.Snapshot.ProcessAlive || !first.Snapshot.Idle {
+		t.Fatal("positive pre-exit snapshot unavailable", e)
+	}
+	s.markExitedLocked()
+	final, e := s.observation(from)
+	if e != nil || final.Through != first.Through || final.Snapshot.ProcessAlive || final.Snapshot.Idle || final.Snapshot.ExactImage {
+		t.Fatalf("exit reused live cut: alive=%v idle=%v image=%v error=%v", final.Snapshot.ProcessAlive, final.Snapshot.Idle, final.Snapshot.ExactImage, e)
+	}
+}
+
+func readyStdioReceiver(t *testing.T) *stdioEngine {
+	t.Helper()
+	s := testStdioReceiver(t)
+	s.done = make(chan struct{})
+	var e error
+	s.state.Directories, e = stdioDirectories(s.state.Channel.Spec)
+	if e != nil {
+		t.Fatal(e)
+	}
+	s.state.Bootstrap = ps.BootstrapComplete
+	s.state.Snapshot = s.snapshotLocked()
+	s.state.Snapshot.ExactLoadedThread = true
+	s.state.Snapshot.Idle = true
+	s.state.Snapshot.EmptyQueue = true
+	s.state.Snapshot.EmptyBackground = true
+	s.state.Snapshot.SnapshotSHA256 = ps.SnapshotDigest(s.state.Snapshot)
+	if e = s.persistLocked(); e != nil {
+		t.Fatal(e)
+	}
+	return s
 }
 
 func testStdioReceiver(t *testing.T) *stdioEngine {

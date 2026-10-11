@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/seanheiney/keelmux/internal/domain"
 	ps "github.com/seanheiney/keelmux/internal/primarystdio"
 	"golang.org/x/sys/unix"
 )
@@ -169,9 +170,9 @@ func serveStdio(b *Backend, r receipt, m launchMessage, listener *net.UnixListen
 		if err != nil && code < 0 {
 			s.r.Detail = "owned stdio child terminated"
 		}
+		s.markExitedLocked()
 		_ = b.writeReceipt(s.r)
 		s.mu.Unlock()
-		close(s.done)
 		s.signal()
 		_ = listener.Close()
 	}()
@@ -196,6 +197,10 @@ func (s *stdioEngine) signal() {
 	case s.notify <- struct{}{}:
 	default:
 	}
+}
+func (s *stdioEngine) markExitedLocked() {
+	s.state.Snapshot = ps.Snapshot{}
+	close(s.done)
 }
 func stdioFrameHash(raw []byte) string {
 	if len(raw) == 0 {
@@ -566,6 +571,7 @@ func (s *stdioEngine) bootstrap(ctx context.Context) error {
 		return nil
 	}
 	s.state.Bootstrap = ps.BootstrapAttempted
+	s.state.Snapshot = ps.Snapshot{}
 	s.exchangeFrames = 0
 	s.exchangeBytes = 0
 	err := s.persistLocked()
@@ -617,12 +623,16 @@ func (s *stdioEngine) bootstrap(ctx context.Context) error {
 			}
 		}
 	}
+	return s.finishBootstrap(err)
+}
+func (s *stdioEngine) finishBootstrap(err error) error {
 	s.mu.Lock()
 	if err == nil {
 		s.state.Bootstrap = ps.BootstrapComplete
 	} else {
 		s.state.Bootstrap = ps.BootstrapUncertain
 	}
+	s.state.Snapshot = ps.Snapshot{}
 	saved := s.persistLocked()
 	s.mu.Unlock()
 	if saved != nil {
@@ -716,7 +726,9 @@ func (s *stdioEngine) snapshotLocked() ps.Snapshot {
 		q.ProcessAlive = true
 	}
 	q.ExactDirectories = sameStdioDirectories(s.state.Channel.Spec, s.state.Directories)
-	q.ExactImage = stdioImageVerifier(s.state.Channel) == nil
+	if q.ProcessAlive {
+		q.ExactImage = stdioImageVerifier(s.state.Channel) == nil
+	}
 	q.SnapshotSHA256 = ps.SnapshotDigest(q)
 	return q
 }
@@ -810,7 +822,7 @@ func (s *stdioEngine) quiescentLocked(q ps.Quiescence) bool {
 		return false
 	}
 	snap := s.state.Snapshot
-	return !s.failed && !s.state.Pending && s.wait == nil && s.state.Continuity == ps.ContinuityComplete && s.state.Bootstrap == ps.BootstrapComplete && s.state.Ack == s.state.Cursor && q.Cursor == s.state.Cursor && q.SnapshotSHA256 == snap.SnapshotSHA256 && snap.Cursor == s.state.Cursor && snap.ExactLoadedThread && snap.Idle && snap.EmptyQueue && snap.EmptyBackground && snap.ProcessAlive && snap.ExactImage && snap.ExactDirectories && s.identity() == nil
+	return !s.failed && !s.state.Pending && s.state.StopOperation == "" && s.wait == nil && s.state.Continuity == ps.ContinuityComplete && s.state.Bootstrap == ps.BootstrapComplete && s.state.Ack == s.state.Cursor && q.Cursor == s.state.Cursor && q.SnapshotSHA256 == snap.SnapshotSHA256 && snap.Cursor == s.state.Cursor && snap.ExactLoadedThread && snap.Idle && snap.EmptyQueue && snap.EmptyBackground && snap.ProcessAlive && snap.ExactImage && snap.ExactDirectories && s.identity() == nil
 }
 func (s *stdioEngine) stop(ctx context.Context, stop ps.StopRequest) error {
 	if !validID(stop.OperationID) {
@@ -846,10 +858,7 @@ func (s *stdioEngine) stop(ctx context.Context, stop ps.StopRequest) error {
 		s.admission.Unlock()
 		return ps.ErrUncertain
 	}
-	s.state.StopOperation = stop.OperationID
-	s.state.TermAttempted = true
-	s.r.Stage = "stopping"
-	err := s.persistLocked()
+	err := s.recordStopAttemptLocked(stop.OperationID)
 	if err == nil {
 		err = s.b.writeReceipt(s.r)
 	}
@@ -886,6 +895,13 @@ func (s *stdioEngine) stop(ctx context.Context, stop ps.StopRequest) error {
 	case <-time.After(time.Second):
 		return ps.ErrUncertain
 	}
+}
+func (s *stdioEngine) recordStopAttemptLocked(operation domain.ID) error {
+	s.state.StopOperation = operation
+	s.state.TermAttempted = true
+	s.state.Snapshot = ps.Snapshot{}
+	s.r.Stage = "stopping"
+	return s.persistLocked()
 }
 func lockStdio(ctx context.Context, mu *sync.Mutex) error {
 	for {
