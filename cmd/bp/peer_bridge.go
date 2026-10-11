@@ -10,9 +10,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/peerbridge"
+	"golang.org/x/sys/unix"
 )
 
 const peerPolicyHelp = `Usage: keelmux peer-policy COMMAND
@@ -89,5 +91,88 @@ func servePeerBridge(args []string) error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	return peerbridge.Serve(ctx, args[0], os.Stdin, os.Stdout)
+	in, err := bridgeStdio(os.Stdin, true)
+	if err != nil {
+		return err
+	}
+	out, err := bridgeStdio(os.Stdout, false)
+	if err != nil {
+		_ = in.Close()
+		return err
+	}
+	return peerbridge.Serve(ctx, args[0], in, out)
+}
+
+// Inherited blocking stdio is not registered with Go's poller. Closing such a
+// file cannot interrupt a quiet in-flight read, which would keep the SSH
+// exporter alive after policy revocation. This exclusive command owns the
+// stream: duplicate its descriptor and set nonblocking BEFORE wrapping it, so
+// Close interrupts both reads and stalled writes. O_NONBLOCK is shared with
+// the original descriptor; do not use this adapter for general CLI output.
+func bridgeStdio(original *os.File, read bool) (*os.File, error) {
+	refuse := errors.New("peer-read-bridge requires interruptible SSH stream pipes")
+	if original == nil {
+		return nil, refuse
+	}
+	raw, err := original.SyscallConn()
+	if err != nil {
+		return nil, refuse
+	}
+	fd := -1
+	var setupErr error
+	err = raw.Control(func(source uintptr) {
+		var info unix.Stat_t
+		setupErr = unix.Fstat(int(source), &info)
+		if setupErr != nil {
+			return
+		}
+		switch info.Mode & unix.S_IFMT {
+		case unix.S_IFIFO:
+		case unix.S_IFSOCK:
+			var kind int
+			kind, setupErr = unix.GetsockoptInt(int(source), unix.SOL_SOCKET, unix.SO_TYPE)
+			if setupErr != nil || kind != unix.SOCK_STREAM {
+				setupErr = refuse
+				return
+			}
+		default:
+			setupErr = refuse
+			return
+		}
+		var flags int
+		flags, setupErr = unix.FcntlInt(source, unix.F_GETFL, 0)
+		if setupErr != nil {
+			return
+		}
+		access := flags & unix.O_ACCMODE
+		if read && access == unix.O_WRONLY || !read && access == unix.O_RDONLY {
+			setupErr = refuse
+			return
+		}
+		fd, setupErr = unix.FcntlInt(source, unix.F_DUPFD_CLOEXEC, 0)
+		if setupErr == nil {
+			setupErr = unix.SetNonblock(fd, true)
+		}
+	})
+	if err != nil || setupErr != nil {
+		if fd >= 0 {
+			_ = unix.Close(fd)
+		}
+		return nil, refuse
+	}
+	file := os.NewFile(uintptr(fd), "peer-read-bridge-stream")
+	if file == nil {
+		_ = unix.Close(fd)
+		return nil, refuse
+	}
+	if read {
+		err = file.SetReadDeadline(time.Time{})
+	} else {
+		err = file.SetWriteDeadline(time.Time{})
+	}
+	if err != nil {
+		_ = file.Close()
+		return nil, refuse
+	}
+	return file, nil
 }
