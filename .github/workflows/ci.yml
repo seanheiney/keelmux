@@ -1,72 +1,38 @@
-name: Source and packaging
+name: Paired macOS terminal diagnostic
 on:
   push:
-    branches: [main, "codex/**"]
-  pull_request:
+    branches: ["codex/macos-paired-throughput-56e8040"]
 permissions:
   contents: read
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
-  source:
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.runner }}
+  paired:
+    runs-on: macos-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Checkout diagnostic driver
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+          path: diagnostic
+      - name: Install unchanged Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: "1.26.6"
           cache: true
-      - name: Race and vet
-        run: |
-          # Tests build real helper executables. Keep cold recursive compilation
-          # from competing with another package's unchanged runtime deadlines.
-          go test -race -p 1 -tags library_registry ./...
-          go vet -tags library_registry ./...
-      - name: Pinned UI source and unchanged upstream tests
-        run: |
-          python3 third_party/bubbletea/verify.py
-          cd third_party/bubbletea
-          go test -race -mod=readonly ./...
-          go vet -mod=readonly ./...
-      - name: Pinned terminal source and unchanged upstream tests
-        run: |
-          python3 third_party/vt/verify.py
-          python3 -B third_party/vt/verify_test.py -v
-          cd third_party/vt
-          go test -race -mod=readonly ./...
-          go vet -mod=readonly ./...
-      - name: Installer negative and ownership cases
-        run: python3 tests/installer_test.py
-      - name: Package qualification cancellation and identity controls
-        run: python3 tests/native_package_acceptance_test.py -v
-      - name: Actual host archive smoke
-        run: |
-          case "$(uname -s)" in Darwin) os=darwin;; Linux) os=linux;; esac
-          case "$(uname -m)" in arm64|aarch64) arch=arm64;; x86_64) arch=amd64;; esac
-          SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" scripts/build-release.sh v0.0.0 "$RUNNER_TEMP/keelmux-host" "$os/$arch"
-          python3 scripts/install-smoke.py "$RUNNER_TEMP/keelmux-host" v0.0.0
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [darwin/arm64, darwin/amd64, linux/amd64, linux/arm64]
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          cache-dependency-path: diagnostic/go.sum
+      - name: Checkout exact green parent
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: 1e429fa8991edc41df8002958b9b439b3dd69ab8
           persist-credentials: false
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+          path: parent
+      - name: Checkout exact retained failing head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          go-version: "1.26.6"
-          cache: true
-      - name: Cross-build reviewed release format
+          ref: 56e80407cd5000f6bbc7dd48fac5b678002447e2
+          persist-credentials: false
+          path: head
+      - name: Run the two original race tests once at each revision
         env:
-          TARGET: ${{ matrix.target }}
-        run: SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" scripts/build-release.sh v0.0.0 "$RUNNER_TEMP/keelmux-assets" "$TARGET"
+          GOTOOLCHAIN: local
+        run: python3 diagnostic/scripts/diagnostics/macos-paired-throughput.py parent head
