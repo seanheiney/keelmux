@@ -40,6 +40,7 @@ These commands are newer than the published v0.2.1 archive. Build the reviewed s
 | `keelmux groups --help` | Nested optional company/product collections; membership, selection and removal preserve work and drafts |
 | `keelmux usage --help` | Read existing local qualified observations; exact filters and explicit atomic manual import |
 | `keelmux peers --help` | Explicit pinned SSH enrollment, permitted inventory, refresh, grant and revoke |
+| `keelmux peer-policy --help` | Provision, inspect or revision-check an explicit home-owned read-only SSH policy and recovery journal |
 | `keelmux plugins --help` | Import verified packs and explicitly preview/apply shared skills, rules and MCP declarations |
 | `keelmux profiles --help` | Create and inspect independent saved capability selections |
 | `keelmux tools on\|off [--profile ID] PACK/TOOL` | Save a pinned component preference; a disabled pack remains disabled |
@@ -90,7 +91,7 @@ keelmux-entry --state /absolute/entry-state --config /absolute/private-entry.jso
   --companion /absolute/path/to/keelmux
 ```
 
-The configuration and scope are described in the [private entry guide](private-entry.md). Entry clients can browse and attach. Launch, stop, link and reconciliation management remain at the execution home. `drive` is an internal attachment companion with generation and acquisition arguments; it is not a public prompt API.
+The configuration and scope are described in the [private entry guide](private-entry.md). Entry clients can browse and attach when the selected route permits it. Enrolled SSH inventory alone cannot attach; an explicit [read bridge](ssh-read-bridge.md) permits observation only. Launch, stop, link and reconciliation management remain at the execution home. `drive` is an internal attachment companion with generation and acquisition arguments; it is not a public prompt API.
 
 ## Authored channels
 

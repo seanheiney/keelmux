@@ -17,6 +17,7 @@ Start with [your first session](user/quickstart.md). Published v0.2.1 includes i
 | Organize company/product collections from the CLI | [Groups — newer source](user/groups.md) |
 | Review source-qualified local observations | [Usage — newer source](user/usage.md) |
 | Enroll permitted SSH inventory | [SSH peers — newer source](user/ssh-peers.md) |
+| Observe an explicitly scoped SSH terminal | [SSH read bridge — development source](user/ssh-read-bridge.md) |
 | Inspect existing state without service startup | [Diagnostics — newer source](user/diagnostics.md) |
 | Find a command or flag | [CLI reference](user/cli.md) |
 | Choose state paths and inspect local files | [Configuration](user/configuration.md) |
@@ -25,6 +26,7 @@ Start with [your first session](user/quickstart.md). Published v0.2.1 includes i
 | Diagnose a refusal or missing terminal | [Troubleshooting](user/troubleshooting.md) |
 | Check what has actually been tested | [Support matrix](user/support-matrix.md) |
 | Understand identity, input ownership and trust | [Architecture](user/architecture.md) |
+| Review the local captain ledger and its runtime limits | [Captain ledger boundary](architecture/0005-captain-ledger.md) |
 | Understand what comes next | [Roadmap](user/roadmap.md) |
 | Review the selected name and collision checks | [Naming](user/naming.md) |
 

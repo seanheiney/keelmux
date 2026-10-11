@@ -2,7 +2,7 @@
 
 SSH peer enrollment brings a permitted inventory from an existing execution home into a private local directory. It can also supply inventory to `keelmux-entry`. These commands and the `inventory_store` entry configuration belong to the **source feature batch after v0.2.1**; both the local client and the remote exporter need a compatible source build. See [feature availability](feature-expansion.md).
 
-This source exposes session and workspace metadata only. It does not attach a terminal, send input, stop work, install a remote service, transfer execution authority or resume a conversation. An SSH-discovered workspace is a recorded path, not proof that the directory currently exists or is ready for work.
+Default SSH enrollment exposes session and workspace metadata only. An explicit home-owned policy and entry selector can opt into the separate [SSH read bridge](ssh-read-bridge.md) in development source. Inventory enrollment alone does not attach a terminal, send input, stop work, install a remote service, transfer execution authority or resume a conversation. An SSH-discovered workspace is a recorded path, not proof that the directory currently exists or is ready for work.
 
 ## Prepare one home
 
