@@ -56,6 +56,34 @@ Use `tools off --profile review headroom/mcp` to disable only its MCP component 
 
 To remove this application's unchanged owned files, use `plugins clear --harness claude --workspace /path/to/project`. This preserves other native files and does not stop a running harness. Edited owned content causes a refusal. `plugins recover` explicitly finishes a valid interrupted application; ordinary status and preview never recover it implicitly.
 
+## Check a session after changing a switch
+
+Use the exact session ID from your switcher or session inventory:
+
+```sh
+keelmux plugins session-status SESSION_ID
+```
+
+In the TUI, select the session, press **l** for the library, then **v** for session status. Press **r** for a fresh read, use the arrow keys to scroll, and **Esc** to return to the library. The inspection follows the profile recorded at that session's launch; the library's editing profile can be different.
+
+The view compares three distinct records:
+
+| Record | Meaning |
+| --- | --- |
+| Saved now | The current revision and exact resolution of the session's recorded profile |
+| Applied files | The recorded workspace application's verified owned files and receipt |
+| Launch declared | The immutable profile, resolution and application recorded when this execution was launched |
+
+After `tools off`, saved and applied normally differ: preview and explicitly apply the change. After applying, the old session's launch declaration normally differs: review the applied profile and start a new session. **Aligned** means these declarations and owned files agree. Native loading, permissions and the effect of an already-running tool remain **unknown**. A saved switch does not immediately revoke an active MCP server or erase rules already loaded into a native session.
+
+For these follow-up commands, reuse the report's profile ID, application ID, provider and workspace. Pass `--profile PROFILE_ID --application APPLICATION_ID --harness HARNESS --workspace WORKSPACE` to preview/apply, then `run --profile PROFILE_ID --application APPLICATION_ID --workspace WORKSPACE HARNESS` for a deliberately new launch. The application defaults to `work` only when you omit its selector; choose the recorded ID explicitly.
+
+A retained removal receipt is shown as **not applied**, even when its removal can be verified. Pending application work, edited files, collisions and incomplete mappings block an agreement claim and show a concrete next step. No command is executed from this panel.
+
+Full comparison requires a managed local execution with a recorded profile and application. A session without that launch declaration cannot acquire it retroactively; review/apply a profile and launch a new session to record it.
+
+Session status uses an existing control socket and never starts a daemon, creates state, applies files, invokes tools or reloads a provider. Only an explicitly local execution-home connection with an existing private canonical host identity can inspect workspace files. An `--entry` connection, remote/linked session or unverified home can show its launch declaration; local saved/applied evidence remains unavailable. The CLI limits each inventory read to 8 MiB and 4,096 sessions and rechecks the exact execution before emitting JSON. The TUI discards replies after a relevant selection, execution or profile change. Every result is a point-in-time observation.
+
 ## Profiles and revisions
 
 ```sh

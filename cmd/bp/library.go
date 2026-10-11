@@ -27,6 +27,7 @@ plugins remove --digest SHA PACK          Archive one exact unchanged revision
 plugins preview --harness NAME --workspace PATH [--profile ID]
 plugins apply --harness NAME --workspace PATH [--expect-plan SHA]
 plugins status --harness NAME --workspace PATH
+plugins session-status SESSION           Compare saved/applied/launch declarations
 plugins clear --harness NAME --workspace PATH [--expect-receipt SHA]
 plugins recover --harness NAME --workspace PATH
 
@@ -55,6 +56,9 @@ func manageLibrary(ctx context.Context, state, entry, command string, args []str
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
 		_, err := fmt.Fprint(out, libraryHelp)
 		return err
+	}
+	if command == "plugins" && args[0] == "session-status" {
+		return librarySessionStatus(ctx, state, entry, args[1:], diagnostics, out)
 	}
 	if entry != "" {
 		return errors.New("capability selections belong to the local execution home")
