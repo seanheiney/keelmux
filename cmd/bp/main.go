@@ -44,6 +44,15 @@ func run() error {
 		return err
 	}
 	args := fs.Args()
+	if len(args) > 0 && (args[0] == "peer-read-bridge" || args[0] == "peer-policy") {
+		if fs.NFlag() != 0 {
+			return errors.New("peer bridge commands accept no global state or entry options")
+		}
+		if args[0] == "peer-read-bridge" {
+			return servePeerBridge(args[1:])
+		}
+		return peerPolicyCommand(context.Background(), args[1:], os.Stdout)
+	}
 	if len(args) > 0 && args[0] == "peer-export" {
 		if len(args) != 1 || fs.NFlag() != 0 {
 			return errors.New("peer-export accepts only its bounded stdin request, without flags or arguments")
@@ -412,6 +421,7 @@ keelmux ircd --help                   Provision and manage a private IRC server
 keelmux projects --help               Create and inspect durable project identities
 keelmux groups --help                 Manage company/product navigation collections
 keelmux peers --help                  Explicit pinned SSH inventory
+keelmux peer-policy --help            Scoped home read-only SSH export policy
 keelmux usage --help                  Contextual source-qualified usage
 keelmux plugins --help                Reusable skill/rule/tool packs and toggles
 keelmux profiles --help               Exact reusable capability selections

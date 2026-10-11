@@ -318,7 +318,7 @@ func startProductFixtureProcess(t *testing.T, dir, executable string, args ...st
 	return p
 }
 
-func productSSHConfig(t *testing.T, processDir, username, product, socket string, host, session domain.ID) Config {
+func productSSHConfig(t *testing.T, processDir, username, product, socket string, host, session domain.ID, fixedCommand ...string) Config {
 	t.Helper()
 	// OpenSSH StrictModes checks authorized_keys ancestors as well as the file.
 	// Socket state needs short /tmp paths, but key material uses the user's owned
@@ -361,7 +361,14 @@ func productSSHConfig(t *testing.T, processDir, username, product, socket string
 	port := listener.Addr().(*net.TCPAddr).Port
 	_ = listener.Close()
 	serverConfig := filepath.Join(dir, "sshd_config")
-	content := fmt.Sprintf("ListenAddress 127.0.0.1\nPort %d\nHostKey %s\nPidFile %s\nAuthorizedKeysFile %s\nStrictModes yes\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nPermitRootLogin prohibit-password\nAllowUsers %s\nAllowAgentForwarding no\nAllowTcpForwarding no\nX11Forwarding no\nPermitTTY no\nPermitUserRC no\nForceCommand %s peer-export\nLogLevel ERROR\n", port, hostKey, filepath.Join(dir, "sshd.pid"), authorized, username, shellQuote(product))
+	command := shellQuote(product) + " peer-export"
+	if len(fixedCommand) > 1 || len(fixedCommand) == 1 && fixedCommand[0] == "" {
+		t.Fatal("invalid fixed fixture ForceCommand")
+	}
+	if len(fixedCommand) == 1 {
+		command = fixedCommand[0]
+	}
+	content := fmt.Sprintf("ListenAddress 127.0.0.1\nPort %d\nHostKey %s\nPidFile %s\nAuthorizedKeysFile %s\nStrictModes yes\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nPermitRootLogin prohibit-password\nAllowUsers %s\nAllowAgentForwarding no\nAllowTcpForwarding no\nX11Forwarding no\nPermitTTY no\nPermitUserRC no\nForceCommand %s\nLogLevel ERROR\n", port, hostKey, filepath.Join(dir, "sshd.pid"), authorized, username, command)
 	if err := os.WriteFile(serverConfig, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}

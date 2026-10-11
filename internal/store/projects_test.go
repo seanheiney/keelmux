@@ -174,7 +174,8 @@ func TestAddressedBindingRequiresOriginalProjectMembership(t *testing.T) {
 // hashes, receipts or seed provenance. New authorities migrate it additively.
 func downgradeProjectFixture(t *testing.T, s *Store) {
 	t.Helper()
-	_, err := s.db.Exec(`DROP TABLE project_threads; DROP TABLE projects; DROP INDEX channel_active_endpoint;
+	_, err := s.db.Exec(`DROP TABLE captain_entries; DROP TABLE captain_assignments; DROP TABLE captain_read_grants; DROP TABLE captain_principals; DROP TABLE captain_commands;
+DROP TABLE project_threads; DROP TABLE projects; DROP INDEX channel_active_endpoint;
 ALTER TABLE channel_bindings DROP COLUMN recipient_id;
 CREATE UNIQUE INDEX channel_active_endpoint ON channel_bindings(provider,endpoint,realm_id,channel_id,root_id) WHERE active=1;
 PRAGMA user_version=3;`)
@@ -313,7 +314,7 @@ func TestProjectEstablishedSchemaAndMembershipFailClosed(t *testing.T) {
 			}
 			defer db.Close()
 			var version int
-			if err = db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 4 {
+			if err = db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 5 {
 				t.Fatal("refusal rewrote version", version, err)
 			}
 		})

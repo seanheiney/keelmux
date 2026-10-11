@@ -258,6 +258,12 @@ func (m *model) switcherFooter() []viewLine {
 				}
 			}
 		}
+		if s, ok := m.selected(); ok && m.offline == nil && s.Capabilities.ObserverOnly && s.Capabilities.NativeAttach && s.Capabilities.ReadOnlyAttach {
+			action = "Enter observe  / search  g groups"
+			if m.width < 52 {
+				action = "Enter view  / find  g groups"
+			}
+		}
 		out = append(out, m.footerText(action, accent)...)
 		if m.width >= 72 {
 			out = append(out, line("↑↓ select  c inbox  u usage  l library  g groups  p draft  r refresh  q quit", muted))

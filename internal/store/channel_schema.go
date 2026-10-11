@@ -44,10 +44,10 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 	for _, d := range channelDefinitions {
-		if version == 4 && d.name == "channel_bindings" {
+		if version >= 4 && d.name == "channel_bindings" {
 			d.sql = strings.TrimSuffix(d.sql, ")") + ", recipient_id TEXT NOT NULL DEFAULT '')"
 		}
-		if version == 4 && d.name == "channel_active_endpoint" {
+		if version >= 4 && d.name == "channel_active_endpoint" {
 			d.sql = `CREATE UNIQUE INDEX channel_active_endpoint ON channel_bindings(provider,endpoint,realm_id,channel_id,root_id,recipient_id) WHERE active=1`
 		}
 		var kind, definition string
@@ -57,7 +57,7 @@ func validateChannelSchema(ctx context.Context, db *sql.DB) error {
 	}
 	bindings := map[domain.ID]channels.Binding{}
 	recipientColumn := "''"
-	if version == 4 {
+	if version >= 4 {
 		recipientColumn = "recipient_id"
 	}
 	rows, err := db.QueryContext(ctx, "SELECT id,session_id,thread_id,provider,endpoint,realm_id,channel_id,root_id,active,data,proof,"+recipientColumn+" FROM channel_bindings")

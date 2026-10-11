@@ -59,6 +59,8 @@ type Receipt struct {
 }
 
 type Stream struct {
+	// observer is an immutable client direction fence, independent of Receipt.
+	observer  bool
 	conn      net.Conn
 	reader    *bufio.Reader
 	writeMu   sync.Mutex
@@ -120,6 +122,10 @@ func (s *Stream) ReadFrame() (Frame, error) {
 	if header[0] < byte(Ready) || header[0] > byte(Failure) || length > MaxFrame {
 		return Frame{}, errors.New("invalid or oversized terminal frame")
 	}
+	if s.observer && (Kind(header[0]) != Output && Kind(header[0]) != Failure && Kind(header[0]) != Close || Kind(header[0]) == Close && length != 0) {
+		_ = s.Close()
+		return Frame{}, errors.New("read-only terminal received a forbidden frame direction")
+	}
 	f := Frame{Kind: Kind(header[0]), Data: make([]byte, int(length))}
 	if err := boundRead(len(f.Data)); err != nil {
 		return Frame{}, err
@@ -131,6 +137,9 @@ func (s *Stream) ReadFrame() (Frame, error) {
 }
 
 func (s *Stream) WriteFrame(f Frame) error {
+	if s.observer && (f.Kind != Close || len(f.Data) != 0) {
+		return errors.New("read-only terminal permits only an empty close frame")
+	}
 	if f.Kind < Ready || f.Kind > Failure || len(f.Data) > MaxFrame {
 		return errors.New("invalid or oversized terminal frame")
 	}
@@ -164,7 +173,7 @@ func writeAll(w io.Writer, bytes []byte) error {
 }
 
 func (s *Stream) WriteInput(bytes []byte) error {
-	if s.Receipt.ReadOnly {
+	if s.observer || s.Receipt.ReadOnly {
 		return errors.New("read-only stream rejects input")
 	}
 	for len(bytes) > 0 {
@@ -181,7 +190,7 @@ func (s *Stream) WriteInput(bytes []byte) error {
 }
 
 func (s *Stream) Resize(rows, cols uint16) error {
-	if s.Receipt.ReadOnly {
+	if s.observer || s.Receipt.ReadOnly {
 		return errors.New("read-only stream rejects resize")
 	}
 	if rows == 0 || cols == 0 || rows > 4096 || cols > 4096 {

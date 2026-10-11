@@ -59,7 +59,7 @@ func Open(path string) (*Store, error) {
 	db.SetMaxOpenConns(1)
 	s := &Store{db: db, lock: lock}
 	var schemaVersion int
-	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 4 {
+	if err = db.QueryRow(`PRAGMA user_version`).Scan(&schemaVersion); err != nil || schemaVersion > 5 {
 		s.Close()
 		if err != nil {
 			return nil, err
@@ -106,6 +106,13 @@ func Open(path string) (*Store, error) {
 	if err == nil {
 		err = validatePrimaryStdioSchema(context.Background(), db)
 	}
+	if err == nil && schemaVersion < 5 {
+		err = migrateCaptains(context.Background(), db)
+	}
+	if err == nil {
+		err = validateCaptainSchema(context.Background(), db)
+	}
+
 	if err != nil {
 		s.Close()
 		return nil, err
