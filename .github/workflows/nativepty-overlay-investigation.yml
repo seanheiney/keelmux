@@ -1,0 +1,32 @@
+name: Native PTY allocation investigation
+on:
+  push:
+    branches: [codex/native-throughput-linux]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measured-overlay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.6"
+          cache: true
+      - name: Exact-source baseline and owned compiler overlay
+        run: |
+          python3 tests/nativepty_overlay_investigation_test.py -v
+          python3 scripts/nativepty-overlay-investigation.py --output "$RUNNER_TEMP/nativepty-investigation"
+      - name: Retain sanitized results, including failed gates
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nativepty-overlay-${{ github.sha }}
+          path: ${{ runner.temp }}/nativepty-investigation/public/
+          if-no-files-found: error
+          retention-days: 14

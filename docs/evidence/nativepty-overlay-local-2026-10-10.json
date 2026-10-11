@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "kind": "pre_hosted_overlay_experiment",
+  "source_sha": "4ef3c9afce086a07abd4646bd6c428abe8d43b90",
+  "production_or_shared_module_changes": false,
+  "overlay": {
+    "original_sha256": "5362209587478feb6c3dc5367ed5f02c7789a8094736c42d305848ee1aa15247",
+    "overlay_sha256": "05154c7c3544764e8c7678c6b933bf582fb31ac092498ce00b97b47f348e560e",
+    "production_or_module_cache_edits": false
+  },
+  "darwin_race_benchmark_2mib": {
+    "baseline": {
+      "nanoseconds": 2236153083,
+      "bytes": 35807240,
+      "allocations": 2097399
+    },
+    "overlay": {
+      "nanoseconds": 2264714958,
+      "bytes": 2263016,
+      "allocations": 374
+    },
+    "one_iteration_each": true,
+    "throughput_improvement_proven": false,
+    "baseline_alloc_profile_vt_handlePrint_objects": 2097184
+  },
+  "valid_margin_differential": {
+    "baseline_pass_seconds": 10.74,
+    "overlay_pass_seconds": 10.65,
+    "exact_trace_equal": true,
+    "records": 35780,
+    "trace_sha256": "4f1647051c1c0fd338d1f74c88e28e9b310fb45eb89e261881e8385caab172e0",
+    "screen_sizes": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        80,
+        24
+      ]
+    ],
+    "chunks": [
+      1,
+      7,
+      13,
+      32768
+    ],
+    "covers": "every input chunk and resize: visible/replies, full writer/reader snapshots, exact cells/content/style/link/width, cursor, pending wrap, grapheme bookkeeping, modes, main/alt and reset",
+    "limits": "valid in-bounds margins only"
+  },
+  "retained_failures": {
+    "go_overlay_refused_shared_modcache": true,
+    "direct_test_wrong_cwd_helper_build_failed": true,
+    "invalid_margin_baseline_and_overlay_panic": true,
+    "minimal_input_hex": "1b5b323b33721b5b323b31481b5b4d",
+    "minimal_input_bytes": 15,
+    "minimal_screen": [
+      1,
+      2
+    ],
+    "minimal_delete_line_race": "panic",
+    "earlier_wrap_only_guess": "pass, not a reproducer",
+    "qemu_amd64_compiler": "SIGSEGV before product execution; runtime unqualified",
+    "first_qemu_cleanup_scan": "false due unexpected idle qemu wrapper spelling; retained",
+    "supplemental_cleanup": "exact idle wrapper only, no Go/test remained; authenticated container removed and inspect/list absent"
+  },
+  "hosted_failure_retained": {
+    "workflow": 38097395544,
+    "main_log_sha256": "959fa7c37afe7f2ce8567e05a79f8f19a30950e32e44a5fd42e607d1ef50145a",
+    "original_gate_seconds": 8.12,
+    "unicode_tail_gate_seconds": 8.19
+  },
+  "local_harness_controls": "3 pass, real Linux pidfd cleanup control skipped on Darwin; workflow must run it",
+  "raw_receipt_sha256": {
+    "darwin-baseline.log": "025ac621a4094c64309665adf0d982144ad6c31cb664455b788c1c3599a664f5",
+    "darwin-baseline.cpu": "be1ccd575d7b904817fd1134bd90359a6fd4dded734adafd88e8efefdc727943",
+    "darwin-baseline.mem": "42aff2923b21d7a468bb3ec08938affa9a7bd79a913a6aeee90ac284227a79de",
+    "darwin-overlay.log": "c03b7dc878aa01b2c68d7857a29c662454c59762e6c74f4fb04074d304e43be2",
+    "darwin-vendor-overlay.log": "0901cab7fad7b52cef1949b3e9b0dbe9ad52b3f0eaff622513378ef338fdde14",
+    "darwin-vendor-overlay.cpu": "6fabd008e819f56353c971739304562e63af926333205429c699c39d4e342624",
+    "darwin-vendor-overlay.mem": "7cea4f56ce1548c480e416c466a9ff5364872512bbd65e319edae2297fec9173",
+    "darwin-baseline-trace.log": "fdad96387c609d56598a1f70ee97f01e1fecc8fefae6eca362185cf350d3f2c5",
+    "darwin-overlay-trace.log": "fdad96387c609d56598a1f70ee97f01e1fecc8fefae6eca362185cf350d3f2c5",
+    "darwin-baseline-trace-cwd.log": "aa6e4577e846a7f7571d3ffb2837d68e65b27f72a3bdc7714bf41564af456da3",
+    "darwin-overlay-trace-cwd.log": "b9491812b6bd21dd76990574a2c12adc19ddb069f9271e2e4b3240bf9b148ace",
+    "darwin-baseline-valid-trace.log": "b4f412910b5e0ff6ec7013176852281a9cfca15a0909b5b343dda3676538b74c",
+    "darwin-overlay-valid-trace.log": "ccab3754c35b63fb97442dffc15e0ea6a8e2dc4c0d54b70c7626bfa4bd1327a4",
+    "darwin-baseline-valid-trace.jsonl": "4f1647051c1c0fd338d1f74c88e28e9b310fb45eb89e261881e8385caab172e0",
+    "darwin-overlay-valid-trace.jsonl": "4f1647051c1c0fd338d1f74c88e28e9b310fb45eb89e261881e8385caab172e0",
+    "invalid-margin-minimal.log": "c0d5ffe92ca31d4a8962f1ca4708bff081a0aa5eb605ced5c89af3113f1969e9",
+    "invalid-margin-delete-line.log": "1e2de0c5739787659742976b52963e342b56ef316512584205f198a08e2f7703",
+    "invalid-margin-reproducer.json": "32ef56f2654e9279bf5504dedeecf68f4d0716631775da844e4f33e1232d3628",
+    "linux-amd64-c7707d622b59/receipt.json": "df46747d76ab541b3b2b067121fe8d455ad377c43711d8fb9342786809e07723",
+    "linux-amd64-c7707d622b59/compile-baseline.stderr": "e0586d13291725941d1e2ef69a9fa56f685818c62ed0033663a2d33c5c3d8771",
+    "linux-amd64-c7707d622b59/cleanup-supplement.json": "7eda5dd130c82551425268a7b3a6f752837f3a010b1ef980a325725af0105956"
+  },
+  "next_gate": "reviewed isolated GitHub Actions Linux amd64 baseline/overlay profiling and unchanged eight-second gates; no production dependency adoption",
+  "models_or_customer_activity": 0
+}

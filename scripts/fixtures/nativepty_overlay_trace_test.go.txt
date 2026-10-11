@@ -1,0 +1,87 @@
+package nativepty
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"os"
+	"strings"
+	"testing"
+)
+
+// This owned-copy experiment emits an exact deterministic digest after every
+// input chunk and resize. Baseline and compiler-overlay runs must agree.
+func TestOverlayEquivalenceTrace(t *testing.T) {
+	path := os.Getenv("KEELMUX_OVERLAY_TRACE")
+	if path == "" {
+		t.Fatal("explicit owned trace path required")
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	enc := json.NewEncoder(file)
+	controls := []string{"\x1b[31;44m", "\x1b[0m", "\x1b[4h", "\x1b[4l", "\x1b[?7l", "\x1b[?7h", "\x1b[2;3r\x1b[?6h", "\x1b[?6l\x1b[r", "\x1b[2;2H", "\x1b[2J", "\x1b[3J", "\x1b[2@", "\x1b[2P", "\x1b[2L", "\x1b[2M", "\x1b(0lqk\x1b(B", "\x1b)0\x0elqk\x0f", "\x1b7\x1b8", "\x1b[?1049h", "\x1b[?1049l", "\x1bc", "\x1b[6n\x1b[c\x1b[>c", "\r\n\t\b", "e\u0301🙂❤️👩\u200d💻👍🏽", "\u0600A\u0301", "\xff\xfe", "\x1b]0;title\a", "\x1b[3b"}
+	for index, size := range [][2]int{{1, 2}, {2, 3}, {7, 4}, {80, 24}} {
+		for _, chunk := range []int{1, 7, 13, 32768} {
+			s := newTerminalScreen(size[0], size[1])
+			rng := rand.New(rand.NewSource(1492))
+			step := 0
+			check := func(input []byte, resize bool) {
+				visible, replies := s.process(input)
+				h := sha256.New()
+				fmt.Fprintf(h, "visible=%x replies=%x writer=%x reader=%x cursor=%+v wrap=%v glyph=%q xy=%d,%d ascii=%v pen=%s saved=%s top=%d bottom=%d degraded=%v\n", visible, replies, s.snapshot(true), s.snapshot(false), s.emulator.CursorPosition(), s.pendingWrap, s.glyph, s.glyphX, s.glyphY, s.hasLastASCII, s.pen.String(), s.savedPen.String(), s.top, s.bottom, s.degraded)
+				for y := 0; y < s.emulator.Height(); y++ {
+					for x := 0; x < s.emulator.Width(); x++ {
+						c := s.emulator.CellAt(x, y)
+						if c == nil {
+							fmt.Fprintf(h, "%d,%d:nil\n", x, y)
+						} else {
+							fmt.Fprintf(h, "%d,%d:%q:%d:%s:%+v\n", x, y, c.Content, c.Width, c.Style.String(), c.Link)
+						}
+					}
+				}
+				if err := enc.Encode(map[string]any{"case": index, "chunk": chunk, "step": step, "resize": resize, "sha256": hex.EncodeToString(h.Sum(nil))}); err != nil {
+					t.Fatal(err)
+				}
+				step++
+			}
+			for turn := 0; turn < 40; turn++ {
+				input := []byte(strings.Repeat("abcXYZ123 ", rng.Intn(30)+1) + controls[turn%len(controls)] + controls[rng.Intn(len(controls))])
+				// This trace qualifies valid margins only. The earlier out-of-bounds
+				// DECSTBM panic is retained and triaged as a separate source bug.
+				margin := fmt.Sprintf("\x1b[1;%dr", min(3, s.emulator.Height()))
+				input = []byte(strings.ReplaceAll(string(input), "\x1b[2;3r", margin))
+				for offset := 0; offset < len(input); offset += chunk {
+					check(input[offset:min(offset+chunk, len(input))], false)
+				}
+				if turn%11 == 0 {
+					s.resize(2+turn%13, 2+turn%4)
+					check(nil, true)
+				}
+			}
+			s.close()
+		}
+	}
+}
+
+var overlayStringSink string
+
+func BenchmarkOverlayRuneString(b *testing.B) {
+	data := []byte("x")
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		overlayStringSink = string(data[0])
+	}
+}
+
+func BenchmarkOverlaySliceString(b *testing.B) {
+	data := []byte("x")
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		overlayStringSink = string(data[:1])
+	}
+}
