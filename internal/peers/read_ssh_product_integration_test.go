@@ -307,6 +307,11 @@ func TestOwnedLoopbackSSHProductReadBridge(t *testing.T) {
 	entryClient.HTTP.CloseIdleConnections()
 	productReadBridgeIdle(t, authorityPath)
 	entry = startEntry("entry-third-logs", true)
+	// This fresh revision-3 route has just returned available inventory. Refuse
+	// the old operation here too; failure only through the dead revision-2
+	// incarnation would establish transport loss, not the retained tombstone.
+	productReadOpenRefused(t, entryClient, quietRequest)
+	productReadJournal(t, authorityPath, quietRequest.Lease, quietRelease.Token, true, true)
 	if os.Remove(quiet) != nil {
 		t.Fatal("owned quiet marker cleanup failed")
 	}
@@ -557,6 +562,9 @@ func productReadOpen(t *testing.T, client *transport.Client, request transport.R
 		stream.Close()
 		t.Fatal("actual Ready changed the original observer identity")
 	}
+	// Structural receipt privacy control. The actual raw home Ready admission
+	// has separate strict-field transport tests; re-marshalling this typed
+	// receipt cannot independently detect unexpected fields in raw JSON.
 	b, _ := json.Marshal(stream.Receipt)
 	if bytes.Contains(b, []byte("token")) || bytes.Contains(b, []byte("socket")) || bytes.Contains(b, []byte("argv")) {
 		cancel()
