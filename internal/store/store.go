@@ -103,6 +103,9 @@ func Open(path string) (*Store, error) {
 	if err == nil {
 		err = validateProjectSchema(context.Background(), db)
 	}
+	if err == nil {
+		err = validatePrimaryStdioSchema(context.Background(), db)
+	}
 	if err != nil {
 		s.Close()
 		return nil, err
