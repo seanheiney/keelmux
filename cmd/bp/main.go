@@ -172,6 +172,9 @@ func run() error {
 		}
 	}
 	if len(args) == 0 {
+		if *entry == "" {
+			return tui.RunLocal(ctx, c, p.Place)
+		}
 		return tui.Run(ctx, c, p.Place)
 	}
 	switch args[0] {

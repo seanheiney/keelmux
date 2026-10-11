@@ -2,7 +2,7 @@
 
 Source: https://chatgpt.com/space/page_3c1ef53937d08191b084fe3e702ce9bb
 
-Snapshot imported on 2026-10-10. This repository owns implementation decisions and evidence; the source Page remains the reviewed product brief.
+Snapshot imported on 2026-10-10. This repository owns implementation decisions and evidence; the source Page remains the reviewed product brief. The current [Keelmux PRD](PRD.md) records later owner decisions and closeout status. It supersedes the historical tmux-first proposal and undecided IRC path below: Keelmux owns native PTY supervision, tmux is optional compatibility, and managed Ergo uses project channels with stable per-thread bots. The imported body remains preserved as a dated snapshot; the source Pages are maintained separately.
 
 Draft revised October 10, 2026. Architecture and commands are proposed product contracts; they are not claims of implemented capabilities.
 

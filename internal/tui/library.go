@@ -199,6 +199,9 @@ func (m *model) libraryKey(key tea.KeyMsg) tea.Cmd {
 	if m.libraryProfiles {
 		return m.libraryProfileKey(key)
 	}
+	if key.String() == "v" {
+		return m.openLibraryAdoption()
+	}
 	if key.String() == "p" && m.libraryCatalog != nil {
 		m.libraryProfiles = true
 		m.libraryProfileChoice = m.editedLibraryProfile()
@@ -319,7 +322,7 @@ func (m *model) libraryView() string {
 		body = append(body, line(fmt.Sprintf("Selected session: %s r%d · loaded unknown", s.Library.ProfileID, s.Library.ProfileRevision), muted))
 	}
 	foot := m.footerText("Enter toggle  Tab components  p profiles", accent)
-	foot = append(foot, m.footerText("r refresh  Esc return", accent)...)
+	foot = append(foot, m.footerText("v session status  r refresh  Esc return", accent)...)
 	foot = append(foot, m.footerText("Saved selection · apply/reload needed", muted)...)
 	if m.libraryProfiles {
 		foot = m.footerText("↑↓/j/k browse  Enter edit  Esc back", accent)

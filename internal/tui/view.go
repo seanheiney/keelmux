@@ -278,6 +278,8 @@ func (m *model) switcherFooter() []viewLine {
 
 func (m *model) View() string {
 	switch m.screen {
+	case "library-adoption":
+		return m.libraryAdoptionView()
 	case "library":
 		return m.libraryView()
 	case "groups":

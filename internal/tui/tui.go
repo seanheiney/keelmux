@@ -21,6 +21,16 @@ import (
 
 // Run reuses the caller's sole daemon connection. Navigation has no model cost.
 func Run(ctx context.Context, client *protocol.Client, statePath string) error {
+	return run(ctx, client, statePath, false)
+}
+
+// RunLocal permits contextual application reads only for the caller's explicit
+// local execution-home route. Entry callers use Run and remain nonlocal.
+func RunLocal(ctx context.Context, client *protocol.Client, statePath string) error {
+	return run(ctx, client, statePath, true)
+}
+
+func run(ctx context.Context, client *protocol.Client, statePath string, local bool) error {
 	if client == nil || statePath == "" {
 		return errors.New("switcher requires a daemon client and local place path")
 	}
@@ -37,6 +47,7 @@ func Run(ctx context.Context, client *protocol.Client, statePath string) error {
 		return err
 	}
 	m := newModel(ctx, client, statePath, s)
+	m.libraryAdoptionLocal = local
 	_, runErr := tea.NewProgram(m, tea.WithAltScreen(), tea.WithContext(ctx)).Run()
 	// Program shutdown may prevent the detach callback from being processed.
 	// A failed release remains durable for reconnect reconciliation.
@@ -76,6 +87,9 @@ type releasedMsg struct {
 }
 
 type model struct {
+	libraryAdoptionPanel  *libraryAdoptionPanel
+	libraryAdoptionEpoch  uint64
+	libraryAdoptionLocal  bool
 	ctx                   context.Context
 	client                *protocol.Client
 	statePath             string
@@ -244,6 +258,9 @@ func (m *model) move(delta int) {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case libraryAdoptionMsg:
+		m.acceptLibraryAdoption(msg)
+		return m, nil
 	case libraryMsg:
 		m.acceptLibrary(msg)
 		return m, nil
@@ -337,6 +354,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.busy {
 			return m, nil
+		}
+		if m.screen == "library-adoption" {
+			return m, m.libraryAdoptionKey(msg)
 		}
 		if m.screen == "usage" {
 			return m, m.usageKey(msg)
