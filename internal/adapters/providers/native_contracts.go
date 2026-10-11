@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // These contracts describe reviewed argv syntax, not runtime identity, login,
@@ -94,13 +96,40 @@ func ValidateManagedEnvironment(provider string, lookup func(string) (string, bo
 	return nil
 }
 
+// RequestedModel returns only the explicit model declaration from a reviewed
+// interactive argv contract. It does not inspect native defaults, credentials,
+// registries or accepted models, and performs no process or filesystem work.
+// Display limits apply here without narrowing the native launch validator.
+func RequestedModel(provider, version string, args []string) (string, error) {
+	c := expandedContract(provider)
+	if c == nil || c.version != version {
+		return "", errors.New("provider version is outside the reviewed model declaration contract")
+	}
+	model, err := c.inspect(args)
+	if err != nil {
+		return "", err
+	}
+	if len(model) > 256 || !utf8.ValidString(model) || strings.ContainsFunc(model, func(r rune) bool {
+		return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
+	}) {
+		return "", errors.New("requested native model is outside the display declaration limits")
+	}
+	return model, nil
+}
+
 func (c *nativeContract) validate(args []string) error {
+	_, err := c.inspect(args)
+	return err
+}
+
+func (c *nativeContract) inspect(args []string) (string, error) {
 	for _, arg := range args {
 		if strings.ContainsRune(arg, '\x00') {
-			return errors.New("native argv contains a NUL byte")
+			return "", errors.New("native argv contains a NUL byte")
 		}
 	}
 	positional, modelSeen, literal := 0, false, false
+	requestedModel := ""
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		if arg == "--" && !literal {
@@ -109,33 +138,33 @@ func (c *nativeContract) validate(args []string) error {
 		}
 		if literal || !strings.HasPrefix(arg, "-") {
 			if c.commands[arg] {
-				return errors.New("native management commands require the provider's separate explicit workflow")
+				return "", errors.New("native management commands require the provider's separate explicit workflow")
 			}
 			if c.provider == "gemini" {
-				return errors.New("Gemini positional prompts can select headless mode; use --prompt-interactive for an explicit interactive initial prompt")
+				return "", errors.New("Gemini positional prompts can select headless mode; use --prompt-interactive for an explicit interactive initial prompt")
 			}
 			if c.provider == "opencode" {
-				return errors.New("select the OpenCode project with the managed workspace option, not a native positional path")
+				return "", errors.New("select the OpenCode project with the managed workspace option, not a native positional path")
 			}
 			positional++
 			if positional > 1 {
-				return errors.New("this native interactive launch accepts at most one positional argument")
+				return "", errors.New("this native interactive launch accepts at most one positional argument")
 			}
 			continue
 		}
 		flag, value, attached := strings.Cut(arg, "=")
 		kind, ok := c.flags[flag]
 		if !ok {
-			return fmt.Errorf("%s option is outside the reviewed interactive argv contract; use separate documented flags", c.provider)
+			return "", fmt.Errorf("%s option is outside the reviewed interactive argv contract; use separate documented flags", c.provider)
 		}
 		// No short clusters/attached short values, abbreviations, camelCase
 		// aliases, or implicit booleans. Their parser boundaries are unqualified.
 		if attached && !strings.HasPrefix(flag, "--") {
-			return errors.New("use separate short option values or a long option with =")
+			return "", errors.New("use separate short option values or a long option with =")
 		}
 		if kind == booleanArgument {
 			if attached {
-				return errors.New("native boolean options must be provided without a value")
+				return "", errors.New("native boolean options must be provided without a value")
 			}
 			continue
 		}
@@ -144,33 +173,34 @@ func (c *nativeContract) validate(args []string) error {
 				if kind == optionalArgument {
 					continue
 				}
-				return errors.New("native option requires a separate value or a long option with =")
+				return "", errors.New("native option requires a separate value or a long option with =")
 			}
 			i++
 			value = args[i]
 			if kind == optionalArgument && c.commands[value] {
-				return errors.New("ambiguous resume value matches a native management command; use --resume=value")
+				return "", errors.New("ambiguous resume value matches a native management command; use --resume=value")
 			}
 		}
 		if value == "" {
-			return errors.New("native option value must not be empty")
+			return "", errors.New("native option value must not be empty")
 		}
 		if flag == "--model" || flag == "-m" {
 			if modelSeen {
-				return errors.New("specify the requested native model only once")
+				return "", errors.New("specify the requested native model only once")
 			}
 			modelSeen = true
+			requestedModel = value
 			if c.provider == "opencode" && !validOpenCodeModel(value) {
-				return errors.New("OpenCode model must be an explicit provider/model identifier; OpenRouter uses openrouter/<model>")
+				return "", errors.New("OpenCode model must be an explicit provider/model identifier; OpenRouter uses openrouter/<model>")
 			}
 		}
 		if flag == "--approval-mode" || flag == "--permission-mode" {
 			if value != "default" && value != "plan" {
-				return errors.New("managed native launch supports default or plan approval mode; approval bypass belongs in a separate native workflow")
+				return "", errors.New("managed native launch supports default or plan approval mode; approval bypass belongs in a separate native workflow")
 			}
 		}
 	}
-	return nil
+	return requestedModel, nil
 }
 
 // Validate only the routing syntax. Native registries/credentials determine
