@@ -14,13 +14,33 @@ import (
 
 const Version = "bp/1"
 
+// MaxControlRequestBytes is the existing finite local control JSON body limit.
+// Count the encoded body, including escaping and the encoder's final newline.
+const MaxControlRequestBytes = 64 << 10
+
+func ValidateLaunchRequestSize(in LaunchRequest) error {
+	var b bytes.Buffer
+	if err := json.NewEncoder(&b).Encode(in); err != nil {
+		return err
+	}
+	return validateLaunchBodySize(b.Len())
+}
+
+func validateLaunchBodySize(size int) error {
+	if size > MaxControlRequestBytes {
+		return fmt.Errorf("launch request exceeds %d encoded JSON bytes; reduce native arguments or instructions", MaxControlRequestBytes)
+	}
+	return nil
+}
+
 type LaunchRequest struct {
-	OperationID     domain.ID `json:"operation_id"`
-	Name            string    `json:"name"`
-	Workspace       string    `json:"workspace"`
-	Provider        string    `json:"provider"`
-	ProviderVersion string    `json:"provider_version"`
-	Argv            []string  `json:"argv"`
+	OperationID     domain.ID               `json:"operation_id"`
+	Name            string                  `json:"name"`
+	Workspace       string                  `json:"workspace"`
+	Provider        string                  `json:"provider"`
+	ProviderVersion string                  `json:"provider_version"`
+	Argv            []string                `json:"argv"`
+	Library         *domain.LibrarySnapshot `json:"library,omitempty"`
 }
 type SessionRequest struct {
 	SessionID   domain.ID `json:"session_id"`
@@ -85,6 +105,11 @@ func (c *Client) Call(ctx context.Context, method, path string, in, out any) err
 	var b bytes.Buffer
 	if in != nil {
 		if err := json.NewEncoder(&b).Encode(in); err != nil {
+			return err
+		}
+	}
+	if method == http.MethodPost && path == "/v1/launch" {
+		if err := validateLaunchBodySize(b.Len()); err != nil {
 			return err
 		}
 	}

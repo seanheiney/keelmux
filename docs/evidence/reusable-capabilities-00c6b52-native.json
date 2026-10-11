@@ -1,0 +1,158 @@
+{
+  "schema": "keelmux-native-current-acceptance/v1",
+  "source_sha": "00c6b5225f1c6d239581c10674235fc691789e7c",
+  "utc": "2026-10-11T01:18:05.393205+00:00",
+  "result": "pass",
+  "scope": "Actual macOS arm64 test archive installation, loaded versions, real Codex and Claude terminal lifecycle, owned uninstall; not a public release or native capability-loading proof",
+  "artifact_version": "v0.0.0",
+  "artifact_sha256": "6d66b2892fadcf7dc7ff71470c24bf84a52af1842f93649bee80906c6037217c",
+  "artifact_bytes": 16581806,
+  "manifest": {
+    "aliases": {
+      "bp": "keelmux",
+      "bpd": "keelmuxd",
+      "bpg": "keelmux-entry"
+    },
+    "arch": "arm64",
+    "built_at": "2026-10-11T00:53:40Z",
+    "commit": "00c6b5225f1c6d239581c10674235fc691789e7c",
+    "development_test": false,
+    "files": {
+      "LICENSE": "bb73c7b3ab3d32b1a951ae552dd732832b360ca3a2e923beb6da2441e4f325ea",
+      "README.md": "56a5ecf80251ef1008e5d44642ea4716153e9fa0d857e892b2a2b5b50029aec5",
+      "keelmux": "947ed7307163dacb06e4754e4e22e86c3bb3d344fa65dfa40ce6bcceb9823c8f",
+      "keelmux-entry": "cac7945d10f50941686f97328347323accd990c9a7038005b8792b63a2fa02dd",
+      "keelmux-supervisor": "eaba2cea4b94ba03093261a31de88c1e37191a6d9519dbd16eb14209fb84e208",
+      "keelmuxd": "81490769611d5d6c7774efd643e9384c43ae31b78127d4c766112347cab32921"
+    },
+    "go_version": "go1.26.6",
+    "os": "darwin",
+    "product": "Keelmux",
+    "schema": 2,
+    "source_clean": true,
+    "version": "v0.0.0"
+  },
+  "installed_executable_sha256": {
+    "keelmux": "947ed7307163dacb06e4754e4e22e86c3bb3d344fa65dfa40ce6bcceb9823c8f",
+    "keelmuxd": "81490769611d5d6c7774efd643e9384c43ae31b78127d4c766112347cab32921",
+    "keelmux-entry": "cac7945d10f50941686f97328347323accd990c9a7038005b8792b63a2fa02dd",
+    "bp": "947ed7307163dacb06e4754e4e22e86c3bb3d344fa65dfa40ce6bcceb9823c8f",
+    "bpd": "81490769611d5d6c7774efd643e9384c43ae31b78127d4c766112347cab32921",
+    "bpg": "cac7945d10f50941686f97328347323accd990c9a7038005b8792b63a2fa02dd",
+    "keelmux-supervisor": "eaba2cea4b94ba03093261a31de88c1e37191a6d9519dbd16eb14209fb84e208"
+  },
+  "go": "go1.26.6",
+  "providers": {
+    "codex": "codex-cli 0.159.0",
+    "claude": "2.1.296 (Claude Code)"
+  },
+  "native_realm": "Existing native realm and explicitly selected previously trusted workspace; effective account/model unknown",
+  "checks": [
+    {
+      "name": "installed_archive_and_loaded_versions",
+      "result": "pass"
+    },
+    {
+      "name": "installed_native_provider_lifecycle",
+      "result": "pass"
+    },
+    {
+      "name": "owned_uninstall_and_preservation",
+      "result": "pass"
+    }
+  ],
+  "native_checks": [
+    {
+      "name": "native_default_daemon_start",
+      "result": "pass",
+      "detail": {}
+    },
+    {
+      "name": "codex_native_transport_tui",
+      "result": "pass",
+      "detail": {
+        "default_backend": "native",
+        "composer_before_native_input": true,
+        "outer_client_terminal_probe_observed": false,
+        "unsubmitted_unicode_draft": true,
+        "escape_forwarded": true,
+        "writer_resize": [
+          92,
+          29
+        ],
+        "read_only_input_and_resize_blocked": true,
+        "second_writer_refused": true,
+        "ctrl_g_d_detach_exit_zero": true,
+        "same_execution_after_reconnect_and_daemon_sigkill": true,
+        "same_operation_no_relaunch": true,
+        "stale_daemon_stop_refused": true,
+        "orphan_attach_grant_reconciled_and_explicitly_released": true,
+        "tui_detach_and_saved_selection": true,
+        "ref_sha256": "fb700310841fb489fd0b6422c674e502edba42b4da65e58ac97bdacc45693e1b",
+        "native_enter_count": 0,
+        "model_turn_count": 0
+      }
+    },
+    {
+      "name": "claude_native_transport_tui",
+      "result": "pass",
+      "detail": {
+        "default_backend": "native",
+        "composer_before_native_input": true,
+        "outer_client_terminal_probe_observed": false,
+        "unsubmitted_unicode_draft": true,
+        "escape_forwarded": true,
+        "writer_resize": [
+          92,
+          29
+        ],
+        "read_only_input_and_resize_blocked": true,
+        "second_writer_refused": true,
+        "ctrl_g_d_detach_exit_zero": true,
+        "same_execution_after_reconnect_and_daemon_sigkill": true,
+        "same_operation_no_relaunch": true,
+        "stale_daemon_stop_refused": true,
+        "orphan_attach_grant_reconciled_and_explicitly_released": true,
+        "tui_detach_and_saved_selection": true,
+        "ref_sha256": "4bf6e448a9ccd7d7db3f060980c2cafafe9adfdfb137bef583bb2c0285d0c79d",
+        "native_enter_count": 0,
+        "model_turn_count": 0
+      }
+    }
+  ],
+  "cleanup": {
+    "owned_process_count": 4,
+    "owned_processes_no_longer_live": true,
+    "exact_product_stop_requested": true,
+    "no_saved_pid_signals": true,
+    "unresolved_launches": [],
+    "daemon_retained_for_reconciliation": false,
+    "private_captures_retained": true,
+    "issues": []
+  },
+  "native_cleanup_confirmed": true,
+  "owned_installation_retained": false,
+  "model_turns_submitted": 0,
+  "native_enter_submitted": false,
+  "tmux_invocations_observed": false,
+  "public_download_verified": false,
+  "seconds": 26.204,
+  "input_hashes": {
+    "installer_sha256": "e57d63a7ad7cc79445d87da5e0e2dd10b1076f4bbc599b46917b1e7d94c45040",
+    "wrapper_sha256": "a756fe17ef2c4abfacf3169bad217dfdb368da9076d7eedea8a8475d45177cce",
+    "native_harness_sha256": "e9a4fdb2faab43e306ed1866409e5a4377a153f2019d9d688620e1b652565f02",
+    "private_original_receipt_sha256": "cd64cc4f378fb7b56d3d22f8ebb976bb5cf48c0f0342e3132936c39e2bc83d44",
+    "private_child_receipt_sha256": "b0241a0f04cd0bb3d08d933ff6ae63b6d6997b1cd3eafca0e4b4ed528a59cb5a",
+    "command_log_sha256": "9c1fb60b4d9a331fd7c34608eee090501f01d2ee1b2f301c7cbf2c3dafbb32ed"
+  },
+  "missing_evidence": [
+    "anonymous public download of these exact release bytes",
+    "authenticated model turn and effective account/model",
+    "host reboot/native resume",
+    "remote transport and Linux native CLIs",
+    "Native reusable skill/rule/MCP loading or invocation",
+    "Gemini/Grok/OpenCode native lifecycle and OpenRouter model turn",
+    "Independent physical second-server federation",
+    "Structured native controller activation and semantic dispatch"
+  ]
+}

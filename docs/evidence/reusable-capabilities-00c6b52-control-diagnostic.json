@@ -1,0 +1,60 @@
+{
+  "schema": "keelmux-native-control-diagnostic/v1",
+  "source_sha": "00c6b5225f1c6d239581c10674235fc691789e7c",
+  "result": "fail",
+  "scope": "benign confinement control only",
+  "helper_sha256": "fe4d1765295e47e1288aaa0ce5641a39f3c88ef3347794a6665aa055074d30e9",
+  "sandbox_controls_attempted": 1,
+  "policy_unchanged_from_canonical_attempt": true,
+  "control_command": {
+    "label": "confinement",
+    "return_code": -6,
+    "exit_kind": "signal",
+    "exit_status": null,
+    "signal_number": 6,
+    "signal_name": "SIGABRT",
+    "helper_requested_kill": false,
+    "parent_guard_failure": null,
+    "elapsed_seconds": 0.039,
+    "captures": {
+      "stdout": {
+        "bytes": 0,
+        "within_bound": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "bytes": 0,
+        "within_bound": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "child_assertion_progress": "not_inferred",
+    "underlying_cause": "not_inferred"
+  },
+  "checks": [
+    {
+      "name": "confinement_control",
+      "result": "fail",
+      "code": "command_failed_confinement"
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "issues": [],
+    "tracked_processes": 1,
+    "no_persisted_pid_signals": true,
+    "escaped_descendants": "not guaranteed absent if never observed in live ancestry",
+    "owned_fixture_removed": true
+  },
+  "product_binary_executions": 0,
+  "provider_binary_executions": 0,
+  "daemon_starts": 0,
+  "model_prompts_submitted": 0,
+  "native_lifecycle": "not_tested",
+  "authentication": "not_tested",
+  "control_policy_qualified": false,
+  "original_failed_attempts_unchanged": true,
+  "private_original_receipt_sha256": "0c9a54e1ab906effedc66ece88c40fb081ed8034e4c57e75dd5210c652f0d45c",
+  "parent_command_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "limitation": "SIGABRT and empty streams locate a benign control-runtime failure; child assertion progress and underlying cause remain unknown. No provider/product launch occurred."
+}

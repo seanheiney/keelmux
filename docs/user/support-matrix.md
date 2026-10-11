@@ -81,6 +81,8 @@ Remote text never submits terminal input, approves tools or starts a model turn.
 
 ## Outside the current runtime claim
 
+The reusable-capabilities development branch has isolated registry, native workspace mapping and tool-health implementations. Its provider adapter evidence qualifies local help/version and argv contracts for Gemini 0.52.0, Grok 1.0.50 (c58f321264ba) [stable] and OpenCode 1.18.21. It does not qualify their native PTY lifecycle, authenticated model turns, accepted OpenRouter model, skill loading or invocation. [Reusable capability workflows](plugins.md) and [provider workflows](providers.md) identify the exact source-only scope.
+
 Grok native lifecycle, independent-server enrollment, customer Mattermost/IRC validation, shared login repair, subscription routing, usage totals, model/account/harness/host continuity, optional captains and independent-user accessibility/simplicity pilots remain on the [roadmap](roadmap.md). Source fixtures or a planned command do not establish these features.
 
 Before a release, record its exact SHA, artifacts, OS/CPU, native versions/authentication mode, commands, passing scenarios and all unsupported/not-run cases. Installation, source checks, native runtime acceptance and public publication are separate gates.

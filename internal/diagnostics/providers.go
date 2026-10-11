@@ -14,6 +14,7 @@ import (
 )
 
 var versionRE = regexp.MustCompile(`^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$`)
+var grokVersionRE = regexp.MustCompile(`^grok (\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)? \([0-9a-f]{12}\) \[(?:stable|alpha)\])$`)
 
 type capture struct {
 	bytes.Buffer
@@ -33,7 +34,7 @@ func (c *capture) Write(p []byte) (int, error) {
 
 func providerChecks(ctx context.Context, probe bool) []Check {
 	var result []Check
-	for _, name := range []string{"codex", "claude"} {
+	for _, name := range []string{"codex", "claude", "grok", "gemini", "opencode"} {
 		c := Check{Name: "provider_" + name, State: "missing", Summary: "Supported CLI is not executable on PATH.", Action: "Install the provider through its native instructions, then rerun diagnostics."}
 		path, err := exec.LookPath(name)
 		if err == nil {
@@ -69,7 +70,7 @@ func providerChecks(ctx context.Context, probe bool) []Check {
 		}
 		result = append(result, c)
 	}
-	return append(result, Check{Name: "provider_grok", State: "unsupported", Summary: "Native launch and version semantics remain unqualified."})
+	return result
 }
 
 func probeVersion(ctx context.Context, path, name string) (string, error) {
@@ -98,8 +99,14 @@ func probeVersion(ctx context.Context, path, name string) (string, error) {
 	v := strings.TrimSpace(out.String())
 	if name == "codex" {
 		v = strings.TrimPrefix(v, "codex-cli ")
-	} else {
+	} else if name == "claude" {
 		v = strings.TrimSuffix(v, " (Claude Code)")
+	} else if name == "grok" {
+		parts := grokVersionRE.FindStringSubmatch(v)
+		if parts == nil {
+			return "", os.ErrInvalid
+		}
+		return parts[1], nil
 	}
 	if !versionRE.MatchString(v) {
 		return "", os.ErrInvalid

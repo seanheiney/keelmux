@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "source_sha": "00c6b5225f1c6d239581c10674235fc691789e7c",
+  "result": "pass",
+  "checks": [
+    {
+      "check": "compiled-version",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "health-pack-import",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "health-profile-create",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "health-profile-select",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "health-profile-resolve",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "selected-tool-list",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "availability-no-execution",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "check": "actual-headroom-health",
+      "exit_code": 0,
+      "result": "pass"
+    }
+  ],
+  "helper_sha256": "0cb62c83e10d6b2ed0190c579455a2b28ff79b68214e74b86a07e52c15836b53",
+  "model_turns": 0,
+  "tool_calls": 0,
+  "native_provider_launches": 0,
+  "daemon_launches": 0,
+  "network_policy": "(version 1) (allow default) (deny network*)",
+  "isolation_limit": "Network denied for selected child; private HOME/XDG from tools.Check are not a filesystem/keychain sandbox.",
+  "cleanup_limit": "tools.Check owns direct child and process group; escaped descendants remain outside coverage.",
+  "health_attempts": 1,
+  "installation": {
+    "wheel_sha256": "f7b0186ad5e76d5c8f75e5de6c57e001637258ead75481575ccca4d57557f5fb",
+    "installed_wheel_files_equal": 579,
+    "installed_record_rewritten_by_installer": true,
+    "private_install_binding_sha256": "566ea3be345038d5987a2e5ab83e56e15a45a7f7810059a0a19be11f0c43de73",
+    "prior_standalone_receipt_sha256": "340af9bcce80f447c7e22bd80c442311a8c59ceb843c573b5a996aa1def2299e",
+    "dependency_pins_sha256": "71a7e69eca5f36abf27ee6c171d2d72709aa6a1debbd6d21963aef6fe72970bb",
+    "headroom_version": "0.40.0",
+    "mcp_sdk_version": "1.30.0",
+    "python_executable_sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634",
+    "headroom_entrypoint_sha256": "d8fbd5f1fd2020f457e32f66640295c1362b2b73ed956f9dd75a89e52c3b08a2",
+    "builtin_declared_source_revision": "976aa714ef3e19174dc0cb586cee7b20d064e4ef",
+    "wheel_matches_builtin_source_revision": false
+  },
+  "binary_sha256": "2c09c9c73dec611d4bf0350dd341d02b41aeadda7535bfd895b81a2f4dc8923f",
+  "build_binding_sha256": "6eba25186268a7967e121a488ed42f885dbf91ff9ef362c44fc5359813942486",
+  "source_archive_sha256": "16dbaaf7bb7565925de8b6d222e510c7de9671dd849a104dd66b8aa9583cb722",
+  "selected_package_digest": "dcc8f46314258c7526b4835d410505cc1c89b15e77283969512b57aca1d1413a",
+  "metadata_verified_before_health": true,
+  "health_elapsed_seconds": 1.939,
+  "health_receipt": {
+    "package_id": "headroom-proof",
+    "package_digest": "dcc8f46314258c7526b4835d410505cc1c89b15e77283969512b57aca1d1413a",
+    "tool_id": "mcp",
+    "transport": "stdio",
+    "observed_at": "2026-10-11T01:22:38.901913Z",
+    "declared": true,
+    "availability": "available",
+    "health": "healthy",
+    "started": true,
+    "initialized": true,
+    "tools_listed": true,
+    "tool_count": 3,
+    "protocol_version": "2025-11-25",
+    "invoked": false,
+    "cleanup": "complete",
+    "code": "health_ok"
+  },
+  "owned_fixture_removed": true,
+  "private_original_stdout_sha256": {
+    "health-profile-select": "9038cda1a03a130584d3003c1ec0ac6fc61721b2ff3593ec2a70e9902a811828",
+    "compiled-version": "3cd71da86c79ade69c3d4dc0a99e9c097f4d1ab93984f19eba18d3f18e637bf5",
+    "health-profile-create": "40e5d33f4b1e39f8e137929295ee31ce3f7aa08764c123199c82e9c836056d63",
+    "selected-tool-list": "bb89088f8cec3784be59d5572f0668702d42551a8b7b0d7d322ba2c37f256e18",
+    "availability-no-execution": "3fc6970bdd399e9e1ade77d7a08c59efb01f865841420ded26dd117d63860f5e",
+    "actual-headroom-health": "411063b24f1670f446a43aaa415d78f48f4f6b2918b039fc411bfd6c9ebd287f",
+    "health-profile-resolve": "a319e8a2dd812f291a0c06f16dd6b057bf333e5342440f50b36c0d3be88ca65f",
+    "health-pack-import": "9a6096d578ad9a37560f764e55fc98e6d8c76b21377399e138636a0f3fdc9398"
+  }
+}

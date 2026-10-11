@@ -257,9 +257,9 @@ func (m *model) switcherFooter() []viewLine {
 		}
 		out = append(out, m.footerText(action, accent)...)
 		if m.width >= 72 {
-			out = append(out, line("↑↓ select  c inbox  u usage  g groups  p draft  r refresh  q quit", muted))
+			out = append(out, line("↑↓ select  c inbox  u usage  l library  g groups  p draft  r refresh  q quit", muted))
 		} else if m.width >= 38 {
-			out = append(out, line("c inbox  u usage  g groups  q quit", muted))
+			out = append(out, line("c inbox  u usage  l library  g groups  q quit", muted))
 		} else {
 			out = append(out, line("c inbox  g groups  q quit", muted))
 		}
@@ -269,6 +269,8 @@ func (m *model) switcherFooter() []viewLine {
 
 func (m *model) View() string {
 	switch m.screen {
+	case "library":
+		return m.libraryView()
 	case "groups":
 		return m.groupsView()
 	case "newgroup":

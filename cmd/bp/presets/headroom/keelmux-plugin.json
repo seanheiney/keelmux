@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "headroom",
+  "version": "0.40.0",
+  "description": "Optional Headroom compression and retrieval MCP server",
+  "source": "https://github.com/headroomlabs-ai/headroom",
+  "revision": "976aa714ef3e19174dc0cb586cee7b20d064e4ef",
+  "files": {
+    "README.md": "b2d15d3a1a337fc1047b580ca0c560c241e04123262b33a63de6128de58e64e0"
+  },
+  "tools": [
+    {
+      "id": "mcp",
+      "description": "Explicitly installed Headroom stdio MCP server; installed version and live health are separate evidence",
+      "transport": "stdio",
+      "command": [
+        "headroom",
+        "mcp",
+        "serve"
+      ]
+    }
+  ]
+}

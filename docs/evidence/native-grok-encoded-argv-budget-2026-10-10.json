@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "result": "pass",
+  "base_source_sha": "7d5d600229ff7726f56e3e2559ece61f0ce24a25",
+  "environment": {
+    "os": "darwin",
+    "architecture": "arm64"
+  },
+  "finding": {
+    "priority": "P2",
+    "reviewed_source_sha": "b730500f5fcf1382c0e292c0a088e0f6ace9cf6f",
+    "description": "The Grok native mapping previously bounded raw literal rules at 64 KiB while the managed launch transport bounded its complete encoded JSON request at 64 KiB. JSON escaping and metadata allowed a valid applied declaration to exceed transport."
+  },
+  "serialization_controls": [
+    {
+      "case": "plain",
+      "rule_bytes": 65515,
+      "generated_rules_bytes": 65536,
+      "json_argument_bytes": 65551,
+      "encoded_request_bytes_including_newline": 66037
+    },
+    {
+      "case": "quote-heavy",
+      "rule_bytes": 32768,
+      "generated_rules_bytes": 32789,
+      "json_argument_bytes": 65572,
+      "encoded_request_bytes_including_newline": 66058
+    },
+    {
+      "case": "HTML-heavy",
+      "rule_bytes": 16384,
+      "generated_rules_bytes": 16405,
+      "json_argument_bytes": 98340,
+      "encoded_request_bytes_including_newline": 98826
+    }
+  ],
+  "serialization_scope": "Actual Go encoding/json, with matching request/snapshot struct tags and finite placeholder identifiers, digests and paths. No product runtime or provider process was invoked.",
+  "correction": {
+    "literal_argument_json_budget_bytes": 32768,
+    "secondary_raw_budget_bytes": 65536,
+    "transport_limit_changed": false,
+    "behavior": "Preview refuses an oversized combined rules/index before native file effects. Receipt validation uses the same helper. Literal bytes are preserved at the accepted bound. The launcher must preflight the complete request separately."
+  },
+  "source_file_sha256": {
+    "internal/library/native/mapping.go": "611d316beea1204a2803f6d1c347f9459ac533579b653deaa514902b05d2fe74",
+    "internal/library/native/preview.go": "4d6c636767cabd09a28d2e4de8cf44cb30a931fdc9053f9b21cbde12a6d57787",
+    "internal/library/native/grok_budget_test.go": "80cd8c9d765cfb6b53a9a7d15e249c286047f2bd1c512db82f4a7d92724e2a30"
+  },
+  "controls": [
+    "Real registry import/select and exact 32768-byte encoded argument application/status",
+    "32769-byte encoded argument refusal without workspace state",
+    "Refused update preserves prior owned rule/receipt bytes and creates no intent",
+    "Resealed oversized receipt fails Status verification",
+    "Plain, quote, HTML, control, Unicode and line-separator text"
+  ],
+  "baseline": {
+    "source_sha": "7d5d600229ff7726f56e3e2559ece61f0ce24a25",
+    "result": "expected-fail",
+    "exit_code": 1,
+    "log_sha256": "5c0c4f2fe68eb97018cf32dc3f958b22f7ebbf8e183434b0d92f6df57b051987",
+    "scope": "Read-only overlay of both unchanged integrated production files fails oversized preview and resealed receipt controls."
+  },
+  "gates": [
+    {
+      "name": "race",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-tags",
+        "library_registry",
+        "-json",
+        "./internal/library/native"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "elapsed_seconds": 6.248,
+      "log_sha256": "89e27c2057bef84d90f7c4d95ce2115df18b5dbb40e6f2bb93f0fd7ecd8611fd",
+      "passed_named_tests": 79,
+      "passed_grok_budget_named_tests": 28
+    },
+    {
+      "name": "vet",
+      "argv": [
+        "go",
+        "vet",
+        "-tags",
+        "library_registry",
+        "./internal/library/native"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "elapsed_seconds": 0.234,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "linux-compile",
+      "argv": [
+        "go",
+        "test",
+        "-tags",
+        "library_registry",
+        "-c",
+        "-o",
+        "<private proof>/native-linux-amd64.test",
+        "./internal/library/native"
+      ],
+      "environment": {
+        "GOOS": "linux",
+        "GOARCH": "amd64",
+        "CGO_ENABLED": "0"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 0.511,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "private_controls_sha256": "fe4748e2658a7a22ef80dcad2e176d4ea771143f581c81309fd719733022c18d",
+  "provider_process_launches": 0,
+  "model_turns": 0,
+  "limits": [
+    "Native-only source and owned temporary filesystem fixture proof. Captain owns full encoded request preflight and integrated release qualification.",
+    "No new concrete blocker found in the finite integrated registry/native/tools/launch source review. Same-OS-user access and selected executable trust remain documented boundaries.",
+    "No installed native configuration parsing, loading, invocation, account or permission proof."
+  ]
+}

@@ -3,11 +3,13 @@ import hashlib
 import importlib.util
 import json
 import re
+import shutil
 import tempfile
 import unittest
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+from unittest.mock import patch
 
 HERE=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('site_build',HERE/'build.py')
@@ -114,7 +116,7 @@ class StaticReferenceAcceptance(unittest.TestCase):
         for name,digest in manifest['image_hashes'].items():self.assertEqual(digest,hashlib.sha256((self.out/'assets'/name).read_bytes()).hexdigest())
         receipt=json.loads((self.out/'terminal-evidence.json').read_text())
         self.assertEqual(manifest['terminal_receipt_sha256'],hashlib.sha256((self.out/'terminal-evidence.json').read_bytes()).hexdigest())
-        self.assertEqual(set(manifest['image_sources'].values()),{receipt['source_commit']})
+        self.assertEqual({source for name,source in manifest['image_sources'].items() if not name.startswith('library-')},{receipt['source_commit']})
         self.assertEqual(receipt['native_provider_launches'],0)
         self.assertEqual(receipt['external_service_posts'],0)
         self.assertEqual(receipt['model_turns'],0)
@@ -129,6 +131,41 @@ class StaticReferenceAcceptance(unittest.TestCase):
         self.assertIn('Provider', (self.out/'assets/switcher.txt').read_text().title())
         text=(self.out/'assets/channel-reply.txt').read_text()
         for field in ('mattermost / channel_owned','Root: root_owned','Bot: bot_owned'):self.assertIn(field,text)
+
+    def test_library_captures_keep_exact_source_and_qualification(self):
+        manifest=json.loads((self.out/'build-manifest.json').read_text())
+        receipt=json.loads((self.out/'library-evidence.json').read_text())
+        source='b730500f5fcf1382c0e292c0a088e0f6ace9cf6f'
+        self.assertEqual(receipt['source_sha'],source)
+        self.assertEqual(manifest['library_receipt_sha256'],hashlib.sha256((self.out/'library-evidence.json').read_bytes()).hexdigest())
+        self.assertEqual(receipt['native_loaded_state'],'unknown')
+        for field in ('model_turns','native_provider_launches','tool_calls','daemon_launches'):
+            self.assertEqual(receipt[field],0)
+        self.assertEqual(sum(len(size['captures']) for size in receipt['captures']),6)
+        text=(self.out/'plugins/index.html').read_text()
+        for name,capture in (('library-pack','library-pack-on-80x24'),('library-component','library-component-off-80x24')):
+            self.assertEqual(manifest['image_sources'][name],source)
+            for suffix in ('.png','.txt'):
+                self.assertEqual(manifest['image_hashes'][name+suffix],receipt['files_sha256'][capture+suffix])
+                self.assertIn('/keelmux/assets/'+name+suffix,text)
+        for phrase in ('source b730500','Interpreted cell rasters','Native loaded state remains unknown','32 compiled CLI checks','six actual PTY captures'):
+            self.assertIn(phrase,text)
+        evidence=json.loads((site.ROOT/site.LIBRARY_CAPTURE/'cli-receipt.json').read_text())
+        self.assertEqual(evidence['source_sha'],source)
+        self.assertEqual(evidence['checks_count'],len(evidence['checks']))
+        self.assertEqual(evidence['checks_count'],32)
+        self.assertTrue(all(check['result']=='pass' for check in evidence['checks']))
+        self.assertFalse(evidence['health_receipt']['invoked'])
+
+    def test_modified_library_asset_fails_frozen_receipt_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            capture=Path(tmp)/'capture'
+            shutil.copytree(site.ROOT/site.LIBRARY_CAPTURE,capture)
+            path=capture/'library-pack-on-80x24.txt'
+            path.write_text(path.read_text()+'modified capture\n')
+            with patch.object(site,'LIBRARY_CAPTURE',str(capture)):
+                with self.assertRaisesRegex(ValueError,'library asset differs from frozen capture receipt'):
+                    site.build(Path(tmp)/'site','/keelmux/')
 
     def test_cli_pipe_table_cell_and_multiline_code_are_preserved(self):
         text=(self.out/'cli/index.html').read_text()

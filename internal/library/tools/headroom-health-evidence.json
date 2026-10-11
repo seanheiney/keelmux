@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "observed_at": "2026-10-11T00:25:08.975416Z",
+  "scope": "standalone Check API fixture; no Registry, native harness, invocation or model proof",
+  "result": "pass",
+  "runtime": {
+    "os": "macOS 26.7.1 (25G309)",
+    "arch": "arm64",
+    "go": "1.26.6",
+    "python": "3.14.7",
+    "headroom": "0.40.0",
+    "mcp_sdk": "1.30.0"
+  },
+  "wheel": {
+    "wheel_filename": "headroom_ai-0.40.0-cp310-abi3-macosx_11_0_arm64.whl",
+    "wheel_sha256": "f7b0186ad5e76d5c8f75e5de6c57e001637258ead75481575ccca4d57557f5fb",
+    "installed_wheel_files_equal": 579
+  },
+  "declared_source_revision": "976aa714ef3e19174dc0cb586cee7b20d064e4ef",
+  "wheel_matches_declared_revision": false,
+  "protocol_version": "2025-11-25",
+  "tools_listed": true,
+  "tool_count": 3,
+  "tool_calls": 0,
+  "model_turns": 0,
+  "network_policy": "Darwin sandbox-exec deny network for this fixture only",
+  "environment": "private ephemeral HOME/cache/config/data/state/temp; explicit offline references only",
+  "cleanup": "complete",
+  "elapsed_seconds": 1.025152625,
+  "private_receipt_sha256": "340af9bcce80f447c7e22bd80c442311a8c59ceb843c573b5a996aa1def2299e",
+  "private_install_binding_sha256": "566ea3be345038d5987a2e5ab83e56e15a45a7f7810059a0a19be11f0c43de73",
+  "dependency_pins_sha256": "71a7e69eca5f36abf27ee6c171d2d72709aa6a1debbd6d21963aef6fe72970bb"
+}

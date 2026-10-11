@@ -1,0 +1,377 @@
+{
+  "schema": 1,
+  "kind": "pinned_vt_single_expression_contribution",
+  "date_local": "2026-10-10",
+  "source_composition": {
+    "base_sha": "91a106a04568f01868488b86f79633c012fdbced",
+    "scope": [
+      "third_party/vt",
+      "docs/evidence/vt-ascii-*"
+    ],
+    "only_changed_upstream_go_file": "utf8.go",
+    "only_expression_change": {
+      "original_sha256": "5362209587478feb6c3dc5367ed5f02c7789a8094736c42d305848ee1aa15247",
+      "changed_sha256": "05154c7c3544764e8c7678c6b933bf582fb31ac092498ce00b97b47f348e560e",
+      "original_expression": "e.handleGrapheme(string(e.grapheme[0]), 1)",
+      "replacement_expression": "e.handleGrapheme(string(e.grapheme[:1]), 1)",
+      "shared_module_cache_mutated": false
+    },
+    "root_manifests_byte_identical_to_base": true,
+    "root_package_source_changed": false,
+    "temporary_modfile": {
+      "mod_sha256": "63d40183d54ddcd9135d6676b37bdc37aedaee67743ead4225677da373aae93c",
+      "sum_sha256": "1e1f1a6642dff1147d79d8c8d1f8291f3b5842be3542dd747be07ca4137221ee",
+      "replace": "github.com/charmbracelet/x/vt => ./third_party/vt",
+      "root_manifest_unchanged": true,
+      "resolution_matches_copy": true
+    },
+    "new_integrated_hosted_run": false,
+    "final_copy_provenance_sha256": "ca19993b0e952d48623f923566788e91736d980208a310369ea27fc69edc52fe",
+    "all_compiled_go_bytes_unchanged_after_gates": true
+  },
+  "upstream_verification": {
+    "changed_files": [
+      "utf8.go"
+    ],
+    "changed_utf8_sha256": "05154c7c3544764e8c7678c6b933bf582fb31ac092498ce00b97b47f348e560e",
+    "original_info_sha256": "8ee7c42a67ebeb1f5e3df9b92065962c9f6b66da13ebde8fd41ed5a107c1c190",
+    "original_utf8_sha256": "5362209587478feb6c3dc5367ed5f02c7789a8094736c42d305848ee1aa15247",
+    "original_zip_sha256": "33e779af4c1855a14128f1cb623dc11a35e28b5dadb20a3de5a7a23bf416e9f8",
+    "result": "pass",
+    "separate_upstream_zip_compared": true,
+    "unmodified_files": 32,
+    "upstream_commit": "faa4adf95555331dfb439b716cc83767ecdadeb4",
+    "upstream_files": 33,
+    "upstream_version": "v0.0.0-20261008172826-faa4adf95555"
+  },
+  "license": {
+    "type": "MIT",
+    "copied_byte_exact": true,
+    "sha256": "0baa4a5942a801d93f4050d2bc0039d8c037105fcd335230d118eec99a11782b"
+  },
+  "equivalence_review": {
+    "stored_grapheme_guard": "len(e.grapheme) == 1 && printableASCII(rune(e.grapheme[0]))",
+    "ascii_low_inclusive": 32,
+    "ascii_high_inclusive": 126,
+    "slice_bound_guaranteed": true,
+    "equal_one_byte_string": true,
+    "immutable_after_buffer_reuse": true,
+    "unicode_width_charset_cursor_wrap_modes_callbacks_unchanged": true,
+    "supplemental_conversion_race_control": {
+      "result": "pass",
+      "seconds": 1.255,
+      "guarded_ascii_values": 95,
+      "negative_nonascii_values": 128,
+      "retained_strings_after_same_buffer_reuse": 95,
+      "fixture_scope": "owned ignored standalone Go source; no terminal parser or provider execution",
+      "fixture_sha256": "0f19b2bf5fc55d1a6291f5e20f5aef1154dd7d12b697c7384d65eb472db28995"
+    }
+  },
+  "local_environment": {
+    "go": "go1.26.6",
+    "os": "Darwin",
+    "kernel": "25.6.0",
+    "arch": "arm64",
+    "model_calls": 0,
+    "provider_calls": 0,
+    "native_config_writes": false,
+    "public_pinned_dependency_downloads": [
+      "golang.org/x/sys@v0.41.0",
+      "golang.org/x/sync@v0.19.0"
+    ]
+  },
+  "local_gates": [
+    {
+      "name": "offline exact copy verifier",
+      "command": "python3 -B third_party/vt/verify.py --upstream-zip <official-cached-zip>",
+      "result": "pass",
+      "independent_official_zip_compared": true,
+      "log": "verification-with-origin.json"
+    },
+    {
+      "name": "offline adverse drift controls",
+      "command": "python3 -B third_party/vt/verify_test.py -v",
+      "result": "pass",
+      "tests": 10,
+      "seconds": 0.418,
+      "log": "verifier-with-origin-controls.log"
+    },
+    {
+      "name": "unchanged upstream tests",
+      "cwd": "third_party/vt",
+      "command": "go test -race -mod=readonly -count=1 -timeout=90s ./...",
+      "result": "pass",
+      "seconds": 1.314,
+      "log": "upstream-race.log"
+    },
+    {
+      "name": "unchanged upstream vet",
+      "cwd": "third_party/vt",
+      "command": "go vet -mod=readonly ./...",
+      "result": "pass",
+      "log": "upstream-vet.log"
+    },
+    {
+      "name": "integrated nativepty race",
+      "command": "GOFLAGS=\"-modfile=<owned-temporary-modfile> -mod=readonly -tags=library_registry\" go test -race -p 1 -count=1 -timeout=90s -v ./internal/adapters/nativepty",
+      "result": "pass",
+      "seconds": 12.252,
+      "original_slow_reader_seconds": 2.87,
+      "unicode_tail_seconds": 2.88,
+      "complete_tail_ack_seconds": 2.817,
+      "original_deadline_seconds": 8,
+      "log": "nativepty-race.log"
+    },
+    {
+      "name": "integrated nativepty vet",
+      "command": "GOFLAGS=\"-modfile=<owned-temporary-modfile> -mod=readonly -tags=library_registry\" go vet ./internal/adapters/nativepty",
+      "result": "pass",
+      "log": "nativepty-vet.log"
+    }
+  ],
+  "unchanged_source_guards": {
+    "go.mod": {
+      "sha256": "9bab7d16157a85800240dd2e480e3ad9c3905dcbc05fa4909dcd8bb939b4214c",
+      "byte_identical_to_base": true
+    },
+    "go.sum": {
+      "sha256": "1e1f1a6642dff1147d79d8c8d1f8291f3b5842be3542dd747be07ca4137221ee",
+      "byte_identical_to_base": true
+    },
+    "internal/adapters/nativepty/screen_test.go": {
+      "sha256": "5bc14a7b978f7b424a000bc33f17571d8d4c899c98943a244d7f7548a9e2c8d9",
+      "byte_identical_to_base": true
+    },
+    "internal/adapters/nativepty/throughput_test.go": {
+      "sha256": "edb2f8b5a0ecfc033ffac54675297fec9629db42f77a899b6565e1b742a31e46",
+      "byte_identical_to_base": true
+    },
+    "internal/adapters/nativepty/performance_test.go": {
+      "sha256": "1cbaafa2ca9af96d05f35ce4716c49514e5e8785dad200d605ce41a525526c1e",
+      "byte_identical_to_base": true
+    }
+  },
+  "retained_local_setup_refusals": [
+    {
+      "result": "setup_failed",
+      "runtime_test_execution": false,
+      "reason": "Initial upstream run used GOPROXY=off with two uncached pinned dependencies; original Go module files remained unchanged. Initial owned log/modfile setup used module cwd and generated only scratch moved to ignored work.",
+      "log": "initial-upstream-offline-refusal.log"
+    },
+    {
+      "result": "read_only_query_not_invoked",
+      "reason": "Quoted shell GOFLAGS assignment was interpreted as a command; corrected to env for separate read-only module-resolution capture.",
+      "log": "module-resolution-shell-refusal.log"
+    }
+  ],
+  "retained_private_local_logs_sha256": {
+    "upstream-race.log": "d6e478ef8ad7eddea9b1ce473db42125f6d0733129e3b045d49458ae52e73edf",
+    "upstream-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ascii-equivalence.log": "f1df8ba7868401cfe56cc3c914e3fabe925a2ef52d5ff8dcabae578090a0c2ff",
+    "ascii_equivalence_test.go": "0f19b2bf5fc55d1a6291f5e20f5aef1154dd7d12b697c7384d65eb472db28995",
+    "nativepty-race.log": "a98ab624d1c083471bba3d673fc174ca3d27203fd117b8b989e11c927554e426",
+    "nativepty-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verification-with-origin.json": "90c10c05776a6b48a9863fe174784d936c6776316a6d6febcd96f3e5f13113f9",
+    "verifier-with-origin-controls.log": "174f771a472aea8f5c85c87df2378dc00513c9e5a80d27354ccb1bc50a827847",
+    "module-resolution.json": "de2995e2e11e14c5f94c0cd3b841d7d7a7e1ca98ab1cff8074f0734a56f80e6c",
+    "manifest-proof.json": "976b7e40597f0cff233551fed3a6c505c5cc73c66386d4a251dd7ecbd19ec696",
+    "initial-upstream-offline-refusal.log": "88d9e7eedfb22ec30ff4ea5ec74dc9cc627804ab72e1de64775e55d6bd14e7fb",
+    "initial-upstream-offline-refusal.json": "f0aad46c63a4c55f3cd2934621ea819238c5d2b4a05ebbd76ea4b95e6ac2efb5",
+    "module-resolution-shell-refusal.log": "cafc67036a95d5cc36aada6af00a0cfe2e5de75df083b884c100c4c0ad1911ad"
+  },
+  "hosted_overlay": {
+    "workflow_sha": "505ad2d4be836476fe78bc728ae77e14312f57c0",
+    "tested_source_sha": "4ef3c9afce086a07abd4646bd6c428abe8d43b90",
+    "run_id": 38098753313,
+    "run_url": "https://github.com/seanheiney/keelmux/actions/runs/38098753313",
+    "job": "measured-overlay",
+    "result": "success",
+    "artifact_name": "nativepty-overlay-505ad2d4be836476fe78bc728ae77e14312f57c0",
+    "artifact_id": 11686679093,
+    "artifact_digest": "sha256:e316655a877410390a7f19b534fa980f1fa02fc0e63535a7b483a81afdac46fe",
+    "sanitized_receipt_file": "vt-ascii-overlay-hosted-505ad2d.json",
+    "sanitized_receipt_sha256": "89dbfd0b59b90cdf891597abe4a6e7957d48c4f936753da2b32da73e0f7a73c1",
+    "private_original_receipt_sha256_declared_by_runner": "44c4f8d49f96d7716a0a0ddd08381a21d05707f5597ef188c315514e0cf9572b",
+    "private_original_downloaded": false,
+    "toolchain": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "GOVERSION": "go1.26.6"
+    },
+    "cpu": "AMD EPYC 7763",
+    "gomaxprocs": 2,
+    "benchmark_bytes": 2097152,
+    "baseline_samples_seconds": [
+      4.62350765,
+      4.611200985,
+      4.624978214
+    ],
+    "overlay_samples_seconds": [
+      4.439784923,
+      4.567536962,
+      4.452760974
+    ],
+    "median_latency_improvement_percent": 3.6930116466877605,
+    "baseline_allocs": [
+      2097383,
+      2097383,
+      2097382
+    ],
+    "overlay_allocs": [
+      358,
+      358,
+      359
+    ],
+    "allocation_reduction_percent": 99.98293110986405,
+    "baseline_bytes_allocated": [
+      35786256,
+      35786256,
+      35786144
+    ],
+    "overlay_bytes_allocated": [
+      2233760,
+      2233760,
+      2233872
+    ],
+    "exact_trace": {
+      "equal": true,
+      "checkpoints": 35780,
+      "sha256": "4f1647051c1c0fd338d1f74c88e28e9b310fb45eb89e261881e8385caab172e0",
+      "valid_margins_only": true
+    },
+    "original_8s_gate_tests": {
+      "baseline_slow_reader_seconds": [
+        4.81,
+        4.88,
+        4.92
+      ],
+      "overlay_slow_reader_seconds": [
+        4.8,
+        4.81,
+        4.92
+      ],
+      "baseline_unicode_tail_seconds": [
+        4.98,
+        4.95,
+        4.95
+      ],
+      "overlay_unicode_tail_seconds": [
+        4.85,
+        4.93,
+        4.91
+      ],
+      "deadline_changed": false,
+      "results": "all pass focused experiment"
+    },
+    "command_returncodes_all_zero": true,
+    "command_count": 18,
+    "owned_cleanup": {
+      "unexpected_owned_processes_before_cleanup": 0,
+      "exact_nonce_and_starttime_checked": true,
+      "no_owned_processes_remained": true
+    },
+    "downloaded_artifact_executed": false,
+    "profiles": {
+      "overlay.cpu": {
+        "raw_sha256": "dce59a62052a45b04c325e8eba234b80737b2a1aa183c95910d4fe613b2f4bfd",
+        "sanitized_sha256": "212355ad071cd58306782240ba2abf11ae4f6f8cf92bda2f3f7d0486c9e84c67",
+        "absolute_path_strings_rewritten": 41,
+        "all_non_string_fields_and_string_indices_preserved": true
+      },
+      "overlay.mem": {
+        "raw_sha256": "df38a7ff5d5878d2cc4f0e3452bedb5adda9621a080061c61c73fc4a0d6783be",
+        "sanitized_sha256": "c2cf8b580999bbba02e3d24487e7abfae413d4ce9f9010966d0c1d0b938f42c0",
+        "absolute_path_strings_rewritten": 26,
+        "all_non_string_fields_and_string_indices_preserved": true
+      },
+      "baseline.cpu": {
+        "raw_sha256": "8df1e718d108565d8e356d2cc29d2b1cb6b1799ef7470b6dc035728d5e5b41dc",
+        "sanitized_sha256": "c7f396bd069ce72188728527d1db6852b313b949f6dcebddd2cd5ff86fbd2648",
+        "absolute_path_strings_rewritten": 40,
+        "all_non_string_fields_and_string_indices_preserved": true
+      },
+      "baseline.mem": {
+        "raw_sha256": "ffabe01579ee610d2214adee2ffe3917c1f6b7e566433e3868f883233395aa05",
+        "sanitized_sha256": "1876a9ab9308d839708cfbadadd54f4457affb51aabd659085a0476bdad0a4dd",
+        "absolute_path_strings_rewritten": 28,
+        "all_non_string_fields_and_string_indices_preserved": true
+      }
+    },
+    "benchmark_logs_sha256": {
+      "baseline": "b74ca4cbb5df3d0d83aefb170cc94814e2004fd0af7809ac08b4efe73af5191e",
+      "overlay": "5af5f7a1755b065fbfb53dc48e5ecc3e2c3d1210f32cf32ef395adc25b8837fa"
+    }
+  },
+  "observed_ordinary_source_ci": {
+    "run_id": 38098753211,
+    "run_url": "https://github.com/seanheiney/keelmux/actions/runs/38098753211",
+    "source_sha": "505ad2d4be836476fe78bc728ae77e14312f57c0",
+    "result": "success",
+    "jobs": [
+      {
+        "name": "source (macos-latest)",
+        "result": "success"
+      },
+      {
+        "name": "build (linux/amd64)",
+        "result": "success"
+      },
+      {
+        "name": "build (darwin/arm64)",
+        "result": "success"
+      },
+      {
+        "name": "source (ubuntu-latest)",
+        "result": "success"
+      },
+      {
+        "name": "build (linux/arm64)",
+        "result": "success"
+      },
+      {
+        "name": "build (darwin/amd64)",
+        "result": "success"
+      }
+    ],
+    "artifacts": [],
+    "source_snapshot_sha256": "c60e0daf1c63bbb8153f2364a458959ce52cb8d16154b97a7afbbc9413d89085",
+    "artifact_snapshot_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "adopted_vt_copy_tested": false
+  },
+  "retained_earlier_failures": {
+    "main_linux": {
+      "run_id": 38097395544,
+      "source_sha": "4ef3c9afce086a07abd4646bd6c428abe8d43b90",
+      "result": "failure",
+      "slow_reader_seconds": 8.12,
+      "unicode_tail_seconds": 8.19,
+      "unchanged_deadline_seconds": 8,
+      "original_log_sha256": "959fa7c37afe7f2ce8567e05a79f8f19a30950e32e44a5fd42e607d1ef50145a",
+      "superseded_by_experiment": false
+    },
+    "invalid_margin": {
+      "baseline_and_overlay_panic": true,
+      "screen": {
+        "cols": 1,
+        "rows": 2
+      },
+      "bytes_hex": "1b5b323b33721b5b323b31481b5b4d",
+      "reproducer_receipt_sha256": "32ef56f2654e9279bf5504dedeecf68f4d0716631775da844e4f33e1232d3628",
+      "independent_native_boundary_fix": "a1b104fc67721deeff117ef68d0ce6bd02ded518",
+      "trace_generalizes_to_invalid_margins": false
+    },
+    "emulated_amd64": {
+      "result": "compile_failure_before_runtime",
+      "runtime_qualification": false,
+      "owned_cleanup": true
+    }
+  },
+  "limitations": [
+    "Allocation reduction is caused by the guarded conversion; earlier hosted deadline failure cause remains unproven.",
+    "Three sequential race-benchmark samples on one focused Linux amd64 runner do not establish a general latency guarantee.",
+    "Prior hosted overlay source is4ef3c9a under505ad2d workflow; new local copied-module integration is91a106a plus exact pinned copy and temporary replacement, not a new hosted result.",
+    "No production dependency adoption, root manifest or CI edits, publication, provider/model work or native configuration changes by this contribution.",
+    "Integrated full-source race/vet, fresh hosted Linux/macOS and release/archive qualification remain captain gates."
+  ]
+}

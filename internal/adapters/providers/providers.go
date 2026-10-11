@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -46,7 +47,7 @@ func Discover(ctx context.Context) ([]Record, error) {
 		return nil, err
 	}
 	var records []Record
-	for _, name := range []string{"codex", "claude", "grok"} {
+	for _, name := range []string{"codex", "claude", "grok", "gemini", "opencode"} {
 		r := Record{Name: name, Version: domain.Unknown(), Auth: Auth{State: domain.Unknown(), Method: domain.Unknown(), Principal: domain.Unknown(), Coverage: authCoverage}, Detail: "Native launch support is unavailable for this provider."}
 		path, err := exec.LookPath(name)
 		if err != nil {
@@ -60,11 +61,6 @@ func Discover(ctx context.Context) ([]Record, error) {
 			continue
 		}
 		r.Executable, r.Installed = path, true
-		if name == "grok" {
-			r.Detail = "Installed; version, auth status and native mapping unverified. Grok is outside this initial support matrix."
-			records = append(records, r)
-			continue
-		}
 		version, err := inspectVersion(ctx, path, name)
 		if err != nil {
 			r.Detail = "Installed; native version probe failed or returned an unrecognized format."
@@ -72,6 +68,11 @@ func Discover(ctx context.Context) ([]Record, error) {
 			continue
 		}
 		r.Version = known(version, name+" --version")
+		if !qualifiedVersion(name, version) {
+			r.Detail = "Installed version is outside the reviewed native argv contract; launch is unavailable until that version is qualified."
+			records = append(records, r)
+			continue
+		}
 		r.NativeTerminal = true
 		r.Detail = "Native argv launch is available; attach fidelity requires the exact terminal-backend proof. Semantic delivery is unavailable."
 		r.Auth = inspectAuth(ctx, path, name)
@@ -83,10 +84,13 @@ func Discover(ctx context.Context) ([]Record, error) {
 // SupportedLaunch preserves explicit native arguments as argv. It probes only
 // version; it neither changes authentication nor treats an account as eligible.
 func SupportedLaunch(ctx context.Context, provider string, nativeArgs []string) ([]string, string, error) {
-	if provider != "codex" && provider != "claude" {
-		return nil, "", errors.New("supported native providers: codex, claude; Grok mapping remains unverified")
+	if provider != "codex" && provider != "claude" && expandedContract(provider) == nil {
+		return nil, "", errors.New("supported native providers: codex, claude, gemini, grok, opencode")
 	}
 	if err := validateNativeArgs(provider, nativeArgs); err != nil {
+		return nil, "", err
+	}
+	if err := ValidateManagedEnvironment(provider, os.LookupEnv); err != nil {
 		return nil, "", err
 	}
 	path, err := exec.LookPath(provider)
@@ -101,6 +105,9 @@ func SupportedLaunch(ctx context.Context, provider string, nativeArgs []string) 
 	if err != nil {
 		return nil, "", err
 	}
+	if !qualifiedVersion(provider, version) {
+		return nil, "", fmt.Errorf("%s installed version is outside the reviewed native argv contract", provider)
+	}
 	return append([]string{path}, nativeArgs...), version, nil
 }
 
@@ -108,6 +115,9 @@ func SupportedLaunch(ctx context.Context, provider string, nativeArgs []string) 
 // Unknown flags are forwarded, but never assumed to consume the next token.
 // Management commands belong outside a managed interactive terminal launch.
 func validateNativeArgs(provider string, args []string) error {
+	if contract := expandedContract(provider); contract != nil {
+		return contract.validate(args)
+	}
 	values := map[string]bool{}
 	blocked := map[string]bool{}
 	var valueFlags, commands string
@@ -173,8 +183,14 @@ func inspectVersion(ctx context.Context, path, provider string) (string, error) 
 	v := strings.TrimSpace(string(out))
 	if provider == "codex" {
 		v = strings.TrimPrefix(v, "codex-cli ")
-	} else {
+	} else if provider == "claude" {
 		v = strings.TrimSuffix(v, " (Claude Code)")
+	} else if provider == "grok" {
+		parts := grokVersionPattern.FindStringSubmatch(v)
+		if parts == nil {
+			return "", errors.New("grok native version format is unverified")
+		}
+		return parts[1], nil // Preserve the reviewed build and channel as evidence.
 	}
 	if !versionPattern.MatchString(v) {
 		return "", fmt.Errorf("%s native version format is unverified", provider)
@@ -202,6 +218,9 @@ func inspectAuth(ctx context.Context, path, provider string) Auth {
 			a.State = known("unavailable", "codex login status")
 		}
 		return a
+	}
+	if provider != "claude" {
+		return a // New harnesses have no qualified account-status adapter.
 	}
 	out, err := probe(ctx, path, []string{"auth", "status", "--json"}, false)
 	var s struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/channels"
 	"github.com/seanheiney/keelmux/internal/clientstate"
 	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/library"
 	"github.com/seanheiney/keelmux/internal/protocol"
 )
 
@@ -75,43 +76,50 @@ type releasedMsg struct {
 }
 
 type model struct {
-	ctx                  context.Context
-	client               *protocol.Client
-	statePath            string
-	state                clientstate.State
-	sessions             []domain.Session
-	places               []protocol.Place
-	loaded               bool
-	inventoryInitialized bool
-	offline              error
-	busy                 bool
-	width, height        int
-	screen               string
-	searching            bool
-	groupIndex           int
-	groupParent          domain.ID
-	input                string
-	draft                clientstate.Draft
-	status               string
-	deleting             domain.ID
-	color                bool
-	channelThread        domain.ID
-	channelEpoch         uint64
-	channelAfter         int64
-	channelBack          []int64
-	channelBindings      []protocol.ChannelStatus
-	channelMessages      []channels.Message
-	channelBinding       *protocol.ChannelStatus
-	channelIndex         int
-	channelScroll        int
-	channelNoteOffset    int
-	channelDraft         clientstate.ChannelDraft
-	channelLoading       bool
-	channelSending       bool
-	channelError         string
-	channelReceipts      map[domain.ID]channels.Delivery
-	usagePanel           *usagePanel
-	usageEpoch           uint64
+	ctx                   context.Context
+	client                *protocol.Client
+	statePath             string
+	state                 clientstate.State
+	sessions              []domain.Session
+	places                []protocol.Place
+	loaded                bool
+	inventoryInitialized  bool
+	offline               error
+	busy                  bool
+	width, height         int
+	screen                string
+	searching             bool
+	groupIndex            int
+	groupParent           domain.ID
+	input                 string
+	draft                 clientstate.Draft
+	status                string
+	deleting              domain.ID
+	color                 bool
+	channelThread         domain.ID
+	channelEpoch          uint64
+	channelAfter          int64
+	channelBack           []int64
+	channelBindings       []protocol.ChannelStatus
+	channelMessages       []channels.Message
+	channelBinding        *protocol.ChannelStatus
+	channelIndex          int
+	channelScroll         int
+	channelNoteOffset     int
+	channelDraft          clientstate.ChannelDraft
+	channelLoading        bool
+	channelSending        bool
+	channelError          string
+	channelReceipts       map[domain.ID]channels.Delivery
+	usagePanel            *usagePanel
+	usageEpoch            uint64
+	libraryCatalog        *library.Catalog
+	libraryEpoch          uint64
+	libraryLoading        bool
+	libraryIndex          int
+	libraryComponents     bool
+	libraryComponentIndex int
+	libraryError          string
 }
 
 func newModel(ctx context.Context, client *protocol.Client, path string, s clientstate.State) *model {
@@ -233,6 +241,9 @@ func (m *model) move(delta int) {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case libraryMsg:
+		m.acceptLibrary(msg)
+		return m, nil
 	case usageSnapshotMsg:
 		m.acceptUsage(msg)
 		return m, nil
@@ -327,6 +338,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.screen == "usage" {
 			return m, m.usageKey(msg)
 		}
+		if m.screen == "library" {
+			return m, m.libraryKey(msg)
+		}
 		if strings.HasPrefix(m.screen, "channel") {
 			return m, m.channelKey(msg)
 		}
@@ -411,6 +425,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.openChannels()
 		case "u":
 			return m, m.openUsage()
+		case "l":
+			return m, m.openLibrary()
 		case "?":
 			m.status = "Enter owns native input; v observes. c opens authored notes; u reads local usage. Native drafts and channel replies stay separate."
 		}

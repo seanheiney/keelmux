@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "source_sha": "b730500f5fcf1382c0e292c0a088e0f6ace9cf6f",
+  "source_archive_sha256": "68e1d26982ecfe9694c0cd30930582c6c7c64618395f8e2f17f51a547dfad450",
+  "binary_sha256": "10434ba0ad9da04af1509714c9fbf91a91a66b134501650d48a1db27749ae838",
+  "version": {
+    "name": "Keelmux",
+    "version": "development",
+    "commit": "b730500f5fcf1382c0e292c0a088e0f6ace9cf6f",
+    "built_at": "2026-10-11T00:00:00Z",
+    "protocol": "bp/1",
+    "go_version": "go1.26.6",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "scope": "Actual compiled CLI PTY; deterministic fake inventory endpoint, actual private Registry toggles; PNG rasterizes captured terminal cells, not native Terminal screenshots",
+  "result": "pass",
+  "captures": [
+    {
+      "size": [
+        120,
+        32
+      ],
+      "captures": [
+        {
+          "view": "pack-on",
+          "size": [
+            120,
+            32
+          ],
+          "png": "library-pack-on-120x32.png",
+          "text": "library-pack-on-120x32.txt",
+          "raw_sha256": "654ed4d80b5c818e04ed438ff9dd9285f4fd6c73f039f422f750ffdc12986eba"
+        },
+        {
+          "view": "component-off",
+          "size": [
+            120,
+            32
+          ],
+          "png": "library-component-off-120x32.png",
+          "text": "library-component-off-120x32.txt",
+          "raw_sha256": "139705d50a904ed6efb7806617cf8daa9e255eff2e0c45bd242ac96c51fb580b"
+        }
+      ],
+      "actual_inventory_gets": 1,
+      "inventory_mutations": 0,
+      "actual_registry_pack_enabled": true,
+      "actual_registry_component_disabled": true,
+      "clean_quit_without_signals": true,
+      "owned_fixture_removed": true
+    },
+    {
+      "size": [
+        80,
+        24
+      ],
+      "captures": [
+        {
+          "view": "pack-on",
+          "size": [
+            80,
+            24
+          ],
+          "png": "library-pack-on-80x24.png",
+          "text": "library-pack-on-80x24.txt",
+          "raw_sha256": "afc4567c56e18a42b3e4d70cdcfb24ccb1503e0f233b6975f3ec2e1c67c2409e"
+        },
+        {
+          "view": "component-off",
+          "size": [
+            80,
+            24
+          ],
+          "png": "library-component-off-80x24.png",
+          "text": "library-component-off-80x24.txt",
+          "raw_sha256": "f2f5c949d62ed612a5578f5108dd6c637d969222a4fda208e019004e13f90089"
+        }
+      ],
+      "actual_inventory_gets": 1,
+      "inventory_mutations": 0,
+      "actual_registry_pack_enabled": true,
+      "actual_registry_component_disabled": true,
+      "clean_quit_without_signals": true,
+      "owned_fixture_removed": true
+    },
+    {
+      "size": [
+        40,
+        14
+      ],
+      "captures": [
+        {
+          "view": "pack-on",
+          "size": [
+            40,
+            14
+          ],
+          "png": "library-pack-on-40x14.png",
+          "text": "library-pack-on-40x14.txt",
+          "raw_sha256": "3c066a209feccf9818af9d09a305c100034dce1cf6c60a02ee21b450a613a7ff"
+        },
+        {
+          "view": "component-off",
+          "size": [
+            40,
+            14
+          ],
+          "png": "library-component-off-40x14.png",
+          "text": "library-component-off-40x14.txt",
+          "raw_sha256": "294718cf2680c940737398b767321dd27acd6151ca6e2554080a29205a2fb56b"
+        }
+      ],
+      "actual_inventory_gets": 1,
+      "inventory_mutations": 0,
+      "actual_registry_pack_enabled": true,
+      "actual_registry_component_disabled": true,
+      "clean_quit_without_signals": true,
+      "owned_fixture_removed": true
+    }
+  ],
+  "files_sha256": {
+    "library-pack-on-80x24.txt": "f13ec9dc17a809bc8b5ef7c9073d27b57842103e80174a2d50dc37471a4ae376",
+    "library-pack-on-40x14.txt": "9cc1eab2c129debce673e9a20b8a5ef18be3c4890710ca0b61ef4a192898c687",
+    "library-component-off-80x24.txt": "588f25522d9c63a286a7a5d3dd501b36b3912611bcfb2f0bf6ac7758a91aedfd",
+    "library-pack-on-120x32.txt": "f7411e65f996be45a30a761d2d0ba4cb8b8044bfa617329d025cbce8802b5bec",
+    "library-component-off-40x14.txt": "a6f88c88470059c299c568022535b8dfd9b820f048ae08536bf0271260b12255",
+    "library-pack-on-80x24.png": "2985e5e341f06eb631e2463aae8737d6349043ee95aa47601a21b3ecd3b10740",
+    "library-pack-on-40x14.png": "6419da034e0d36bf3e5d1e5a9879966ddf92892b4411d903547a2e90db60fbd3",
+    "library-pack-on-120x32.png": "bd5e4143c62f702d29dc589f2be153686fde953948d36eafef6fbc9b11a3102d",
+    "library-component-off-80x24.png": "604f65e10088eba6ba2b7ada417ea26ec9c65c802c46f68fd57f7c3d41cc2ab2",
+    "library-component-off-40x14.png": "dd5042f13def7856ae5cf1b4dc9d32c4414655f5a7f33be61f895286d3260d66",
+    "library-component-off-120x32.txt": "5a58328281f8b0a8b9d4fb0ff179d9ca110c7a52cd2dfc62303c7084845625ed",
+    "library-component-off-120x32.png": "2ffc15969687657e5f57d8d434dc5104943cd6886fcd3812414af45ed3b96887"
+  },
+  "model_turns": 0,
+  "native_provider_launches": 0,
+  "tool_calls": 0,
+  "daemon_launches": 0,
+  "native_loaded_state": "unknown",
+  "binary_postcheck_sha256": "10434ba0ad9da04af1509714c9fbf91a91a66b134501650d48a1db27749ae838",
+  "helper_sha256": "6a74b233e11ed1783971cdfa82d573ad0486600c3f03ca33c17cd121ec2b2d4b",
+  "visual_review": {
+    "all_six_pngs_inspected": true,
+    "result": "pass",
+    "notes": "Selected pack and component states are legible at every size. 40x14 truncates descriptor/pin with ellipsis and wraps the footer; controls and loaded-unknown notice remain visible."
+  }
+}
