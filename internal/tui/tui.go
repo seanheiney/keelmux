@@ -116,6 +116,9 @@ type model struct {
 	libraryCatalog        *library.Catalog
 	libraryEpoch          uint64
 	libraryLoading        bool
+	libraryProfileID      string
+	libraryProfiles       bool
+	libraryProfileChoice  string
 	libraryIndex          int
 	libraryComponents     bool
 	libraryComponentIndex int
