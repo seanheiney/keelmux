@@ -1,0 +1,554 @@
+{
+  "schema": 1,
+  "kind": "exact_source_compiler_overlay_investigation",
+  "source_sha": "4ef3c9afce086a07abd4646bd6c428abe8d43b90",
+  "result": "pass",
+  "commands": [
+    {
+      "label": "toolchain",
+      "argv": [
+        "go",
+        "env",
+        "-json",
+        "GOOS",
+        "GOARCH",
+        "GOVERSION",
+        "CGO_ENABLED"
+      ],
+      "outer_timeout_seconds": 90,
+      "returncode": 0,
+      "wall_seconds": 0.004,
+      "direct_child_reaped": true,
+      "stdout_sha256": "5b843cd21a2037c0a4fc45075ae4158574d5044bb724fc59d28a064b2dd56061",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "owned-vendor",
+      "argv": [
+        "go",
+        "mod",
+        "vendor"
+      ],
+      "outer_timeout_seconds": 180,
+      "returncode": 0,
+      "wall_seconds": 3.978,
+      "direct_child_reaped": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "bb3e84a22bc5013cb9985a3b65ccb67c3aa353f82f5f7e2596e255aa8c8311bc",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "compile-baseline",
+      "argv": [
+        "go",
+        "test",
+        "-c",
+        "-race",
+        "-p",
+        "1",
+        "-o",
+        "<experiment>/baseline.test",
+        "./internal/adapters/nativepty"
+      ],
+      "outer_timeout_seconds": 240,
+      "returncode": 0,
+      "wall_seconds": 30.139,
+      "direct_child_reaped": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "compile-overlay",
+      "argv": [
+        "go",
+        "test",
+        "-c",
+        "-race",
+        "-p",
+        "1",
+        "-o",
+        "<experiment>/overlay.test",
+        "-overlay",
+        "<experiment>/overlay.json",
+        "./internal/adapters/nativepty"
+      ],
+      "outer_timeout_seconds": 240,
+      "returncode": 0,
+      "wall_seconds": 1.969,
+      "direct_child_reaped": true,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-bench",
+      "argv": [
+        "<experiment>/baseline.test",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkScreenASCIIBurst$",
+        "-test.benchtime=1x",
+        "-test.count=3",
+        "-test.timeout=90s",
+        "-test.cpuprofile=<experiment>/raw/baseline.cpu",
+        "-test.memprofile=<experiment>/raw/baseline.mem"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 24.288,
+      "direct_child_reaped": true,
+      "stdout_sha256": "b74ca4cbb5df3d0d83aefb170cc94814e2004fd0af7809ac08b4efe73af5191e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-trace",
+      "argv": [
+        "<experiment>/baseline.test",
+        "-test.run=^TestOverlayEquivalenceTrace$",
+        "-test.timeout=90s",
+        "-test.v"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 18.764,
+      "direct_child_reaped": true,
+      "stdout_sha256": "e03f92f4ab6c397428e4fe93605cc43b72a7211330336b4f58cef532dee38ae7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-controls",
+      "argv": [
+        "<experiment>/baseline.test",
+        "-test.run=^Test(ASCIIBatchMatchesBytewise|ASCIITailAfterWrapPreservingControls|ASCIITailCombinesAtActiveScrollMargin|CurrentScreenWithoutMainHistoryMatchesHistoryEnabled)$",
+        "-test.timeout=90s",
+        "-test.v"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 2.722,
+      "direct_child_reaped": true,
+      "stdout_sha256": "02f7ede7e5c35ed1a5ae3da905250bb9ac1f24a02e6ab397d5716c1a47e88690",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-original-gates",
+      "argv": [
+        "<experiment>/baseline.test",
+        "-test.run=^Test(SlowReaderDoesNotBlockNativeOutput|SlowViewerBurstTracksCompleteUnicodeTail)$",
+        "-test.count=3",
+        "-test.timeout=90s",
+        "-test.v"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 31.083,
+      "direct_child_reaped": true,
+      "stdout_sha256": "d355df05e462510f804f92ed1200f004198171ff9a42df7db4fb5c708886a14e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-profile-cpu",
+      "argv": [
+        "go",
+        "tool",
+        "pprof",
+        "-top",
+        "-nodecount=15",
+        "<experiment>/baseline.test",
+        "<experiment>/raw/baseline.cpu"
+      ],
+      "outer_timeout_seconds": 30,
+      "returncode": 0,
+      "wall_seconds": 17.394,
+      "direct_child_reaped": true,
+      "stdout_sha256": "a4d10e43c353e1052967877db7ce18b0d7f9eb2ec9ba24cfc3111264da4b97ce",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-profile-alloc_objects",
+      "argv": [
+        "go",
+        "tool",
+        "pprof",
+        "-top",
+        "-nodecount=15",
+        "-alloc_objects",
+        "<experiment>/baseline.test",
+        "<experiment>/raw/baseline.mem"
+      ],
+      "outer_timeout_seconds": 30,
+      "returncode": 0,
+      "wall_seconds": 0.114,
+      "direct_child_reaped": true,
+      "stdout_sha256": "719ad27ee48d06cd0248d4b551228f9397698544facd56792bf102f56877f65d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "baseline-profile-alloc_space",
+      "argv": [
+        "go",
+        "tool",
+        "pprof",
+        "-top",
+        "-nodecount=15",
+        "-alloc_space",
+        "<experiment>/baseline.test",
+        "<experiment>/raw/baseline.mem"
+      ],
+      "outer_timeout_seconds": 30,
+      "returncode": 0,
+      "wall_seconds": 0.114,
+      "direct_child_reaped": true,
+      "stdout_sha256": "e9d9f4caebb9834babe91b9988e4fe0d89b0bd01f57acae6e06f4640c2ec4a6e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-bench",
+      "argv": [
+        "<experiment>/overlay.test",
+        "-test.run=^$",
+        "-test.bench=^BenchmarkScreenASCIIBurst$",
+        "-test.benchtime=1x",
+        "-test.count=3",
+        "-test.timeout=90s",
+        "-test.cpuprofile=<experiment>/raw/overlay.cpu",
+        "-test.memprofile=<experiment>/raw/overlay.mem"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 15.504,
+      "direct_child_reaped": true,
+      "stdout_sha256": "5af5f7a1755b065fbfb53dc48e5ecc3e2c3d1210f32cf32ef395adc25b8837fa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-trace",
+      "argv": [
+        "<experiment>/overlay.test",
+        "-test.run=^TestOverlayEquivalenceTrace$",
+        "-test.timeout=90s",
+        "-test.v"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 18.661,
+      "direct_child_reaped": true,
+      "stdout_sha256": "9e7f6b4ce39232fb77eeccdcf942695e9bddc66f3d39034169ea59421a3985e0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-controls",
+      "argv": [
+        "<experiment>/overlay.test",
+        "-test.run=^Test(ASCIIBatchMatchesBytewise|ASCIITailAfterWrapPreservingControls|ASCIITailCombinesAtActiveScrollMargin|CurrentScreenWithoutMainHistoryMatchesHistoryEnabled)$",
+        "-test.timeout=90s",
+        "-test.v"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 2.722,
+      "direct_child_reaped": true,
+      "stdout_sha256": "9bc7a464b30edd0ea07df38158f090ce0324ac6b45338f122b6c9def7e065581",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-original-gates",
+      "argv": [
+        "<experiment>/overlay.test",
+        "-test.run=^Test(SlowReaderDoesNotBlockNativeOutput|SlowViewerBurstTracksCompleteUnicodeTail)$",
+        "-test.count=3",
+        "-test.timeout=90s",
+        "-test.v"
+      ],
+      "outer_timeout_seconds": 100,
+      "returncode": 0,
+      "wall_seconds": 30.833,
+      "direct_child_reaped": true,
+      "stdout_sha256": "ed5e6b839d64e9bef0a8e565d9d92f78004d127ec3fda7782ea1f907c54d31cf",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-profile-cpu",
+      "argv": [
+        "go",
+        "tool",
+        "pprof",
+        "-top",
+        "-nodecount=15",
+        "<experiment>/overlay.test",
+        "<experiment>/raw/overlay.cpu"
+      ],
+      "outer_timeout_seconds": 30,
+      "returncode": 0,
+      "wall_seconds": 0.114,
+      "direct_child_reaped": true,
+      "stdout_sha256": "9b2f53d60152f5404514b11745cd775b866489c7e43557cf985ae8047c1c6507",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-profile-alloc_objects",
+      "argv": [
+        "go",
+        "tool",
+        "pprof",
+        "-top",
+        "-nodecount=15",
+        "-alloc_objects",
+        "<experiment>/overlay.test",
+        "<experiment>/raw/overlay.mem"
+      ],
+      "outer_timeout_seconds": 30,
+      "returncode": 0,
+      "wall_seconds": 0.114,
+      "direct_child_reaped": true,
+      "stdout_sha256": "46ecfbabaa06e3f02489e56c5300946f0103fd5b7cdc86339dac004474eab1f0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    },
+    {
+      "label": "overlay-profile-alloc_space",
+      "argv": [
+        "go",
+        "tool",
+        "pprof",
+        "-top",
+        "-nodecount=15",
+        "-alloc_space",
+        "<experiment>/overlay.test",
+        "<experiment>/raw/overlay.mem"
+      ],
+      "outer_timeout_seconds": 30,
+      "returncode": 0,
+      "wall_seconds": 0.114,
+      "direct_child_reaped": true,
+      "stdout_sha256": "1c2bb2b697176383363e0413dda8da6439a02a13b0ef70232dd570ae07141809",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "owned_cleanup": {
+        "unexpected_owned_processes_before_cleanup": 0,
+        "exact_nonce_and_starttime_checked": true,
+        "no_owned_processes_remained": true
+      }
+    }
+  ],
+  "model_calls": 0,
+  "production_or_shared_module_edits": false,
+  "original_gate_deadline_seconds": 8,
+  "scope": "Dedicated hosted Linux amd64 worker; focused package, not full-suite or release qualification",
+  "earlier_negatives": {
+    "main_source_log_sha256": "959fa7c37afe7f2ce8567e05a79f8f19a30950e32e44a5fd42e607d1ef50145a",
+    "hosted_original_gate_seconds": 8.12,
+    "hosted_unicode_gate_seconds": 8.19,
+    "qemu_compile_failed_before_runtime": true,
+    "invalid_margin_panic_independent_of_overlay": true,
+    "trace_qualifies_valid_margins_only": true
+  },
+  "toolchain": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "amd64",
+    "GOOS": "linux",
+    "GOVERSION": "go1.26.6"
+  },
+  "investigation_commit": "505ad2d4be836476fe78bc728ae77e14312f57c0",
+  "script_sha256": "3a9e837d9b569df45d905507900fd9ae7480b246618a68cfd244ae73ddc376b7",
+  "fixture_sha256": "40ec0b1b3e2cefc2e340816bfda3dbaebdacddfc4d5925891078ecf7071165bc",
+  "exact_source_archive_sha256": "5687c849fb4ef2c2fe70e59a689e8d561fffbf9f69efcba0d8bec2e2b410703c",
+  "gate_source_files": {
+    "internal/adapters/nativepty/screen_test.go": {
+      "sha256": "5bc14a7b978f7b424a000bc33f17571d8d4c899c98943a244d7f7548a9e2c8d9",
+      "mode": 436
+    },
+    "internal/adapters/nativepty/throughput_test.go": {
+      "sha256": "edb2f8b5a0ecfc033ffac54675297fec9629db42f77a899b6565e1b742a31e46",
+      "mode": 436
+    },
+    "internal/adapters/nativepty/performance_test.go": {
+      "sha256": "1cbaafa2ca9af96d05f35ce4716c49514e5e8785dad200d605ce41a525526c1e",
+      "mode": 436
+    },
+    "go.mod": {
+      "sha256": "9bab7d16157a85800240dd2e480e3ad9c3905dcbc05fa4909dcd8bb939b4214c",
+      "mode": 436
+    },
+    "go.sum": {
+      "sha256": "1e1f1a6642dff1147d79d8c8d1f8291f3b5842be3542dd747be07ca4137221ee",
+      "mode": 436
+    }
+  },
+  "overlay": {
+    "original_sha256": "5362209587478feb6c3dc5367ed5f02c7789a8094736c42d305848ee1aa15247",
+    "changed_sha256": "05154c7c3544764e8c7678c6b933bf582fb31ac092498ce00b97b47f348e560e",
+    "original_expression": "e.handleGrapheme(string(e.grapheme[0]), 1)",
+    "replacement_expression": "e.handleGrapheme(string(e.grapheme[:1]), 1)",
+    "shared_module_cache_mutated": false
+  },
+  "binaries": {
+    "baseline": "5249f51d18d181e003b8363f3bc6b73a96b7ed940a63a97d9e947fbd993e85eb",
+    "overlay": "178623e68d3d1bbf902634b122107b3fe23525cc5e739660876131ce3b477b21"
+  },
+  "trace_equal": true,
+  "trace_records": 35780,
+  "original_tracked_bytes_and_modes_unchanged": true,
+  "cleanup": {
+    "unexpected_owned_processes_before_cleanup": 0,
+    "exact_nonce_and_starttime_checked": true,
+    "no_owned_processes_remained": true
+  },
+  "raw_files": {
+    "overlay.cpu": "dce59a62052a45b04c325e8eba234b80737b2a1aa183c95910d4fe613b2f4bfd",
+    "toolchain.stdout": "5b843cd21a2037c0a4fc45075ae4158574d5044bb724fc59d28a064b2dd56061",
+    "baseline-original-gates.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "overlay.mem": "df38a7ff5d5878d2cc4f0e3452bedb5adda9621a080061c61c73fc4a0d6783be",
+    "overlay-controls.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-bench.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-profile-alloc_space.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline.cpu": "8df1e718d108565d8e356d2cc29d2b1cb6b1799ef7470b6dc035728d5e5b41dc",
+    "overlay-bench.stdout": "5af5f7a1755b065fbfb53dc48e5ecc3e2c3d1210f32cf32ef395adc25b8837fa",
+    "baseline-profile-alloc_space.stdout": "e9d9f4caebb9834babe91b9988e4fe0d89b0bd01f57acae6e06f4640c2ec4a6e",
+    "compile-baseline.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-trace.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-profile-alloc_objects.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-controls.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compile-overlay.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-profile-cpu.stdout": "a4d10e43c353e1052967877db7ce18b0d7f9eb2ec9ba24cfc3111264da4b97ce",
+    "overlay-profile-alloc_space.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "overlay-profile-alloc_objects.stdout": "46ecfbabaa06e3f02489e56c5300946f0103fd5b7cdc86339dac004474eab1f0",
+    "overlay-original-gates.stdout": "ed5e6b839d64e9bef0a8e565d9d92f78004d127ec3fda7782ea1f907c54d31cf",
+    "baseline-profile-cpu.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "owned-vendor.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-bench.stdout": "b74ca4cbb5df3d0d83aefb170cc94814e2004fd0af7809ac08b4efe73af5191e",
+    "overlay-profile-cpu.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "overlay-profile-alloc_space.stdout": "1c2bb2b697176383363e0413dda8da6439a02a13b0ef70232dd570ae07141809",
+    "baseline-trace.jsonl": "4f1647051c1c0fd338d1f74c88e28e9b310fb45eb89e261881e8385caab172e0",
+    "overlay-original-gates.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-original-gates.stdout": "d355df05e462510f804f92ed1200f004198171ff9a42df7db4fb5c708886a14e",
+    "toolchain.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline.mem": "ffabe01579ee610d2214adee2ffe3917c1f6b7e566433e3868f883233395aa05",
+    "overlay-controls.stdout": "9bc7a464b30edd0ea07df38158f090ce0324ac6b45338f122b6c9def7e065581",
+    "owned-vendor.stderr": "bb3e84a22bc5013cb9985a3b65ccb67c3aa353f82f5f7e2596e255aa8c8311bc",
+    "baseline-profile-alloc_objects.stdout": "719ad27ee48d06cd0248d4b551228f9397698544facd56792bf102f56877f65d",
+    "baseline-trace.stdout": "e03f92f4ab6c397428e4fe93605cc43b72a7211330336b4f58cef532dee38ae7",
+    "overlay-bench.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "overlay-trace.jsonl": "4f1647051c1c0fd338d1f74c88e28e9b310fb45eb89e261881e8385caab172e0",
+    "overlay-profile-alloc_objects.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compile-overlay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compile-baseline.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "overlay-trace.stdout": "9e7f6b4ce39232fb77eeccdcf942695e9bddc66f3d39034169ea59421a3985e0",
+    "baseline-controls.stdout": "02f7ede7e5c35ed1a5ae3da905250bb9ac1f24a02e6ab397d5716c1a47e88690",
+    "overlay-profile-cpu.stdout": "9b2f53d60152f5404514b11745cd775b866489c7e43557cf985ae8047c1c6507",
+    "overlay-trace.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "sanitized_profiles": {
+    "overlay.cpu": {
+      "raw_sha256": "dce59a62052a45b04c325e8eba234b80737b2a1aa183c95910d4fe613b2f4bfd",
+      "sanitized_sha256": "212355ad071cd58306782240ba2abf11ae4f6f8cf92bda2f3f7d0486c9e84c67",
+      "absolute_path_strings_rewritten": 41,
+      "all_non_string_fields_and_string_indices_preserved": true
+    },
+    "overlay.mem": {
+      "raw_sha256": "df38a7ff5d5878d2cc4f0e3452bedb5adda9621a080061c61c73fc4a0d6783be",
+      "sanitized_sha256": "c2cf8b580999bbba02e3d24487e7abfae413d4ce9f9010966d0c1d0b938f42c0",
+      "absolute_path_strings_rewritten": 26,
+      "all_non_string_fields_and_string_indices_preserved": true
+    },
+    "baseline.cpu": {
+      "raw_sha256": "8df1e718d108565d8e356d2cc29d2b1cb6b1799ef7470b6dc035728d5e5b41dc",
+      "sanitized_sha256": "c7f396bd069ce72188728527d1db6852b313b949f6dcebddd2cd5ff86fbd2648",
+      "absolute_path_strings_rewritten": 40,
+      "all_non_string_fields_and_string_indices_preserved": true
+    },
+    "baseline.mem": {
+      "raw_sha256": "ffabe01579ee610d2214adee2ffe3917c1f6b7e566433e3868f883233395aa05",
+      "sanitized_sha256": "1876a9ab9308d839708cfbadadd54f4457affb51aabd659085a0476bdad0a4dd",
+      "absolute_path_strings_rewritten": 28,
+      "all_non_string_fields_and_string_indices_preserved": true
+    }
+  },
+  "limits": [
+    "Compiler overlay experiment; no adopted dependency or production change",
+    "Focused dedicated-runner capacity results do not supersede the retained full-suite failure",
+    "Valid-margin trace only; separate invalid-margin crash remains retained",
+    "No provider models, customer channels, credentials or installed release operations"
+  ],
+  "private_original_receipt_sha256": "44c4f8d49f96d7716a0a0ddd08381a21d05707f5597ef188c315514e0cf9572b"
+}
