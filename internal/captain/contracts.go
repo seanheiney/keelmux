@@ -236,6 +236,7 @@ type Report struct {
 type Status struct {
 	Assignment           Assignment      `json:"assignment"`
 	Cursors              []Position      `json:"cursors"`
+	Coverage             Coverage        `json:"coverage"` // Cumulative committed prefix.
 	ReservationsConsumed uint32          `json:"reservations_consumed"`
 	Pending              *ReservationRef `json:"pending"`
 	EntryCount           uint32          `json:"entry_count"`
@@ -262,7 +263,7 @@ type Repository interface {
 	SetCaptainControl(context.Context, AuthCaller, Mutation, Ref, Control) (Status, error)
 	ScanCaptainEvents(context.Context, AuthCaller, Ref) (Scan, error)
 	CheckpointCaptainQuiet(context.Context, AuthCaller, domain.ID, Scan) (Status, error)
-	ReserveCaptainTurn(context.Context, AuthCaller, domain.ID, Scan) (Reservation, error)
+	ReserveCaptainWork(context.Context, AuthCaller, domain.ID, Scan) (Reservation, error)
 	CommitCaptainReport(context.Context, AuthCaller, ReservationRef, domain.ID) (Report, error)
 	CancelCaptainReservation(context.Context, AuthCaller, domain.ID, Ref, ReservationRef) (Status, error)
 	ReadCaptainReport(context.Context, AuthCaller, Ref, domain.ID) (Report, error)
