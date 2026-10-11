@@ -52,11 +52,30 @@ RECORD_KEYS = frozenset(("version", "sequence", "elapsed_ns", "checkpoint", "rea
     "replies_generated_bytes", "reply_write_calls", "reply_attempted_bytes", "reply_successful_bytes",
     "reply_write_ns", "last_reply_outcome"))
 DECIMAL = r"[0-9]+(?:\.[0-9]+)?"
+PROFILE_REASONS = {"profile_top_row_unsupported": 1, "profile_path_in_symbol": 2,
+    "profile_summary_missing_or_excess": 3, "numeric_column_invalid": 4,
+    "numeric_column_not_finite": 5, "numeric_unit_column_invalid": 6,
+    "profile_total_column_invalid": 7, "profile_shown_total_column_invalid": 8,
+    "profile_total_invalid": 9}
 
 
 def need(condition, code):
     if not condition:
         raise ValueError(code)
+
+
+def profile_reason(error, phase_code):
+    """Only fixed validator categories leave this boundary, never exception text."""
+    if type(phase_code) is not int:
+        return 0
+    if phase_code in (1, 2):
+        if type(error) is UnicodeDecodeError:
+            return 10
+        if type(error) is ValueError and len(error.args) == 1 and type(error.args[0]) is str:
+            return PROFILE_REASONS.get(error.args[0], 0)
+    if phase_code == 3 and type(error) is ValueError:
+        return 11
+    return 0
 
 
 def sha(data):
@@ -255,7 +274,7 @@ class Driver:
         self.end = self.started + 12 * 60
         self.report = {"version": 1, "kind": "exact_source_native_capacity_investigation",
             "result": "fail", "stages": [], "failures": [], "sources": {}, "benchmarks": [],
-            "native_tests": [], "diagnostics": [], "artifacts": [], "model_calls": 0,
+            "native_tests": [], "diagnostics": [], "profile_errors": [], "artifacts": [], "model_calls": 0,
             "driver_sha256": sha(Path(__file__).read_bytes()),
             "limitations": ["isolated_diagnostic_does_not_clear_failed_source_ci",
                 "no_provider_or_model_qualification", "no_detached_child_census",
@@ -273,6 +292,14 @@ class Driver:
     def fail(self, label):
         if label not in self.report["failures"]:
             self.report["failures"].append(label)
+
+    def profile_error(self, mode, profile_code, phase_code, error):
+        if len(self.report["profile_errors"]) >= 4:
+            self.fail("profile_error_records_excess")
+            return
+        self.report["profile_errors"].append({"mode_code": 1 if mode == "normal" else 2,
+            "profile_code": profile_code, "phase_code": phase_code,
+            "reason_code": profile_reason(error, phase_code)})
 
     def run(self, label, argv, cwd, limit=60, extra=None):
         remaining = self.end - time.monotonic() - 10
@@ -481,26 +508,37 @@ class Driver:
             "-test.cpuprofile=" + str(cpu), "-test.memprofile=" + str(alloc)]
         stage, data = self.run(label + "-benchmark", argv, self.baseline / NATIVE, 90)
         stage["test_binary"] = identity
+        profile_code, phase_code = 0, 0
         try:
             result = parse_benchmark(data)
             result.update(mode=mode, source=BASELINE, test_binary=identity, profiles={})
             self.report["benchmarks"].append(result)
             for kind, path in (("cpu", cpu), ("alloc_space", alloc)):
+                profile_code, phase_code = (1 if kind == "cpu" else 2), 0
                 need(path.is_file() and 0 < path.stat().st_size <= 32 << 20, "profile_missing_or_size_invalid")
                 result["profiles"][kind] = file_binding(path)
                 argv = [self.go, "tool", "pprof", "-top", "-nodecount=25"]
                 if kind == "alloc_space": argv.append("-sample_index=alloc_space")
                 summary, raw = self.run(label + "-" + kind + "-top", argv + [str(binary), str(path)], self.baseline, 60)
                 need(summary["result"] == "pass", "profile_tool_failed")
+                phase_code = 1
                 rows = pprof_summary(raw)
-                result["profiles"][kind]["totals"] = profile_totals(raw)
+                phase_code = 0
+                phase_code = 2
+                totals = profile_totals(raw)
+                phase_code = 0
+                result["profiles"][kind]["totals"] = totals
                 result["profiles"][kind]["top"] = rows
                 public = self.public / (label + "-" + kind + "-top.txt")
-                public.write_text("\n".join(json.dumps(row, sort_keys=True, allow_nan=False) for row in rows) + "\n")
+                phase_code = 3
+                text = "\n".join(json.dumps(row, sort_keys=True, allow_nan=False) for row in rows) + "\n"
+                phase_code = 0
+                public.write_text(text)
                 self.report["artifacts"].append({"file": public.name, **file_binding(public),
                     "original_summary": {"sha256": sha(raw), "bytes": len(raw)}})
-        except (ValueError, UnicodeError):
+        except (ValueError, UnicodeError) as error:
             self.fail(label + ":profile_measurement_failed")
+            self.profile_error(mode, profile_code, phase_code, error)
 
     def finish(self):
         try:
