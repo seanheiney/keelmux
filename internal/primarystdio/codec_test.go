@@ -249,7 +249,7 @@ func TestNotificationClassificationNeverApproves(t *testing.T) {
 }
 func TestSchemaPinAndConcurrentStatelessUse(t *testing.T) {
 	sum := sha256.Sum256([]byte(pinnedSchemaJSON))
-	if hex.EncodeToString(sum[:]) != schemaPinForTest {
+	if hex.EncodeToString(sum[:]) != CodecSchemaSHA256 {
 		t.Fatal("embedded schema changed without reviewed pin")
 	}
 	env := response(t, fixtureResume())
@@ -287,5 +287,3 @@ func FuzzCodecNeverPanics(f *testing.F) {
 		_, _ = c.ClassifyNotification(e)
 	})
 }
-
-const schemaPinForTest = "c3d1047ff5c3135141f4e6cfaab9c7b7bb6280938bb6e1365bc394344e0de819"

@@ -13,6 +13,12 @@ import (
 // Codec is a stateless, pinned Codex 0.159.0 codec. It performs no I/O or
 // readiness decisions. Envelopes and payloads stay private to the helper actor.
 type Codec struct{}
+
+// CodecSchemaSHA256 binds the exact embedded response and notification schemas.
+// Callers must match this pin before attributing observations to this codec;
+// it does not establish native binary identity or transport qualification.
+const CodecSchemaSHA256 = "c3d1047ff5c3135141f4e6cfaab9c7b7bb6280938bb6e1365bc394344e0de819"
+
 type FrameKind uint8
 
 const (
