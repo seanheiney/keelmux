@@ -351,6 +351,21 @@ func openStore(path string) (*authorityStore, error) {
 	return s, nil
 }
 func (s *authorityStore) close() { s.lock.Close(); s.dir.Close() }
+
+func (s *authorityStore) checkPaths() error {
+	current, e := openDir(filepath.Dir(s.path))
+	if e != nil {
+		return e
+	}
+	defer current.Close()
+	a, e := s.dir.Stat()
+	b, e2 := current.Stat()
+	if e != nil || e2 != nil || !os.SameFile(a, b) || !samePathFile(s.dir, s.name+".lock", s.lock) {
+		return ErrStorage
+	}
+	return nil
+}
+
 func flock(ctx context.Context, f *os.File, mode int) error {
 	for {
 		if ctx.Err() != nil {
@@ -384,24 +399,20 @@ func (s *authorityStore) access(ctx context.Context, write bool, fn func(*author
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	current, e := openDir(filepath.Dir(s.path))
-	if e != nil {
+	if e := s.checkPaths(); e != nil {
 		return e
-	}
-	a, _ := s.dir.Stat()
-	b, _ := current.Stat()
-	current.Close()
-	if !os.SameFile(a, b) || !samePathFile(s.dir, s.name+".lock", s.lock) {
-		return ErrStorage
 	}
 	mode := unix.LOCK_SH
 	if write {
 		mode = unix.LOCK_EX
 	}
-	if e = flock(ctx, s.lock, mode); e != nil {
+	if e := flock(ctx, s.lock, mode); e != nil {
 		return e
 	}
 	defer unix.Flock(int(s.lock.Fd()), unix.LOCK_UN)
+	if e := s.checkPaths(); e != nil {
+		return e
+	}
 	f, e := openAt(s.dir, s.name, unix.O_RDONLY)
 	if e != nil {
 		return e
@@ -488,20 +499,20 @@ func (s *authorityStore) confirm(ctx context.Context) error {
 		if s.syncFile(f) != nil || ctx.Err() != nil || s.syncFile(s.dir) != nil {
 			return ErrStorage
 		}
-		if !samePathFile(s.dir, s.name, f) || !samePathFile(s.dir, s.name+".lock", s.lock) {
+		if s.checkPaths() != nil || !samePathFile(s.dir, s.name, f) {
 			return ErrStorage
 		}
 		if _, e = f.Seek(0, io.SeekStart); e != nil {
 			return ErrStorage
 		}
 		after, e := io.ReadAll(io.LimitReader(f, authorityLimit+1))
-		if e != nil || !bytes.Equal(before, after) || ctx.Err() != nil {
+		if e != nil || !bytes.Equal(before, after) || ctx.Err() != nil || s.checkPaths() != nil || !samePathFile(s.dir, s.name, f) {
 			return ErrStorage
 		}
 		return nil
 	})
 }
-func (s *authorityStore) save(ctx context.Context, a authority) error {
+func (s *authorityStore) save(ctx context.Context, a authority) (result error) {
 	b, e := json.Marshal(a)
 	if e != nil || len(b) > authorityLimit {
 		return ErrCapacity
@@ -511,18 +522,35 @@ func (s *authorityStore) save(ctx context.Context, a authority) error {
 	if e != nil {
 		return e
 	}
+	defer func() {
+		if e := f.Close(); e != nil && result == nil {
+			result = ErrStorage
+		}
+	}()
 	defer unix.Unlinkat(int(s.dir.Fd()), name, 0)
 	_, e = f.Write(b)
 	if e == nil {
 		e = s.syncFile(f)
 	}
-	if ce := f.Close(); e == nil {
-		e = ce
-	}
 	if e != nil || ctx.Err() != nil {
 		return ErrStorage
 	}
 	if unix.Renameat(int(s.dir.Fd()), name, int(s.dir.Fd()), s.name) != nil || s.syncFile(s.dir) != nil {
+		return ErrStorage
+	}
+	// Successful persistence must still name the exact current authority. A
+	// replaced lock/directory or modified visible file during Sync is not an
+	// admission to perform the subsequent home effect.
+	if ctx.Err() != nil || s.checkPaths() != nil || !samePathFile(s.dir, s.name, f) {
+		return ErrStorage
+	}
+	held, e := openAt(s.dir, s.name, unix.O_RDONLY)
+	if e != nil {
+		return e
+	}
+	defer held.Close()
+	current, e := io.ReadAll(io.LimitReader(held, authorityLimit+1))
+	if e != nil || !bytes.Equal(current, b) || !samePathFile(s.dir, s.name, held) || !samePathFile(s.dir, s.name, f) || s.checkPaths() != nil || ctx.Err() != nil {
 		return ErrStorage
 	}
 	return nil
@@ -598,8 +626,10 @@ func UpdatePolicy(ctx context.Context, path string, expected uint64, next ReadPo
 		if expected != a.Policy.Revision || !sameBinding(a.Policy, next) {
 			return ErrConflict
 		}
+		next.Sessions = append([]SessionActions(nil), next.Sessions...)
 		sort.Slice(next.Sessions, func(i, j int) bool { return next.Sessions[i].SessionID < next.Sessions[j].SessionID })
 		old := a.Policy
+		old.Sessions = append([]SessionActions(nil), old.Sessions...)
 		sort.Slice(old.Sessions, func(i, j int) bool { return old.Sessions[i].SessionID < old.Sessions[j].SessionID })
 		next.Revision = old.Revision
 		if reflect.DeepEqual(old, next) {

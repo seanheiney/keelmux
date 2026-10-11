@@ -95,7 +95,7 @@ func (f *fixture) handle(w http.ResponseWriter, q *http.Request) {
 		f.attaches++
 		l, ok := f.leases[r.OperationID]
 		if !ok {
-			l = domain.Lease{r.SessionID, r.ExecutionID, r.Generation, r.OperationID, r.ClientID, string(domain.NewID("lease"))}
+			l = domain.Lease{SessionID: r.SessionID, ExecutionID: r.ExecutionID, Generation: r.Generation, OperationID: r.OperationID, ClientID: r.ClientID, Token: string(domain.NewID("lease"))}
 			f.leases[r.OperationID] = l
 		}
 		hold := f.attachHold

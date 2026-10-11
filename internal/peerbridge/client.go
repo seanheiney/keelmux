@@ -64,7 +64,7 @@ func (c *Client) abort() {
 	}
 	c.mu.Unlock()
 }
-func (c *Client) Close() error { c.abort(); c.wg.Wait(); return nil }
+func (c *Client) Close() error { c.abort(); c.wg.Wait(); return c.wire.close() }
 func (c *Client) Hello(ctx context.Context) (PolicyStamp, error) {
 	c.helloMu.Lock()
 	defer c.helloMu.Unlock()

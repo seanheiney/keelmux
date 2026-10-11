@@ -86,13 +86,22 @@ func (p packet) valid(client bool) bool {
 }
 
 type wire struct {
-	in      io.ReadCloser
-	out     io.WriteCloser
-	once    sync.Once
-	writeMu sync.Mutex
+	in       io.ReadCloser
+	out      io.WriteCloser
+	once     sync.Once
+	writeMu  sync.Mutex
+	closeErr error
 }
 
-func (w *wire) close() { w.once.Do(func() { w.in.Close(); w.out.Close() }) }
+func (w *wire) close() error {
+	w.once.Do(func() {
+		w.closeErr = w.in.Close()
+		if e := w.out.Close(); w.closeErr == nil {
+			w.closeErr = e
+		}
+	})
+	return w.closeErr
+}
 func (w *wire) read(ctx context.Context) (packet, error) {
 	var h [21]byte
 	if _, e := io.ReadFull(w.in, h[:1]); e != nil {

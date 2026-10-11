@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -16,6 +17,86 @@ import (
 	"github.com/seanheiney/keelmux/internal/transport"
 	"golang.org/x/sys/unix"
 )
+
+// The connection owns its transport cleanup. Close must finish that cleanup and
+// retain its refusal even if EOF aborts the client before its caller closes it.
+type cleanupFaultConn struct {
+	net.Conn
+	once             sync.Once
+	err              error
+	entered, release chan struct{}
+}
+
+func (c *cleanupFaultConn) Close() error {
+	c.once.Do(func() {
+		c.Conn.Close()
+		close(c.entered)
+		<-c.release
+	})
+	return c.err
+}
+
+func TestClientCloseRetainsOwnedTransportCleanupFailure(t *testing.T) {
+	for _, abortFirst := range []bool{false, true} {
+		name := "caller"
+		if abortFirst {
+			name = "reader_eof"
+		}
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t)
+			a, b := net.Pipe()
+			defer b.Close()
+			fault := errors.New("fixture owned transport cleanup unconfirmed")
+			owned := &cleanupFaultConn{Conn: a, err: fault, entered: make(chan struct{}), release: make(chan struct{})}
+			defer func() {
+				select {
+				case <-owned.release:
+				default:
+					close(owned.release)
+				}
+				a.Close()
+			}()
+			serverDone := make(chan error, 1)
+			go func() { serverDone <- Serve(context.Background(), f.path, b, b) }()
+			c, e := NewClient(owned, Selector{f.policy.ScopeID, f.policy.HostID, f.policy.Principal})
+			if e != nil {
+				t.Fatal(e)
+			}
+			if _, e = c.Hello(context.Background()); e != nil {
+				t.Fatal(e)
+			}
+			if abortFirst {
+				b.Close()
+				waitSignal(t, owned.entered)
+			}
+			closed := make(chan error, 1)
+			go func() { closed <- c.Close() }()
+			waitSignal(t, owned.entered)
+			select {
+			case e = <-closed:
+				t.Fatalf("close returned before owned cleanup completed: %v", e)
+			default:
+			}
+			close(owned.release)
+			select {
+			case e = <-closed:
+				if !errors.Is(e, fault) {
+					t.Fatalf("cleanup refusal suppressed: %v", e)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("client cleanup did not join")
+			}
+			if e = c.Close(); !errors.Is(e, fault) {
+				t.Fatalf("repeated close lost cleanup refusal: %v", e)
+			}
+			waitDone(t, serverDone)
+			aCount, openCount, releaseCount := f.counts()
+			if aCount != 0 || openCount != 0 || releaseCount != 0 {
+				t.Fatal("close issued a home effect")
+			}
+		})
+	}
+}
 
 func TestConcurrentReadOnlyStreamsAndControlStayBounded(t *testing.T) {
 	f := newFixture(t)
@@ -426,5 +507,113 @@ func TestVisibleFailedCommitNeedsFreshHeldEvidenceSync(t *testing.T) {
 	a, o, rel := f.counts()
 	if a+o+rel != 0 {
 		t.Fatal("local sync had native effect")
+	}
+}
+
+func TestAuthoritySyncReplacementRefusesHomeEffect(t *testing.T) {
+	for _, confirmation := range []bool{false, true} {
+		phase := "intent"
+		if confirmation {
+			phase = "confirmation"
+		}
+		for _, replacement := range []string{"lock", "directory", "content", "same_bytes"} {
+			t.Run(phase+"_"+replacement, func(t *testing.T) {
+				f := newFixture(t)
+				store, e := openStore(f.path)
+				if e != nil {
+					t.Fatal(e)
+				}
+				defer store.close()
+				h, e := newHome(f.policy.Socket)
+				if e != nil {
+					t.Fatal(e)
+				}
+				actor := &server{store: store, home: h, policy: f.policy, owned: map[domain.ID]protocol.LeaseRequest{}}
+				var once sync.Once
+				store.syncHook = func(file *os.File) error {
+					if e := file.Sync(); e != nil {
+						return e
+					}
+					info, e := file.Stat()
+					if e != nil {
+						return e
+					}
+					if info.IsDir() {
+						once.Do(func() {
+							switch replacement {
+							case "lock":
+								if e = os.Rename(f.path+".lock", f.path+".lock-old"); e == nil {
+									e = os.WriteFile(f.path+".lock", nil, 0600)
+								}
+							case "directory":
+								moved := f.dir + "-moved"
+								t.Cleanup(func() { os.RemoveAll(moved) })
+								if e = os.Rename(f.dir, moved); e == nil {
+									e = os.Mkdir(f.dir, 0700)
+								}
+							case "content":
+								e = os.WriteFile(f.path, []byte("corrupt-during-sync"), 0600)
+							case "same_bytes":
+								var data []byte
+								if data, e = os.ReadFile(f.path); e == nil {
+									if e = os.Rename(f.path, f.path+".old"); e == nil {
+										e = os.WriteFile(f.path, data, 0600)
+									}
+								}
+							}
+						})
+					}
+					return e
+				}
+				if confirmation {
+					e = store.confirm(context.Background())
+				} else {
+					_, e = actor.acquire(context.Background(), f.request())
+				}
+				if !errors.Is(e, ErrStorage) {
+					t.Fatalf("replaced durable authority accepted: %v", e)
+				}
+				if e = store.access(context.Background(), false, func(*authority) error { return nil }); !errors.Is(e, ErrStorage) {
+					t.Fatalf("replacement poison was cleared: %v", e)
+				}
+				a, o, r := f.counts()
+				if a+o+r != 0 {
+					t.Fatal("stale persistence admitted a home effect")
+				}
+			})
+		}
+	}
+}
+
+func TestEquivalentPolicyOrderingDoesNotRewriteRevision(t *testing.T) {
+	f := newFixture(t)
+	s, e := openStore(f.path)
+	if e != nil {
+		t.Fatal(e)
+	}
+	p := f.policy
+	p.Sessions = append(p.Sessions, SessionActions{SessionID: domain.NewID("session"), Inventory: true})
+	sort.Slice(p.Sessions, func(i, j int) bool { return p.Sessions[i].SessionID > p.Sessions[j].SessionID })
+	p.Revision++
+	if e = s.access(context.Background(), true, func(a *authority) error { a.Policy = p; return nil }); e != nil {
+		t.Fatal(e)
+	}
+	s.close()
+	before, e := os.ReadFile(f.path)
+	if e != nil {
+		t.Fatal(e)
+	}
+	next := p
+	next.Sessions = append([]SessionActions(nil), p.Sessions...)
+	next.Sessions[0], next.Sessions[1] = next.Sessions[1], next.Sessions[0]
+	if e = UpdatePolicy(context.Background(), f.path, p.Revision, next); e != nil {
+		t.Fatal(e)
+	}
+	after, e := os.ReadFile(f.path)
+	if e != nil || !bytes.Equal(before, after) {
+		t.Fatal("equivalent action set rewrote authority at unchanged revision")
+	}
+	if next.Sessions[0] != p.Sessions[1] {
+		t.Fatal("update mutated caller's action set")
 	}
 }
