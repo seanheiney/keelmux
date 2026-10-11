@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "result": "pass",
+  "date": "2026-10-10",
+  "base_source_sha": "2e09b0ed11678c9248ab0168da1505cc9a9bafc5",
+  "os": "darwin",
+  "arch": "arm64",
+  "scope": "Explicit workspace native mapping and durable local file lifecycle. Temporary owned fixture writes only. No provider or real native configuration effects.",
+  "native_contracts": {
+    "codex": {
+      "version": "codex-cli 0.159.0",
+      "version_sha256": "8a8469ab9e45cda52908dc6f57b933a00f602e2dce766709df60161368440a1d",
+      "help_sha256": "4a7f0188d4d6e6d812c5cfbcf82468336b899acd5e437de7450421a403c0071e",
+      "binary_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70"
+    },
+    "claude": {
+      "version": "2.1.296 (Claude Code)",
+      "version_sha256": "ced06c95bb4c0780504b700880ceea37cd764283d2be9d3ea2555683183207ea",
+      "help_sha256": "550db4f88ae1d97bf7244ca96dc89554aabd3978241ceb69f79001e816c35f09",
+      "binary_sha256": "c9b5341637becbd423ddffc5b254afb645682a3868cb708bbc6cc0e7bb419937"
+    },
+    "gemini": {
+      "version": "0.52.0",
+      "version_sha256": "f0ff15ea2ce1fbc899964a336ed594ad3d53eac3ae183a081b547998805ab138",
+      "help_sha256": "b5c6e1af180f48adb3700982e7b06e905f29d2965f047eaeebd0b5c4f676b632",
+      "binary_sha256": "0ba2cf6728db37a08e2d5d326790d061f9ae8246db32bf68e99e02ed0aa69ed5"
+    },
+    "grok": {
+      "version": "grok 1.0.50 (c58f321264ba) [stable]",
+      "version_sha256": "0a2dae661ccdf4cd858dac39912a260a17ad481799f1cba5d9754fb3fb895fda",
+      "help_sha256": "cda6873e2f90a7d77de94c2e3026794671fac04b2e40ac74e4d91f429f829403",
+      "binary_sha256": "af41b1d65d4116ff649a689ad9d070d4c2abe255737d46ba0b3e8161345696e6"
+    },
+    "opencode": {
+      "version": "1.18.21",
+      "version_sha256": "4a830c412419a3308d095a64e4fd2504b26d1e975366e089d886c03d90fa016c",
+      "help_sha256": "b594ad32674bf8008017157833ab87316170523ed23dbd10c37ae9931d2ba178",
+      "binary_sha256": "8c783005340f8dfc5e7d168478dd0dd2bd1faead531cb34270de2a9689d9f135"
+    }
+  },
+  "native_contract_provenance": "Installed --version/--help only, plus official mapping documentation; native loading, invocation, approval and MCP health are not qualified.",
+  "controls_receipt_sha256": "213f59ddfdeeb453fddef94cdb632d721ed4c2c99a042aa9c25cfd20d0b70bc1",
+  "source_file_sha256": {
+    "internal/library/native/files.go": "6cfaa3376667f8ec39466229a7baef3301986366dd380106df29a4688f131221",
+    "internal/library/native/lifecycle.go": "26a7a69b188fff114c492d8fdcb9d935680fc508f4f69bbf099babdc2a82f98f",
+    "internal/library/native/mapping.go": "d0e26984e41f63258953f6b8efc6b20349abdd98d1b06a6a3880b7d2812ee16f",
+    "internal/library/native/native_test.go": "7218028c253f90e4cc79e0411143a6117ba1b1d38673c5ae32ca0a2362e47a52",
+    "internal/library/native/preview.go": "d182aead52de03f0b7a6d6ab89c4fee102b0591a177cfcb5e1a4f844a7f5c0aa",
+    "internal/library/native/registry_integration_test.go": "f04c573b18ced5bc03cb2f55828460b3b068382e572b801fd9c87f9664c1b56a",
+    "internal/library/native/types.go": "1d57bf9459d8cf864e3825d58df5521624ad3e147cb29294f3e7cffa04e658e5"
+  },
+  "registry_interoperability": {
+    "source_sha": "f1c026172d3ed362247f602cde6cd16a1639340a",
+    "overlay_sha256": "2c87df2876958d97535083a64ca9091f56408a88ad24c0d4b84ed548c10690ed",
+    "read_only_overlay": true
+  },
+  "focused_test_functions": 26,
+  "gates": [
+    {
+      "gate": "race",
+      "exit_code": 0,
+      "elapsed_seconds": 3.11,
+      "log_sha256": "69343418fdbc9e6971fc6412af95cf5be5b1fc79d96a3ff3a254bbfd2578366d"
+    },
+    {
+      "gate": "vet",
+      "exit_code": 0,
+      "elapsed_seconds": 0.104,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "gate": "linux-compile",
+      "exit_code": 0,
+      "elapsed_seconds": 0.276,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "model_turns": 0,
+  "native_configuration_writes": 0,
+  "native_process_launches": 0,
+  "credential_values_read_or_copied": 0,
+  "limitations": [
+    "Same-user cooperating-writer serialization, not sandbox/account security isolation.",
+    "Status verifies owned bytes/allowed argv shape; launch must compare a fresh registry preview, profile identity/revision/digest and desired file/argv identities.",
+    "Parent/user/managed/environment-selected native configuration and global precedence are not inspected.",
+    "Grok skills are copied immutable instructions referenced by a bounded rules/index, not native skill discovery; MCP is unsupported.",
+    "Unknown/structured skill frontmatter and ambiguous HTTPS authentication references remain explicitly unmapped.",
+    "Applied files do not prove Loaded, tool health, invocation or native reload."
+  ],
+  "retained_preliminary_failures": [
+    "Initial hardlink test refused a changed-link package with ErrDrift instead of ErrUnsafe; corrected error propagation.",
+    "Initial retained-lock refactor shadowed the open error and refused first application; corrected before final gates."
+  ]
+}
