@@ -35,6 +35,13 @@ jobs:
           cd third_party/bubbletea
           go test -race -mod=readonly ./...
           go vet -mod=readonly ./...
+      - name: Pinned terminal source and unchanged upstream tests
+        run: |
+          python3 third_party/vt/verify.py
+          python3 -B third_party/vt/verify_test.py -v
+          cd third_party/vt
+          go test -race -mod=readonly ./...
+          go vet -mod=readonly ./...
       - name: Installer negative and ownership cases
         run: python3 tests/installer_test.py
       - name: Package qualification cancellation and identity controls

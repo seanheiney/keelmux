@@ -46,7 +46,15 @@ for platform do
         pkg=${pair#*:}
         GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags "$flags" -o "$dir/$name" "./cmd/$pkg"
     done
-    cp LICENSE "$dir/LICENSE"
+    # Keep notices for the complete pinned source copies in the existing
+    # hash-bound LICENSE member; the finite installer format stays unchanged.
+    {
+        cat LICENSE
+        printf '\n\n--- Pinned Bubble Tea source ---\n\n'
+        cat third_party/bubbletea/LICENSE
+        printf '\n\n--- Pinned VT source ---\n\n'
+        cat third_party/vt/LICENSE
+    } > "$dir/LICENSE"
     cp README.md "$dir/README.md"
     python3 scripts/pack-release.py "$dir" "$stage" "$version" "$commit" "$built_at" "$os" "$arch" "$go_version" "$epoch" "$dirty" "$dev"
 done

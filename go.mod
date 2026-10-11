@@ -42,3 +42,5 @@ require (
 )
 
 replace github.com/charmbracelet/bubbletea => ./third_party/bubbletea
+
+replace github.com/charmbracelet/x/vt => ./third_party/vt
