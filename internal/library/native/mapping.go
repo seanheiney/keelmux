@@ -2,6 +2,7 @@ package native
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -14,6 +15,19 @@ import (
 )
 
 const maxRulesArg = 64 << 10
+const maxEncodedRulesArg = 32 << 10
+
+// Grok carries this literal text inside a JSON launch request. Count the same
+// encoding, including quotes and escapes, and leave room for argv and metadata
+// under the existing 64 KiB transport ceiling. The launcher checks the full
+// request separately; this bound alone is not a request-size guarantee.
+func rulesArgumentWithinBudget(text string) bool {
+	if len(text) > maxRulesArg {
+		return false
+	}
+	encoded, err := json.Marshal(text)
+	return err == nil && len(encoded) <= maxEncodedRulesArg
+}
 
 var skillName = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
@@ -351,8 +365,8 @@ func buildMapping(ctx context.Context, reg library.Registry, r library.Resolutio
 		if index.Len() > 0 {
 			text += "\n## Skill instruction index\nInstruction compatibility mapping; this is not native skill discovery. Loading and invocation remain unknown.\n" + index.String()
 		}
-		if len(text) > maxRulesArg {
-			return m, fmt.Errorf("%w: Grok rules/index exceeds 64 KiB", ErrUnsupported)
+		if !rulesArgumentWithinBudget(text) {
+			return m, fmt.Errorf("%w: Grok rules/index exceeds 32 KiB JSON-encoded argument budget", ErrUnsupported)
 		}
 		if text != "" {
 			e = m.add(filepath.Join(base, "rules.md"), []byte(text))

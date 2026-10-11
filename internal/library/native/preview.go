@@ -108,7 +108,7 @@ func receiptArgs(r Receipt) error {
 			return ErrUnsafe
 		}
 	} else {
-		if r.LaunchArgs[0] != "--rules" || len(r.LaunchArgs[1]) > maxRulesArg || len(r.LaunchArgs[1]) != file.Bytes || hash([]byte(r.LaunchArgs[1])) != file.SHA256 {
+		if r.LaunchArgs[0] != "--rules" || !rulesArgumentWithinBudget(r.LaunchArgs[1]) || len(r.LaunchArgs[1]) != file.Bytes || hash([]byte(r.LaunchArgs[1])) != file.SHA256 {
 			return ErrUnsafe
 		}
 	}
