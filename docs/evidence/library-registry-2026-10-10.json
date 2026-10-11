@@ -1,0 +1,68 @@
+{
+  "schema": "keelmux-library-registry-source/v1",
+  "result": "pass",
+  "utc": "2026-10-11T00:18:31.298619+00:00",
+  "base_sha": "2e09b0ed11678c9248ab0168da1505cc9a9bafc5",
+  "branch": "codex/library-registry",
+  "os": "macOS-26.7.1-arm64-arm-64bit-Mach-O",
+  "go": "go version go1.26.6 darwin/arm64",
+  "scope": "Local registry implementation; no native application, process/provider/model or independent server proof",
+  "manifest": "keelmux-plugin.json",
+  "model_turns": 0,
+  "native_credentials_accessed": false,
+  "shared_types_unchanged": true,
+  "implementation_sha256": {
+    "internal/library/bundle.go": "59a8e3c8dda2a4bbd333e7950d66a21143109aa128c583aa22f3b889dbe94841",
+    "internal/library/manifest.go": "c7f5f2688bfe4fc2c4ecde8c6a944dd07919caff74a12dfe3b3b34866dd5647f",
+    "internal/library/storage.go": "8931faa91c5244ea8c3ba3006b75d540ed6f48a0b76053d5a1f4544422a9f03c",
+    "internal/library/registry.go": "6a6dfcc456251de065e2a5500f6ba616242693865240971fff42a015e3acbdc0",
+    "internal/library/manifest_test.go": "fc4060b85bed9b856c27ec339ea998d5cfb9d0b7b6c015a89b7e23789c00ef5c",
+    "internal/library/registry_test.go": "a29869a8cfdcb98ccfafee2cf3864bac88162a4847256c19f411d9638151c4bc"
+  },
+  "commands": [
+    {
+      "command": "go test -race ./internal/library -count=1 -v",
+      "result": "pass",
+      "seconds": 11.978,
+      "top_level_tests": 16
+    },
+    {
+      "command": "go vet ./internal/library",
+      "result": "pass"
+    },
+    {
+      "command": "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -c -o work/library-linux-amd64-qualified.test ./internal/library",
+      "result": "pass",
+      "qualification": "Compilation only; Linux execution not qualified"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "retained_logs_sha256": {
+    "work/library-race-qualified.log": "7cfe4d8dc20111fbd94760776cb897fcb95ec8d1c15f10a623d4a7539f6e74a7",
+    "work/library-vet-qualified.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/library-linux-compile-qualified.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "controls": [
+    "Absent Open/read/resolve preserve full parent snapshot; virtual default profile with loaded unknown",
+    "Strict bounded manifest exact keys, duplicate keys, future schema, UTF-8, field aliases including pending pointer fields",
+    "Exact file inventory and SHA-256; path/size/depth/count/total bounds; symlink/FIFO/hardlink/write-permission refusal without state creation",
+    "Immutable revisions, canonical ordering, no tool program execution, no input edits and no stored execute bits",
+    "Pin-preserving on/off; component preferences; same-value writes byte-idempotent; unrelated catalog/profile changes preserve resolution digest",
+    "Exact removal archives bytes/modes, disables matching selections only, preserves other versions and never exposes archived roots for application",
+    "Interrupted import and removal at durable intent/move/catalog boundaries; reads do not recover; explicit safe mutations recover",
+    "Edited archive/diverged catalog/ambiguous pending intent preserved; catalog drift after intent refuses directory movement",
+    "Twelve independent concurrent registry openers serialize writes without losing profiles",
+    "Method lock cancellation and replacement inode refusal; actual Open held-writer lock reaches finite five-second deadline without effects"
+  ],
+  "limits": [
+    "Foreign-owner check exercised with real inode stat metadata carrying a foreign UID; no privileged chown fixture was used",
+    "Linux amd64 compilation passed; Linux runtime for this registry contribution remains unqualified",
+    "Source tests are not native provider loaded-state or tool health proof",
+    "Same-user owned-file coordination is not a permission sandbox",
+    "An unpublished pre-intent staging directory can remain for explicit repair after I/O failure",
+    "Archived revisions remain intact; restoring the same exact archived pin is not in this initial API"
+  ]
+}
