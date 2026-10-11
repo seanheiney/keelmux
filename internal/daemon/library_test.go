@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/store"
 )
 
 func TestLaunchLibrarySnapshotSurvivesRestartAndPinsRetry(t *testing.T) {
@@ -34,6 +35,22 @@ func TestLaunchLibrarySnapshotSurvivesRestartAndPinsRetry(t *testing.T) {
 	assertConflict(t, err)
 	if n, _ := e.backend.counts(); n != 1 {
 		t.Fatal("profile retry caused new launch", n)
+	}
+}
+
+func TestEncodedLaunchOverflowHasNoOperationOrRuntimeEffect(t *testing.T) {
+	e := setup(t)
+	in := e.launchRequest("encoded-overflow")
+	in.Provider = "grok"
+	in.Argv = []string{"grok", "--rules", strings.Repeat("<", 11<<10)}
+	if _, err := e.service.Launch(context.Background(), in); err == nil {
+		t.Fatal("escaped oversized instructions accepted")
+	}
+	if n, _ := e.backend.counts(); n != 0 {
+		t.Fatal("size refusal launched runtime", n)
+	}
+	if _, _, err := e.store.Operation(context.Background(), in.OperationID); err != store.ErrNotFound {
+		t.Fatal("size refusal recorded an operation", err)
 	}
 }
 

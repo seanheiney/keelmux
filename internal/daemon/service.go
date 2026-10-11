@@ -179,7 +179,7 @@ func writeError(w http.ResponseWriter, err error) {
 	writeJSON(w, status, protocol.Error{Message: err.Error()})
 }
 func decode(w http.ResponseWriter, r *http.Request, v any) bool {
-	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10))
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, protocol.MaxControlRequestBytes))
 	d.DisallowUnknownFields()
 	if err := d.Decode(v); err != nil {
 		writeError(w, invalid("invalid request: "+err.Error()))
@@ -209,6 +209,9 @@ func (s *Service) Launch(ctx context.Context, in protocol.LaunchRequest) (protoc
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out protocol.LaunchResponse
+	if err := protocol.ValidateLaunchRequestSize(in); err != nil {
+		return out, invalid(err.Error())
+	}
 	if in.OperationID == "" || in.Provider == "" || strings.TrimSpace(in.Name) == "" || !filepath.IsAbs(in.Workspace) || len(in.Argv) == 0 || in.Argv[0] == "" {
 		return out, invalid("launch requires operation, name, provider, absolute workspace and executable")
 	}
