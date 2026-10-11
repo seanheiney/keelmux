@@ -40,8 +40,13 @@ These commands are newer than the published v0.2.1 archive. Build the reviewed s
 | `keelmux groups --help` | Nested optional company/product collections; membership, selection and removal preserve work and drafts |
 | `keelmux usage --help` | Read existing local qualified observations; exact filters and explicit atomic manual import |
 | `keelmux peers --help` | Explicit pinned SSH enrollment, permitted inventory, refresh, grant and revoke |
+| `keelmux plugins --help` | Import verified packs and explicitly preview/apply shared skills, rules and MCP declarations |
+| `keelmux profiles --help` | Create and inspect independent saved capability selections |
+| `keelmux tools on\|off [--profile ID] PACK/TOOL` | Save a pinned component preference; a disabled pack remains disabled |
+| `keelmux run --profile ID [--workspace PATH] gemini\|grok\|opencode [native args]` | Select an applied profile with a reviewed interactive native contract; native lifecycle qualification remains open |
+| `keelmux run --operation ID` | Retry the original stored launch at its execution home without rebuilding argv or selections |
 | `keelmux diagnose --json` | Structured existing-state diagnosis; no startup or repair |
-| `keelmux diagnose --probe-versions` | Additionally permit bounded native Codex/Claude version subprocesses |
+| `keelmux diagnose --probe-versions` | Additionally permit bounded Codex, Claude, Gemini, Grok and OpenCode version subprocesses |
 
 Press **u** in the source switcher to read usage for the captured host/session. **r** rereads the local ledger; **Esc** returns to the same place. See [the source feature guides](feature-expansion.md).
 
@@ -64,7 +69,15 @@ keelmux run --name "Backend" --workspace /absolute/project --operation op_ORIGIN
 keelmux stop session_EXACT --operation op_ORIGINAL_STOP
 ```
 
-A launch retry must preserve the full original name, workspace, provider and native arguments. A changed request with the same operation ID conflicts. A replacement execution may make an old stop stale. Neither a new ID nor a repeated keystroke reconciles a possibly completed effect.
+In the development source, prefer the original operation ID alone:
+
+```sh
+keelmux run --operation op_ORIGINAL
+```
+
+This loads and validates the original stored request and session generation at the local execution home. It does not reconstruct native arguments, provider version or capability selections from current configuration. A completed or failed operation is never relaunched; an attempted/uncertain operation is reconciled without blindly replaying its effect. This form accepts only `--operation ID`. Supplying a provider selects the full-payload compatibility form, which must exactly match the recorded request. The operation must already exist; a missing ID creates no intent. Launch management is unavailable through a private entry.
+
+The full-payload compatibility form above must preserve the full original name, workspace, provider and native arguments. A changed request with the same operation ID conflicts. A replacement execution may make an old stop stale. Neither a new ID nor a repeated keystroke reconciles a possibly completed effect.
 
 ## Entry and companion executables
 
@@ -87,4 +100,4 @@ For owned IRC, use `keelmux projects create --name NAME --workspace PATH`, prese
 
 ## Commands still on the roadmap
 
-There are no implemented `join`, `connect`, `continue`, `subscriptions`, `usage`, backup or semantic-message commands at this source. Proposed syntax in the product specification must not be mistaken for an available command. Structured Codex prompt and approval control remains experimental and has no product launcher.
+There are no implemented `join`, `connect`, `continue`, `subscriptions`, backup or semantic-message commands at this source. Proposed syntax in the product specification must not be mistaken for an available command. Structured Codex prompt and approval control remains experimental and has no product launcher.

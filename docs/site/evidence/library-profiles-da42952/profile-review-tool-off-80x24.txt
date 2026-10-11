@@ -1,0 +1,24 @@
+  LIBRARY
+  Editing profile: review r3 · Code review
+  headroom / component preferences
+  › tool/mcp                                                         saved off
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Saved for next explicit apply/launch. Running sessions need reload; loaded
+  state unknown.
+  Enter toggle  Tab components  p profiles
+  r refresh  Esc return
+  Saved selection · apply/reload needed

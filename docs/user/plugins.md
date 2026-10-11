@@ -134,6 +134,10 @@ Grok carries rules and its skill index as literal launch arguments. Preview coun
 
 ## Qualified library controls
 
+Development source `da42952` adds saved-profile selection and direct tool switches. Complete local normal/race tests, vet, development builds and twelve site checks passed. Fifteen actual PTY captures across three sizes verified profile independence and exact cleanup; the [control qualification record](../evidence/capability-controls-da42952.md) keeps this scope separate from native loading and release qualification.
+
+The 80×24 [saved-profile picker](../site/evidence/library-profiles-da42952/profile-saved-profile-picker-80x24.png), [review-only tool switch](../site/evidence/library-profiles-da42952/profile-review-tool-off-80x24.png) and [saved-on component in a disabled pack](../site/evidence/library-profiles-da42952/profile-review-pack-off-saved-on-80x24.png) rasterize actual PTY cells from a deterministic inventory fixture and real Registry. No provider or tool ran; native loaded state remains **unknown**. The [capture bundle](../site/evidence/library-profiles-da42952/README.md) includes text equivalents and the original receipt.
+
 Earlier development source `00c6b52` passed 31 compiled CLI checks, six actual PTY captures at three sizes, complete local and hosted source checks, and fresh installed macOS Codex/Claude terminal lifecycle. A separate executable from that source passed actual Headroom initialize/list-only health with three tools listed, zero invoked and complete owned cleanup. The [qualification record for that source](../evidence/reusable-capabilities-00c6b52.md) distinguishes those executables, receipts and remaining native-loading/provider gates. Published v0.2.1 does not include the library commands.
 
 Development source `b730500` passed 32 compiled CLI checks and six actual PTY captures at 120×32, 80×24 and 40×14. The [qualification record](../evidence/reusable-capabilities-b730500.md) binds the exact source, executable and sanitized receipts. This does not establish native loading or qualify a released build.

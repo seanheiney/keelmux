@@ -31,9 +31,9 @@ The default path follows normal [state selection](configuration.md). An explicit
 | `live_registry`, `live_channels` | Bounded read-only projections from the same verified owner process |
 | `channel_configuration` | Saved bindings and receipt provenance validate; no remote channel request is made |
 | `ircd_configuration` | Saved IRC configuration, recorded runtime digests and release metadata validate |
-| `provider_codex`, `provider_claude` | Executable availability on PATH by default; reported version only with an explicit probe |
+| `provider_codex`, `provider_claude`, `provider_gemini`, `provider_grok`, `provider_opencode` | Executable availability on PATH by default; reported version only with an explicit probe |
 
-Some checks are omitted when earlier prerequisites are unavailable. The absence of an optional IRC configuration is normal when you have not initialized managed IRC. `provider_grok` remains unsupported rather than implying an unqualified native launch.
+Some checks are omitted when earlier prerequisites are unavailable. The absence of an optional IRC configuration is normal when you have not initialized managed IRC. Provider observations distinguish executable availability and a reported version from reviewed launch support. They do not qualify native loading or lifecycle; see [additional providers](providers.md).
 
 Offline registry inspection requires the existing owned private authority lock. If a writer holds it, diagnostics reports `in_use` and skips offline inspection. It may still obtain a bounded live projection from an already running local daemon. It never removes a lock, invokes recovery or opens SQLite in a mode that writes sidecars. A journal/WAL/SHM file, unsupported schema, corrupt data or unsafe file prevents offline validation.
 
@@ -53,7 +53,7 @@ Live reads have strict time, size and representation limits. A large or incompat
 keelmux --state /absolute/private/keelmux diagnose --probe-versions
 ```
 
-This permits `codex --version` and `claude --version` for executables found on PATH, with a three-second bound per probe and bounded captured output. Without this flag, diagnostics launches no provider subprocess. A probe that fails or returns an unsupported format stays unavailable.
+This permits `--version` for Codex, Claude, Gemini, Grok and OpenCode executables found on PATH, with a three-second bound per probe and bounded captured output. Without this flag, diagnostics launches no provider subprocess. A probe that fails or returns an unsupported format stays unavailable.
 
 A reported version does not establish login, entitlement, actual model, quota or terminal readiness. The command does not run login, update, billing, native account or model operations.
 

@@ -1,0 +1,1077 @@
+{
+  "artifact_sha256": {
+    "profile-default-pack-on-120x32.ansi": "646676e19349cec63024634f41befbb9a45d2aca19309032c8c72eac79b75583",
+    "profile-default-pack-on-120x32.png": "8b39c0899bbdc779f04adc51450c440f78ef809a4098f5c4bb1f18f8a0f5bd18",
+    "profile-default-pack-on-120x32.txt": "839e7326b242365f293605d4f1a42f26d4388d4b107268e67069fab8ec9298b5",
+    "profile-default-pack-on-40x14.ansi": "3e1eac841b6cfb209f105d52e3c246d13c7d87cd81a241d834bfe2a6f8c5de5d",
+    "profile-default-pack-on-40x14.png": "c71d57e4e97ffec9e706c638f1b8d6b0072e67c00928284a6dc19b63d6904c34",
+    "profile-default-pack-on-40x14.txt": "04b52c91c89992f4ff3dae13ecc8cb34c1e00f286f2d1ada5116ebd928744f70",
+    "profile-default-pack-on-80x24.ansi": "56816ad7af49c167920b51b696b3d39ff1fb7f79823e272bb5b4a2d42e0ce5f0",
+    "profile-default-pack-on-80x24.png": "5f16dc092f59313c20b73a55c806c03f9f2463686feb32c81dafcb869d4d4dd6",
+    "profile-default-pack-on-80x24.txt": "f402801619bd86f901cf51f968576c1c492564a3d3ad8e1aeed743f4f96728a3",
+    "profile-default-tool-on-120x32.ansi": "beedf077ab12eef619d76d8b5c266906d98ec2f39a01219c01ec555d94f8b907",
+    "profile-default-tool-on-120x32.png": "887e059e15221dc08396bb6693c27319c5e4a32b1a0d479d68ded159a10a5c79",
+    "profile-default-tool-on-120x32.txt": "ec66acdfb72b476c8d9274098ecf31cd91e61df0f900ebb8415c78c46f2052f7",
+    "profile-default-tool-on-40x14.ansi": "e0b7982481cb069cad2c931bce87a429ad4c15a8e2425bcc80bb4d2f1c226047",
+    "profile-default-tool-on-40x14.png": "e5381bb16699c5d554bbbf7324d558e5066f04a338d1c1efd15860a387f71313",
+    "profile-default-tool-on-40x14.txt": "2a54e0e419efd1b3c052a48df1b2ea39b80c7edf6e6e37f457c21a4b5c4da569",
+    "profile-default-tool-on-80x24.ansi": "0f1e7fdceb3b9a07ac40709864d3c27743da9e00dbdd928b22b6d549e3dd28c0",
+    "profile-default-tool-on-80x24.png": "79bffdd2612554e706232f9e66dc0696ac346c87a5103da0f6286ac080e8b558",
+    "profile-default-tool-on-80x24.txt": "00d63295d7b4b976ffbcab93b772e09cac02cc73c4c25b16da6a8b2e36964470",
+    "profile-review-pack-off-saved-on-120x32.ansi": "ae5a9b979993787e370eeefb84d4c5545bc30224082cc0379c0dc90296c82804",
+    "profile-review-pack-off-saved-on-120x32.png": "eda3af50b4d4ccaa70442d0b8bfb26a4ebc479ba409873a9bf5185f804ae4a56",
+    "profile-review-pack-off-saved-on-120x32.txt": "2ed984d7436469b4358cc5e0b140ab63f39c25f887b46483637d60b493ef94d8",
+    "profile-review-pack-off-saved-on-40x14.ansi": "7aa5f5d5381f92052b0c15cd0c9e7e7ee80a9891f2a6e8aadc5a575c8cb2e0ba",
+    "profile-review-pack-off-saved-on-40x14.png": "8027eba37e946a1f3802e2b8a3cc287e6906ddde1436d929bb38195cf0c14750",
+    "profile-review-pack-off-saved-on-40x14.txt": "9b5d7507736cc8e0efc577691558e30e509d430f2b978384730bc1430452cd83",
+    "profile-review-pack-off-saved-on-80x24.ansi": "e05bc4ae3fd7a4e235417979971d81ab58240941e6c16ef23cabca3eabd7fbc9",
+    "profile-review-pack-off-saved-on-80x24.png": "f75902fac5fb940cba20080f1284bfe43015604b24d64d04c39edc10a0ba927e",
+    "profile-review-pack-off-saved-on-80x24.txt": "ab44053ab2e96f679b7107c2eb7761cf61b5e525e10137150dafd265e24bc834",
+    "profile-review-tool-off-120x32.ansi": "61950e4081b41b5880e87d2d11277047044b520035711130cf6f45a697f59f27",
+    "profile-review-tool-off-120x32.png": "967b5cba2e96eb7293e1921f6ea9ca3e0918b2cce88f1ac2e01985aad5da688d",
+    "profile-review-tool-off-120x32.txt": "237540eb5ee8ef08a9c7ce3433cf875416ef14045befd9e6aa21c87ca5fc0066",
+    "profile-review-tool-off-40x14.ansi": "c3a41c9cf0bc6eb1a87358d6064e151790bc4e974421ce4492fec1c50236199f",
+    "profile-review-tool-off-40x14.png": "e0a6275ea1a985419fe07be6ca0d11e57cc78a2ac3783079eb806d9700d7a338",
+    "profile-review-tool-off-40x14.txt": "6522ad78a1e971c5138d38489b5083d83d29d3829f065045db273c88950bc317",
+    "profile-review-tool-off-80x24.ansi": "e45055c96e05927e12a5e17bfbacff1a02e225d24b57397c9ed84b51c2191780",
+    "profile-review-tool-off-80x24.png": "b010d19cffc0ec553c28c19f5092425192401f763066dfdd1f942a55e701004c",
+    "profile-review-tool-off-80x24.txt": "92d70565b0e7897f6d3604cb8ce233d5d18de06c4a53118a654246ae17288baf",
+    "profile-saved-profile-picker-120x32.ansi": "7ac1788e7af51bc69d0ca0c863f3fc2cf5472e17346ce912b893bb756aeb7335",
+    "profile-saved-profile-picker-120x32.png": "4356e5be71db7c7ad930aec26250acf2c8be20ffd2559a98824f4246d07a5530",
+    "profile-saved-profile-picker-120x32.txt": "f6dec29a272bb37cf1b66c695e1bda84fea7002c2ae27556c599ed5eecfc6fe3",
+    "profile-saved-profile-picker-40x14.ansi": "f46fec8d324f6db0defbb6c01dee03f8ca2493b4cc9a16c659ad1e766aee9a07",
+    "profile-saved-profile-picker-40x14.png": "99d1f4dad949688db6db8f5f51f2347f24cea66f2a00db4ddd1c014460434839",
+    "profile-saved-profile-picker-40x14.txt": "61b57b6d5b500f3d219977f26035ffb975ce6e380ab5bdadf9df4199cf73846e",
+    "profile-saved-profile-picker-80x24.ansi": "f20de4353c4b164ed817fd2dc8028dd9730d8a47ebf24df4cdfb5c5f97c9e32f",
+    "profile-saved-profile-picker-80x24.png": "985dccbbc16edbe250cddf60b46e214f71f10e86e190dbfe33b759802cd2d27e",
+    "profile-saved-profile-picker-80x24.txt": "713cd38da70fbb806488961c0c5db7ab4bd30d8ef2fb5fc204b29d93d78d3416"
+  },
+  "binary_sha256": "4bbe83684be233874a22d10b28283181936f7651ddfda9c7a091103fb1f7b639",
+  "captures": [
+    {
+      "captures": [
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-default-pack-on-120x32.ansi",
+              "sha256": "646676e19349cec63024634f41befbb9a45d2aca19309032c8c72eac79b75583"
+            },
+            "png": {
+              "name": "profile-default-pack-on-120x32.png",
+              "sha256": "8b39c0899bbdc779f04adc51450c440f78ef809a4098f5c4bb1f18f8a0f5bd18"
+            },
+            "txt": {
+              "name": "profile-default-pack-on-120x32.txt",
+              "sha256": "839e7326b242365f293605d4f1a42f26d4388d4b107268e67069fab8ec9298b5"
+            }
+          },
+          "size": [
+            120,
+            32
+          ],
+          "view": "default-pack-on"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-saved-profile-picker-120x32.ansi",
+              "sha256": "7ac1788e7af51bc69d0ca0c863f3fc2cf5472e17346ce912b893bb756aeb7335"
+            },
+            "png": {
+              "name": "profile-saved-profile-picker-120x32.png",
+              "sha256": "4356e5be71db7c7ad930aec26250acf2c8be20ffd2559a98824f4246d07a5530"
+            },
+            "txt": {
+              "name": "profile-saved-profile-picker-120x32.txt",
+              "sha256": "f6dec29a272bb37cf1b66c695e1bda84fea7002c2ae27556c599ed5eecfc6fe3"
+            }
+          },
+          "size": [
+            120,
+            32
+          ],
+          "view": "saved-profile-picker"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-review-tool-off-120x32.ansi",
+              "sha256": "61950e4081b41b5880e87d2d11277047044b520035711130cf6f45a697f59f27"
+            },
+            "png": {
+              "name": "profile-review-tool-off-120x32.png",
+              "sha256": "967b5cba2e96eb7293e1921f6ea9ca3e0918b2cce88f1ac2e01985aad5da688d"
+            },
+            "txt": {
+              "name": "profile-review-tool-off-120x32.txt",
+              "sha256": "237540eb5ee8ef08a9c7ce3433cf875416ef14045befd9e6aa21c87ca5fc0066"
+            }
+          },
+          "size": [
+            120,
+            32
+          ],
+          "view": "review-tool-off"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-default-tool-on-120x32.ansi",
+              "sha256": "beedf077ab12eef619d76d8b5c266906d98ec2f39a01219c01ec555d94f8b907"
+            },
+            "png": {
+              "name": "profile-default-tool-on-120x32.png",
+              "sha256": "887e059e15221dc08396bb6693c27319c5e4a32b1a0d479d68ded159a10a5c79"
+            },
+            "txt": {
+              "name": "profile-default-tool-on-120x32.txt",
+              "sha256": "ec66acdfb72b476c8d9274098ecf31cd91e61df0f900ebb8415c78c46f2052f7"
+            }
+          },
+          "size": [
+            120,
+            32
+          ],
+          "view": "default-tool-on"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-review-pack-off-saved-on-120x32.ansi",
+              "sha256": "ae5a9b979993787e370eeefb84d4c5545bc30224082cc0379c0dc90296c82804"
+            },
+            "png": {
+              "name": "profile-review-pack-off-saved-on-120x32.png",
+              "sha256": "eda3af50b4d4ccaa70442d0b8bfb26a4ebc479ba409873a9bf5185f804ae4a56"
+            },
+            "txt": {
+              "name": "profile-review-pack-off-saved-on-120x32.txt",
+              "sha256": "2ed984d7436469b4358cc5e0b140ab63f39c25f887b46483637d60b493ef94d8"
+            }
+          },
+          "size": [
+            120,
+            32
+          ],
+          "view": "review-pack-off-saved-on"
+        }
+      ],
+      "cleanup": {
+        "clean_quit_without_signals": true,
+        "errors": [],
+        "inventory_thread_joined": true,
+        "owned_fixture_removed": true,
+        "signals_sent": [],
+        "tui_exit_code": 0,
+        "tui_reaped": true
+      },
+      "default_resolution_unchanged": true,
+      "direct_tool_on_shortcut_verified": true,
+      "headroom_declaration_digest": "c9dc779bb8ae7fc9cf12a466a678558781be9712b423c05a84e9c2135ade9679",
+      "inventory_gets": 3,
+      "inventory_mutations": 0,
+      "inventory_requests": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ]
+      ],
+      "local_cli_commands": [
+        {
+          "args": [
+            "plugins",
+            "import",
+            "--builtin",
+            "headroom"
+          ],
+          "json_sha256": "668f255a3327a415b4a71956453c16b5db0df65f8f93d0390647686eef6aa2b8",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "on",
+            "headroom"
+          ],
+          "json_sha256": "df03b35f49fd5ec8c49bdfe98b40cb62aee0ab70676f54bd17cdea1baf968132",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "create",
+            "--name",
+            "Code review",
+            "review"
+          ],
+          "json_sha256": "0fe75b28dd7d9c642c149a7037ba5eed01332c2b6bf93f81df4bc8139d42bdcd",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "on",
+            "--profile",
+            "review",
+            "headroom"
+          ],
+          "json_sha256": "b1ffe24392514448877332439d02eb2289447a399632c6b606ed383714221317",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "946c60d4094f5e605fadc7231f963a2369702600f899457386425c3c37b0d393",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "53e395aea4cd630689cb02949e016017a2006bad796407d9f4d24dd4674bfdf5",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "fbfe467afa5d6aaf1de6b33b26e699726620db1e5b9d159847472a91a9840e9d",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "97944f651aaad96849167ddb52a9b7ffea831491f12410e5d54f167146dc538d",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "7f22660eb5cf22f3d04b76a78b92f010a5acbcfe04d5f10810d6cc3340546cde",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "e837d70a7ca2ad974c869b8331dd2f4ae4a67cebaeecc4ea2a8f2773067e3e4e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "e837d70a7ca2ad974c869b8331dd2f4ae4a67cebaeecc4ea2a8f2773067e3e4e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "tools",
+            "on",
+            "--profile",
+            "review",
+            "headroom/mcp"
+          ],
+          "json_sha256": "7107d820733ee6389dbe7b8cab12c7a8d03effcef49b7ffced88695e21a2d0af",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "a24a97385d1bbcfc17c10d89c5413a1daae21b5abf7c95e8e850e4f14eeb0691",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "fb3e53f5b3ff1479f53031fb6db56055917745d45e56327a766502f02209533e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "bbac5d3c1d051ff612245b39ab96c4476f8cb948c6177e52dfb92fdb081d151a",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "off",
+            "--profile",
+            "review",
+            "headroom"
+          ],
+          "json_sha256": "2063f6c5a4449332d9a981325360ee4679a27d8d2e2218b6d3feb9b92a547d15",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "8adae12a6b7b65e3a93a563407a837a66067690407e52e07c249bc19a2aa4102",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "19db4df8b63516c15340527a712e2e040bd7d0011b984ba069d9f7d5743337d7",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "67ac07d35d451e641e24029f4ef108d16fafae30f096106700caa30cfa348184",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "67ac07d35d451e641e24029f4ef108d16fafae30f096106700caa30cfa348184",
+          "result": "pass"
+        }
+      ],
+      "native_loaded_state": "unknown",
+      "result": "pass",
+      "review_disabled_pack_saved_on_inactive_verified": true,
+      "review_tool_only_toggle_verified": true,
+      "size": [
+        120,
+        32
+      ],
+      "unexpected_command_markers": []
+    },
+    {
+      "captures": [
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-default-pack-on-80x24.ansi",
+              "sha256": "56816ad7af49c167920b51b696b3d39ff1fb7f79823e272bb5b4a2d42e0ce5f0"
+            },
+            "png": {
+              "name": "profile-default-pack-on-80x24.png",
+              "sha256": "5f16dc092f59313c20b73a55c806c03f9f2463686feb32c81dafcb869d4d4dd6"
+            },
+            "txt": {
+              "name": "profile-default-pack-on-80x24.txt",
+              "sha256": "f402801619bd86f901cf51f968576c1c492564a3d3ad8e1aeed743f4f96728a3"
+            }
+          },
+          "size": [
+            80,
+            24
+          ],
+          "view": "default-pack-on"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-saved-profile-picker-80x24.ansi",
+              "sha256": "f20de4353c4b164ed817fd2dc8028dd9730d8a47ebf24df4cdfb5c5f97c9e32f"
+            },
+            "png": {
+              "name": "profile-saved-profile-picker-80x24.png",
+              "sha256": "985dccbbc16edbe250cddf60b46e214f71f10e86e190dbfe33b759802cd2d27e"
+            },
+            "txt": {
+              "name": "profile-saved-profile-picker-80x24.txt",
+              "sha256": "713cd38da70fbb806488961c0c5db7ab4bd30d8ef2fb5fc204b29d93d78d3416"
+            }
+          },
+          "size": [
+            80,
+            24
+          ],
+          "view": "saved-profile-picker"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-review-tool-off-80x24.ansi",
+              "sha256": "e45055c96e05927e12a5e17bfbacff1a02e225d24b57397c9ed84b51c2191780"
+            },
+            "png": {
+              "name": "profile-review-tool-off-80x24.png",
+              "sha256": "b010d19cffc0ec553c28c19f5092425192401f763066dfdd1f942a55e701004c"
+            },
+            "txt": {
+              "name": "profile-review-tool-off-80x24.txt",
+              "sha256": "92d70565b0e7897f6d3604cb8ce233d5d18de06c4a53118a654246ae17288baf"
+            }
+          },
+          "size": [
+            80,
+            24
+          ],
+          "view": "review-tool-off"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-default-tool-on-80x24.ansi",
+              "sha256": "0f1e7fdceb3b9a07ac40709864d3c27743da9e00dbdd928b22b6d549e3dd28c0"
+            },
+            "png": {
+              "name": "profile-default-tool-on-80x24.png",
+              "sha256": "79bffdd2612554e706232f9e66dc0696ac346c87a5103da0f6286ac080e8b558"
+            },
+            "txt": {
+              "name": "profile-default-tool-on-80x24.txt",
+              "sha256": "00d63295d7b4b976ffbcab93b772e09cac02cc73c4c25b16da6a8b2e36964470"
+            }
+          },
+          "size": [
+            80,
+            24
+          ],
+          "view": "default-tool-on"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-review-pack-off-saved-on-80x24.ansi",
+              "sha256": "e05bc4ae3fd7a4e235417979971d81ab58240941e6c16ef23cabca3eabd7fbc9"
+            },
+            "png": {
+              "name": "profile-review-pack-off-saved-on-80x24.png",
+              "sha256": "f75902fac5fb940cba20080f1284bfe43015604b24d64d04c39edc10a0ba927e"
+            },
+            "txt": {
+              "name": "profile-review-pack-off-saved-on-80x24.txt",
+              "sha256": "ab44053ab2e96f679b7107c2eb7761cf61b5e525e10137150dafd265e24bc834"
+            }
+          },
+          "size": [
+            80,
+            24
+          ],
+          "view": "review-pack-off-saved-on"
+        }
+      ],
+      "cleanup": {
+        "clean_quit_without_signals": true,
+        "errors": [],
+        "inventory_thread_joined": true,
+        "owned_fixture_removed": true,
+        "signals_sent": [],
+        "tui_exit_code": 0,
+        "tui_reaped": true
+      },
+      "default_resolution_unchanged": true,
+      "direct_tool_on_shortcut_verified": true,
+      "headroom_declaration_digest": "c9dc779bb8ae7fc9cf12a466a678558781be9712b423c05a84e9c2135ade9679",
+      "inventory_gets": 3,
+      "inventory_mutations": 0,
+      "inventory_requests": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ]
+      ],
+      "local_cli_commands": [
+        {
+          "args": [
+            "plugins",
+            "import",
+            "--builtin",
+            "headroom"
+          ],
+          "json_sha256": "668f255a3327a415b4a71956453c16b5db0df65f8f93d0390647686eef6aa2b8",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "on",
+            "headroom"
+          ],
+          "json_sha256": "df03b35f49fd5ec8c49bdfe98b40cb62aee0ab70676f54bd17cdea1baf968132",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "create",
+            "--name",
+            "Code review",
+            "review"
+          ],
+          "json_sha256": "0fe75b28dd7d9c642c149a7037ba5eed01332c2b6bf93f81df4bc8139d42bdcd",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "on",
+            "--profile",
+            "review",
+            "headroom"
+          ],
+          "json_sha256": "b1ffe24392514448877332439d02eb2289447a399632c6b606ed383714221317",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "946c60d4094f5e605fadc7231f963a2369702600f899457386425c3c37b0d393",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "53e395aea4cd630689cb02949e016017a2006bad796407d9f4d24dd4674bfdf5",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "fbfe467afa5d6aaf1de6b33b26e699726620db1e5b9d159847472a91a9840e9d",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "97944f651aaad96849167ddb52a9b7ffea831491f12410e5d54f167146dc538d",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "7f22660eb5cf22f3d04b76a78b92f010a5acbcfe04d5f10810d6cc3340546cde",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "e837d70a7ca2ad974c869b8331dd2f4ae4a67cebaeecc4ea2a8f2773067e3e4e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "e837d70a7ca2ad974c869b8331dd2f4ae4a67cebaeecc4ea2a8f2773067e3e4e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "tools",
+            "on",
+            "--profile",
+            "review",
+            "headroom/mcp"
+          ],
+          "json_sha256": "7107d820733ee6389dbe7b8cab12c7a8d03effcef49b7ffced88695e21a2d0af",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "a24a97385d1bbcfc17c10d89c5413a1daae21b5abf7c95e8e850e4f14eeb0691",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "fb3e53f5b3ff1479f53031fb6db56055917745d45e56327a766502f02209533e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "bbac5d3c1d051ff612245b39ab96c4476f8cb948c6177e52dfb92fdb081d151a",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "off",
+            "--profile",
+            "review",
+            "headroom"
+          ],
+          "json_sha256": "2063f6c5a4449332d9a981325360ee4679a27d8d2e2218b6d3feb9b92a547d15",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "8adae12a6b7b65e3a93a563407a837a66067690407e52e07c249bc19a2aa4102",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "19db4df8b63516c15340527a712e2e040bd7d0011b984ba069d9f7d5743337d7",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "67ac07d35d451e641e24029f4ef108d16fafae30f096106700caa30cfa348184",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "67ac07d35d451e641e24029f4ef108d16fafae30f096106700caa30cfa348184",
+          "result": "pass"
+        }
+      ],
+      "native_loaded_state": "unknown",
+      "result": "pass",
+      "review_disabled_pack_saved_on_inactive_verified": true,
+      "review_tool_only_toggle_verified": true,
+      "size": [
+        80,
+        24
+      ],
+      "unexpected_command_markers": []
+    },
+    {
+      "captures": [
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-default-pack-on-40x14.ansi",
+              "sha256": "3e1eac841b6cfb209f105d52e3c246d13c7d87cd81a241d834bfe2a6f8c5de5d"
+            },
+            "png": {
+              "name": "profile-default-pack-on-40x14.png",
+              "sha256": "c71d57e4e97ffec9e706c638f1b8d6b0072e67c00928284a6dc19b63d6904c34"
+            },
+            "txt": {
+              "name": "profile-default-pack-on-40x14.txt",
+              "sha256": "04b52c91c89992f4ff3dae13ecc8cb34c1e00f286f2d1ada5116ebd928744f70"
+            }
+          },
+          "size": [
+            40,
+            14
+          ],
+          "view": "default-pack-on"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-saved-profile-picker-40x14.ansi",
+              "sha256": "f46fec8d324f6db0defbb6c01dee03f8ca2493b4cc9a16c659ad1e766aee9a07"
+            },
+            "png": {
+              "name": "profile-saved-profile-picker-40x14.png",
+              "sha256": "99d1f4dad949688db6db8f5f51f2347f24cea66f2a00db4ddd1c014460434839"
+            },
+            "txt": {
+              "name": "profile-saved-profile-picker-40x14.txt",
+              "sha256": "61b57b6d5b500f3d219977f26035ffb975ce6e380ab5bdadf9df4199cf73846e"
+            }
+          },
+          "size": [
+            40,
+            14
+          ],
+          "view": "saved-profile-picker"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-review-tool-off-40x14.ansi",
+              "sha256": "c3a41c9cf0bc6eb1a87358d6064e151790bc4e974421ce4492fec1c50236199f"
+            },
+            "png": {
+              "name": "profile-review-tool-off-40x14.png",
+              "sha256": "e0a6275ea1a985419fe07be6ca0d11e57cc78a2ac3783079eb806d9700d7a338"
+            },
+            "txt": {
+              "name": "profile-review-tool-off-40x14.txt",
+              "sha256": "6522ad78a1e971c5138d38489b5083d83d29d3829f065045db273c88950bc317"
+            }
+          },
+          "size": [
+            40,
+            14
+          ],
+          "view": "review-tool-off"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-default-tool-on-40x14.ansi",
+              "sha256": "e0b7982481cb069cad2c931bce87a429ad4c15a8e2425bcc80bb4d2f1c226047"
+            },
+            "png": {
+              "name": "profile-default-tool-on-40x14.png",
+              "sha256": "e5381bb16699c5d554bbbf7324d558e5066f04a338d1c1efd15860a387f71313"
+            },
+            "txt": {
+              "name": "profile-default-tool-on-40x14.txt",
+              "sha256": "2a54e0e419efd1b3c052a48df1b2ea39b80c7edf6e6e37f457c21a4b5c4da569"
+            }
+          },
+          "size": [
+            40,
+            14
+          ],
+          "view": "default-tool-on"
+        },
+        {
+          "files": {
+            "ansi": {
+              "name": "profile-review-pack-off-saved-on-40x14.ansi",
+              "sha256": "7aa5f5d5381f92052b0c15cd0c9e7e7ee80a9891f2a6e8aadc5a575c8cb2e0ba"
+            },
+            "png": {
+              "name": "profile-review-pack-off-saved-on-40x14.png",
+              "sha256": "8027eba37e946a1f3802e2b8a3cc287e6906ddde1436d929bb38195cf0c14750"
+            },
+            "txt": {
+              "name": "profile-review-pack-off-saved-on-40x14.txt",
+              "sha256": "9b5d7507736cc8e0efc577691558e30e509d430f2b978384730bc1430452cd83"
+            }
+          },
+          "size": [
+            40,
+            14
+          ],
+          "view": "review-pack-off-saved-on"
+        }
+      ],
+      "cleanup": {
+        "clean_quit_without_signals": true,
+        "errors": [],
+        "inventory_thread_joined": true,
+        "owned_fixture_removed": true,
+        "signals_sent": [],
+        "tui_exit_code": 0,
+        "tui_reaped": true
+      },
+      "default_resolution_unchanged": true,
+      "direct_tool_on_shortcut_verified": true,
+      "headroom_declaration_digest": "c9dc779bb8ae7fc9cf12a466a678558781be9712b423c05a84e9c2135ade9679",
+      "inventory_gets": 3,
+      "inventory_mutations": 0,
+      "inventory_requests": [
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ],
+        [
+          "GET",
+          "/v1/sessions"
+        ]
+      ],
+      "local_cli_commands": [
+        {
+          "args": [
+            "plugins",
+            "import",
+            "--builtin",
+            "headroom"
+          ],
+          "json_sha256": "668f255a3327a415b4a71956453c16b5db0df65f8f93d0390647686eef6aa2b8",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "on",
+            "headroom"
+          ],
+          "json_sha256": "df03b35f49fd5ec8c49bdfe98b40cb62aee0ab70676f54bd17cdea1baf968132",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "create",
+            "--name",
+            "Code review",
+            "review"
+          ],
+          "json_sha256": "0fe75b28dd7d9c642c149a7037ba5eed01332c2b6bf93f81df4bc8139d42bdcd",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "on",
+            "--profile",
+            "review",
+            "headroom"
+          ],
+          "json_sha256": "b1ffe24392514448877332439d02eb2289447a399632c6b606ed383714221317",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "946c60d4094f5e605fadc7231f963a2369702600f899457386425c3c37b0d393",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "53e395aea4cd630689cb02949e016017a2006bad796407d9f4d24dd4674bfdf5",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "fbfe467afa5d6aaf1de6b33b26e699726620db1e5b9d159847472a91a9840e9d",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "97944f651aaad96849167ddb52a9b7ffea831491f12410e5d54f167146dc538d",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "7f22660eb5cf22f3d04b76a78b92f010a5acbcfe04d5f10810d6cc3340546cde",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "e837d70a7ca2ad974c869b8331dd2f4ae4a67cebaeecc4ea2a8f2773067e3e4e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "e837d70a7ca2ad974c869b8331dd2f4ae4a67cebaeecc4ea2a8f2773067e3e4e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "tools",
+            "on",
+            "--profile",
+            "review",
+            "headroom/mcp"
+          ],
+          "json_sha256": "7107d820733ee6389dbe7b8cab12c7a8d03effcef49b7ffced88695e21a2d0af",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "a24a97385d1bbcfc17c10d89c5413a1daae21b5abf7c95e8e850e4f14eeb0691",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "fb3e53f5b3ff1479f53031fb6db56055917745d45e56327a766502f02209533e",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "bbac5d3c1d051ff612245b39ab96c4476f8cb948c6177e52dfb92fdb081d151a",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "off",
+            "--profile",
+            "review",
+            "headroom"
+          ],
+          "json_sha256": "2063f6c5a4449332d9a981325360ee4679a27d8d2e2218b6d3feb9b92a547d15",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "default"
+          ],
+          "json_sha256": "8adae12a6b7b65e3a93a563407a837a66067690407e52e07c249bc19a2aa4102",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "profiles",
+            "show",
+            "review"
+          ],
+          "json_sha256": "19db4df8b63516c15340527a712e2e040bd7d0011b984ba069d9f7d5743337d7",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "67ac07d35d451e641e24029f4ef108d16fafae30f096106700caa30cfa348184",
+          "result": "pass"
+        },
+        {
+          "args": [
+            "plugins",
+            "list"
+          ],
+          "json_sha256": "67ac07d35d451e641e24029f4ef108d16fafae30f096106700caa30cfa348184",
+          "result": "pass"
+        }
+      ],
+      "native_loaded_state": "unknown",
+      "result": "pass",
+      "review_disabled_pack_saved_on_inactive_verified": true,
+      "review_tool_only_toggle_verified": true,
+      "size": [
+        40,
+        14
+      ],
+      "unexpected_command_markers": []
+    }
+  ],
+  "daemon_launches": 0,
+  "font_sha256": "dc256e0b39c2a6fec947129d421fef41b8b429f58f9b6e5d1b148c87f775c1f6",
+  "limits": [
+    "No native provider/loading/model qualification",
+    "No installed release or running-image proof",
+    "No OS sandbox isolation claim"
+  ],
+  "model_turns": 0,
+  "native_application_writes": 0,
+  "native_loaded_state": "unknown",
+  "native_provider_launches": 0,
+  "pillow": "12.3.0",
+  "python": "3.12.14",
+  "reference_capture_sha256": "2a868a3dc492d4ec0d4fcd1be11ae67a29310c87ab1cbb3bd79d6dc5d8b17fb4",
+  "result": "pass",
+  "schema": 1,
+  "scope": "Compiled product CLI and actual PTY cells; deterministic GET-only Unix inventory; real private Registry. PNGs rasterize terminal cells, not native-window screenshots.",
+  "script_sha256": "4a6edd0f6d5dbed333962e3655dcd12b2f9c8a5872f49cbe75be5b71a8b600e6",
+  "source_clean": true,
+  "source_sha": "da429525953715956bb765cac98fbc8691be8cfc",
+  "source_tree": "1fd70620769c36019656b5e8aeda1cb3fb12c3ea",
+  "tool_invocations": 0,
+  "version": {
+    "arch": "arm64",
+    "built_at": "2026-10-11T04:09:45Z",
+    "commit": "da429525953715956bb765cac98fbc8691be8cfc",
+    "go_version": "go1.26.6",
+    "name": "Keelmux",
+    "os": "darwin",
+    "protocol": "bp/1",
+    "version": "development"
+  }
+}
