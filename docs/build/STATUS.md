@@ -1,6 +1,10 @@
 # Implementation status
 
-Updated: 2026-10-11 UTC (2026-10-10 EDT), public Keelmux v0.2.1 remains latest; reusable capabilities passed combined-source, hosted and installed macOS Codex/Claude qualification at `00c6b52`; supervisor-owned stdio passed fresh local integrated source/build gates at `158f6ca`; new hosted qualification is pending and the earlier `56e8040` failures remain retained. New release publication awaits final runtime and archive qualification.
+Updated: 2026-10-11 UTC (2026-10-10 EDT). Public Keelmux v0.2.1 remains latest. Linux running-image repair at `af27d86` passed all five fresh local source/build gates and both six-job hosted source/packaging workflows; both Linux jobs also passed explicit owned exec and normal-production-helper/deterministic-child controls. Documentation build passed with deployment skipped. Native provider and final release qualification remain separate.
+
+The verifier now compares the current kernel executable backing object with its retained hashed descriptor, including stable metadata, boot and process lifetime. This rejects sustained same-PID different-image exec, with checked-instant and ABA limits explicit. [Current source evidence](../evidence/linux-running-image-af27d86.md) records exact checkout trees, logs and fixture scope. Darwin remains unavailable; no native model, writer or approval capability was enabled. The next concrete Bouncer source gap is enrolled SSH terminal attachment; scoped export and captain-ledger contracts are proposed, not implemented.
+
+Earlier controller checkpoint snapshots below retain their original source and qualification scope.
 
 Source `158f6cac6810ca8bda0b64d950f6e10ecbd5c5c8` passed fresh full tagged normal and race suites, vet, four development binary builds and twelve documentation tests. Stop success now waits for terminal receipt persistence. Exact retained stop recovery independently validates and syncs the owned receipt, stdio sidecar and state directory, with file/content/identity/context rechecks; explicit errors remain errors and no new native request or signal is replayed. Independent finite source/log review closed the terminal stop durability findings; deterministic negative controls preserve the original deadlines and no-replay assertions. [Repaired source evidence](../evidence/primary-stdio-158f6ca.md).
 
