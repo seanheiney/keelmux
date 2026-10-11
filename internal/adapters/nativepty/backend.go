@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/seanheiney/keelmux/internal/domain"
+	ps "github.com/seanheiney/keelmux/internal/primarystdio"
 	bpruntime "github.com/seanheiney/keelmux/internal/runtime"
 )
 
@@ -60,12 +61,14 @@ type receipt struct {
 	SupervisorStart string            `json:"supervisor_start"`
 	ExitCode        *int              `json:"exit_code,omitempty"`
 	Detail          string            `json:"detail,omitempty"`
+	Stdio           *ps.Channel       `json:"stdio,omitempty"`
 }
 type launchMessage struct {
 	Spec             domain.LaunchSpec
 	Auth, Executable string
 	Env              []string
 	HistoryBytes     int
+	Stdio            *ps.LaunchSpec `json:",omitempty"`
 }
 
 func New(stateDir string) (*Backend, error) { return NewWithOptions(stateDir, Options{}) }
@@ -299,6 +302,9 @@ func (b *Backend) Stop(ctx context.Context, ref domain.RuntimeRef) error {
 	if err != nil {
 		return err
 	}
+	if r.Mode == "stdio" {
+		return ps.ErrConflict // Only the typed, cursor-fenced path may stop stdio.
+	}
 	boot, err := bootID()
 	if err != nil {
 		return err
@@ -404,7 +410,9 @@ func (b *Backend) readReceipt(id domain.ID) (receipt, error) {
 	if err = json.Unmarshal(data, &r); err != nil {
 		return r, err
 	}
-	if r.Version != 1 || r.Ref.Backend != "native" || r.Ref.ExecutionID != id || r.Ref.Socket != b.socket(id) || !validID(r.Ref.OperationID) || !identityPattern.MatchString(r.Auth) || !identityPattern.MatchString(r.LinkToken) || !identityPattern.MatchString(r.Ref.Session) || (r.Mode != "pty" && r.Mode != "process") {
+	legacy := r.Version == 1 && (r.Mode == "pty" || r.Mode == "process") && r.Stdio == nil
+	stdio := r.Version == 2 && r.Mode == "stdio" && validStdioReceipt(r)
+	if (!legacy && !stdio) || r.Ref.Backend != "native" || r.Ref.ExecutionID != id || r.Ref.Socket != b.socket(id) || !validID(r.Ref.OperationID) || !identityPattern.MatchString(r.Auth) || !identityPattern.MatchString(r.LinkToken) || !identityPattern.MatchString(r.Ref.Session) {
 		return r, errors.New("invalid private native receipt")
 	}
 	return r, nil

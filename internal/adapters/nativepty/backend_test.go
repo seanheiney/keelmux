@@ -22,6 +22,9 @@ import (
 var helperPath string
 
 func TestMain(m *testing.M) {
+	if runStdioTestMode() {
+		return
+	}
 	if os.Getenv("KEELMUX_TEST_PTY_LIFECYCLE_CHILD") == "1" {
 		os.Exit(runPTYLifecycleFixture())
 	}
