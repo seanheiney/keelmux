@@ -447,6 +447,7 @@ func (m *model) acquire(readOnly bool) tea.Cmd {
 		m.status = "Saved selection is unavailable; use arrows to select available work."
 		return nil
 	}
+	readOnly = readOnly || s.Capabilities.ObserverOnly
 	if !s.Capabilities.NativeAttach || (readOnly && !s.Capabilities.ReadOnlyAttach) {
 		m.status = capability(s)
 		return nil

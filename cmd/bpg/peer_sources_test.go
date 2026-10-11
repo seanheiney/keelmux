@@ -23,7 +23,11 @@ func entryEnrollment(t *testing.T) (configuration, string, domain.ID) {
 	t.Helper()
 	host := domain.NewID("host")
 	session := domain.NewSession(host, "fixture", "/fixture", "fixture", "test")
-	dir := filepath.Join(t.TempDir(), "peers")
+	canonical, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(canonical, "peers")
 	r, err := peerregistry.Open(dir, entryInventoryFixture{peerregistry.Snapshot{Version: peerregistry.Version, HostID: host, CapturedAt: time.Now().UTC(), Sessions: []domain.Session{session}}})
 	if err != nil {
 		t.Fatal(err)

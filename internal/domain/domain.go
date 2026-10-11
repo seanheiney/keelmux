@@ -38,6 +38,8 @@ type Evidence struct {
 func Unknown() Evidence { return Evidence{Value: "unknown", Source: "unknown"} }
 
 type Capabilities struct {
+	// ObserverOnly marks a scoped route that cannot acquire native input.
+	ObserverOnly   bool   `json:"observer_only,omitempty"`
 	NativeAttach   bool   `json:"native_attach"`
 	ReadOnlyAttach bool   `json:"read_only_attach"`
 	Stop           bool   `json:"stop"`

@@ -4,24 +4,26 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/seanheiney/keelmux/internal/buildinfo"
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/federation"
+	"github.com/seanheiney/keelmux/internal/peers"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/transport"
 )
@@ -29,9 +31,10 @@ import (
 type configuration struct {
 	Principal string `json:"principal"`
 	Peers     []struct {
-		HostID         domain.ID `json:"host_id"`
-		Socket         string    `json:"socket"`
-		InventoryStore string    `json:"inventory_store,omitempty"`
+		HostID         domain.ID            `json:"host_id"`
+		Socket         string               `json:"socket"`
+		InventoryStore string               `json:"inventory_store,omitempty"`
+		TerminalRead   *peers.ReadSelection `json:"terminal_read,omitempty"`
 	} `json:"peers"`
 	Grants []struct {
 		HostID   domain.ID   `json:"host_id"`
@@ -52,25 +55,18 @@ func main() {
 
 func readConfiguration(path string) (configuration, error) {
 	var conf configuration
-	fd, err := syscall.Open(path, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC|syscall.O_NONBLOCK, 0)
-	if err != nil {
-		return conf, errors.New("private entry configuration unavailable")
+	if err := config.ReadPrivateJSON(path, 65536, &conf); err != nil {
+		return conf, err
 	}
-	f := os.NewFile(uintptr(fd), path)
-	defer f.Close()
-	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0600 || info.Sys().(*syscall.Stat_t).Uid != uint32(os.Geteuid()) || info.Size() > 65536 {
-		return conf, errors.New("entry configuration must be an owned regular file with mode 0600, at most 64 KiB")
+	if conf.Principal == "" || len(conf.Principal) > 128 || conf.Principal != strings.TrimSpace(conf.Principal) || !utf8.ValidString(conf.Principal) || strings.ContainsFunc(conf.Principal, unicode.IsControl) || len(conf.Peers) == 0 || len(conf.Peers) > peers.MaxPeers {
+		return conf, errors.New("entry configuration needs one bounded principal and explicit peers")
 	}
-	d := json.NewDecoder(io.LimitReader(f, 65537))
-	d.DisallowUnknownFields()
-	if err := d.Decode(&conf); err != nil {
-		return conf, errors.New("invalid private entry configuration")
-	}
-	if !errors.Is(d.Decode(new(any)), io.EOF) || conf.Principal == "" || len(conf.Peers) == 0 {
-		return conf, errors.New("entry configuration needs one principal and explicit peers")
-	}
+	seen := map[domain.ID]bool{}
 	for _, peer := range conf.Peers {
+		if peer.HostID == "" || seen[peer.HostID] {
+			return conf, errors.New("entry peers require distinct exact home identities")
+		}
+		seen[peer.HostID] = true
 		if (peer.Socket == "") == (peer.InventoryStore == "") {
 			return conf, errors.New("select exactly one peer socket or enrolled inventory_store")
 		}
@@ -80,11 +76,17 @@ func readConfiguration(path string) (configuration, error) {
 		if peer.InventoryStore != "" && (!filepath.IsAbs(peer.InventoryStore) || filepath.Clean(peer.InventoryStore) != peer.InventoryStore || len(peer.InventoryStore) > 4096 || !domain.ValidObjectID(peer.HostID, "host")) {
 			return conf, errors.New("SSH inventory needs an existing absolute inventory_store and exact host ID")
 		}
+		if peer.TerminalRead != nil {
+			read := peer.TerminalRead
+			if peer.InventoryStore == "" || !filepath.IsAbs(read.PolicyPath) || filepath.Clean(read.PolicyPath) != read.PolicyPath || len(read.PolicyPath) > 4096 || !utf8.ValidString(read.PolicyPath) || strings.ContainsFunc(read.PolicyPath, unicode.IsControl) || !domain.ValidObjectID(read.ScopeID, "scope") {
+				return conf, errors.New("terminal_read requires an enrolled inventory store and explicit canonical home policy selector")
+			}
+		}
 	}
 	return conf, nil
 }
 
-func run() error {
+func run() (resultErr error) {
 	state := flag.String("state", "", "explicit private entry state directory")
 	file := flag.String("config", "", "owned mode-0600 peer/session grant configuration")
 	companion := flag.String("companion", "", "client-local Keelmux executable; defaults beside entry")
@@ -131,7 +133,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer closePeers()
+	defer func() { resultErr = errors.Join(resultErr, closePeers()) }()
 	var grants []federation.Grant
 	for _, grant := range conf.Grants {
 		grants = append(grants, federation.Grant{Principal: conf.Principal, HostID: grant.HostID, Sessions: grant.Sessions})
