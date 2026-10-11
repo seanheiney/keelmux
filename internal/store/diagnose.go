@@ -74,7 +74,7 @@ func DiagnoseExisting(ctx context.Context, dir *diagnosticfs.Dir) (DiagnosticSna
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	var version int
-	if err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version != 4 {
+	if err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || (version != 4 && version != 5) {
 		return out, repair("diagnostic schema unavailable")
 	}
 	var integrity string
@@ -83,6 +83,11 @@ func DiagnoseExisting(ctx context.Context, dir *diagnosticfs.Dir) (DiagnosticSna
 	}
 	for _, check := range []func(context.Context, *sql.DB) error{validateCodexSchema, validateChannelSchema, validateProjectSchema, validatePrimaryStdioSchema} {
 		if err = check(ctx, db); err != nil {
+			return out, err
+		}
+	}
+	if version == 5 {
+		if err = validateCaptainSchema(ctx, db); err != nil {
 			return out, err
 		}
 	}

@@ -557,7 +557,7 @@ func TestChannelMigrationLateCollisionLeavesNoPartialSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, table := range []string{"project_threads", "projects", "channel_inbox", "channel_deliveries", "channel_cursors", "channel_messages", "channel_bindings", "chat_threads"} {
+	for _, table := range []string{"captain_entries", "captain_assignments", "captain_read_grants", "captain_principals", "captain_commands", "project_threads", "projects", "channel_inbox", "channel_deliveries", "channel_cursors", "channel_messages", "channel_bindings", "chat_threads"} {
 		if _, err = s.db.Exec("DROP TABLE " + table); err != nil {
 			t.Fatal(err)
 		}
@@ -609,7 +609,7 @@ func TestChannelMigrationCollisionRollsBackVersionAndPreservesLegacy(t *testing.
 	if err = s.db.QueryRow("SELECT data,payload FROM operations WHERE id=?", lease.OperationID).Scan(&opBefore, &payloadBefore); err != nil {
 		t.Fatal(err)
 	}
-	for _, table := range []string{"project_threads", "projects", "channel_inbox", "channel_deliveries", "channel_cursors", "channel_messages", "channel_bindings", "chat_threads"} {
+	for _, table := range []string{"captain_entries", "captain_assignments", "captain_read_grants", "captain_principals", "captain_commands", "project_threads", "projects", "channel_inbox", "channel_deliveries", "channel_cursors", "channel_messages", "channel_bindings", "chat_threads"} {
 		if _, err = s.db.Exec("DROP TABLE " + table); err != nil {
 			t.Fatal(err)
 		}
@@ -725,7 +725,7 @@ func TestChannelEstablishedSchemaAndMetadataFailClosed(t *testing.T) {
 			}
 			defer db.Close()
 			var v int
-			if e = db.QueryRow("PRAGMA user_version").Scan(&v); e != nil || v != 4 {
+			if e = db.QueryRow("PRAGMA user_version").Scan(&v); e != nil || v != 5 {
 				t.Fatal("corruption changed version", v, e)
 			}
 		})
