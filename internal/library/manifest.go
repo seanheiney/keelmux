@@ -28,6 +28,7 @@ var ErrCorrupt = errors.New("capability library is corrupt; preserve it for expl
 var ErrUnsafe = errors.New("capability library path must be owned and safe")
 var ErrNotFound = errors.New("capability package or profile not found")
 var ErrPending = errors.New("capability library has an unfinished write; retry a mutation to recover")
+var ErrStale = errors.New("capability selection changed; refresh and retry")
 
 var identifier = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
 var digestPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)

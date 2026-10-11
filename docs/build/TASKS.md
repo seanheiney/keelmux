@@ -62,10 +62,10 @@ Owner scope added 2026-10-10: reusable plugins, rules, skills and tools with exp
 
 | Lane | Owner | Required acceptance |
 | --- | --- | --- |
-| Plugin registry and profiles | Captain; capability specialist | Versioned pinned manifests, explicit scope and toggles, durable desired/applied/loaded states, ownership-aware removal and rollback |
-| Portable rules and skills | Skill integration specialist | One selected source/pin maps to each supported harness; native precedence and unrelated assets preserved; collisions and restart needs explicit |
-| Tools and Headroom | Tool runtime specialist | Explicit tool/MCP declarations, pinned optional Headroom, selected upstream routing, owned local processes, on/off restoration and no credential transfer |
-| Gemini/Grok/OpenRouter sessions | Provider specialist | Version-qualified native adapters and an explicit portable API harness; exact model/endpoint/credential realm, cancellation/reconnect, no inferred entitlement or silent billing fallback |
-| Product controls and guides | Interface/docs specialist; captain | Contextual terminal controls, concise inspect/preview/apply flow, practical guides and actual screenshots with evidence scope |
+| Plugin registry and profiles — Plane #12 / [GitHub #22](https://github.com/seanheiney/keelmux/issues/22) | feature_remote; captain | Verified immutable packs, pin-preserving profiles/toggles, strict private ownership, durable intents and archive recovery; source race/vet and independent review |
+| Portable rules and skills — Plane #13 / [GitHub #23](https://github.com/seanheiney/keelmux/issues/23) | feature_usage; independent controller review | One selected source/pin maps to supported harnesses; native precedence and unrelated assets preserved; collisions, unmapped fields and restart needs explicit |
+| Tools and Headroom — Plane #14 / [GitHub #24](https://github.com/seanheiney/keelmux/issues/24) | feature_controller; captain | Explicit MCP declarations, optional Headroom, bounded initialize/list-only health, private environment and fresh owned-group cleanup; declaration and actual executable provenance separate |
+| Gemini/Grok/OpenRouter sessions — Plane #15 / [GitHub #25](https://github.com/seanheiney/keelmux/issues/25) | feature_controller; captain | Version-reviewed interactive argv; explicit native OpenCode/OpenRouter routing; no inferred account/model entitlement; native lifecycle and model proof remain separate |
+| Product controls and guides — Plane #16 / [GitHub #26](https://github.com/seanheiney/keelmux/issues/26) | captain; bounded independent review | Terminal pack/component switches, inspect/preview/apply flow, launch snapshots, practical guides and actual screenshots with evidence scope |
 
 The five lanes roll through the finite worker pool. Provider/tool declarations are model-neutral; each native mapping reports supported, applied and unknown fields separately. Native model turns and customer message destinations retain their existing independent authorization and qualification gates.

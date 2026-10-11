@@ -103,6 +103,12 @@ func run() error {
 	if len(args) > 0 && args[0] == "skills" {
 		return manageSkills(args[1:])
 	}
+	if len(args) > 0 && (args[0] == "plugins" || args[0] == "profiles") {
+		return libraryCommand(*state, *entry, args[0], args[1:])
+	}
+	if len(args) > 0 && args[0] == "tools" {
+		return toolsCommand(context.Background(), *state, *entry, args[1:], os.Stderr, os.Stdout)
+	}
 	if len(args) > 0 && args[0] == "providers" {
 		records, err := providers.Discover(context.Background())
 		if err != nil {
@@ -183,18 +189,16 @@ func run() error {
 		name := rfs.String("name", "", "session name")
 		workspace := rfs.String("workspace", "", "exact workspace path")
 		operation := rfs.String("operation", "", "retry the same launch operation ID")
+		profile := rfs.String("profile", "default", "exact reusable capability profile")
+		application := rfs.String("application", "work", "verified workspace application ID")
 		if err = rfs.Parse(args[1:]); err != nil {
 			return err
 		}
 		rest := rfs.Args()
 		if len(rest) == 0 {
-			return errors.New("run needs codex or claude; flags precede provider")
+			return errors.New("run needs codex, claude, gemini, grok or opencode; flags precede provider")
 		}
 		provider := rest[0]
-		argv, version, err := providers.SupportedLaunch(ctx, provider, rest[1:])
-		if err != nil {
-			return err
-		}
 		if *workspace == "" {
 			*workspace, err = os.Getwd()
 			if err != nil {
@@ -205,13 +209,27 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		explicitProfile := false
+		rfs.Visit(func(f *flag.Flag) {
+			if f.Name == "profile" || f.Name == "application" {
+				explicitProfile = true
+			}
+		})
+		nativeArgs, snapshot, err := prepareLibraryLaunch(ctx, p.Dir, provider, *workspace, *profile, *application, explicitProfile, rest[1:])
+		if err != nil {
+			return err
+		}
+		argv, version, err := providers.SupportedLaunch(ctx, provider, nativeArgs)
+		if err != nil {
+			return err
+		}
 		if *name == "" {
 			*name = provider + " · " + filepath.Base(*workspace)
 		}
 		if *operation == "" {
 			*operation = string(domain.NewID("op"))
 		}
-		r, err := c.Launch(ctx, protocol.LaunchRequest{OperationID: domain.ID(*operation), Name: *name, Workspace: *workspace, Provider: provider, ProviderVersion: version, Argv: argv})
+		r, err := c.Launch(ctx, protocol.LaunchRequest{OperationID: domain.ID(*operation), Name: *name, Workspace: *workspace, Provider: provider, ProviderVersion: version, Argv: argv, Library: snapshot})
 		if err != nil {
 			return fmt.Errorf("launch operation %s: %w; retry only with this same --operation", *operation, err)
 		}
@@ -359,7 +377,9 @@ const help = `Keelmux — keep your agents running, keep your place
 keelmux [--state DIR]                 Open remembered work
 keelmux --state CLIENTDIR --entry SOCKET
                                  Open permitted work through a private entry
-keelmux run [--name NAME] [--workspace PATH] [--operation ID] codex|claude [native args]
+keelmux run [--name NAME] [--workspace PATH] [--operation ID] PROVIDER [native args]
+                                 Providers: codex, claude, gemini, grok, opencode
+                                 Profile: --profile ID --application ID
 keelmux list                          Inspect registered work as JSON
 keelmux directory                     Inspect home availability and permitted inventory
 keelmux attach SESSION [--read-only]   Enter native terminal; Ctrl-G d returns
@@ -378,6 +398,9 @@ keelmux projects --help               Create and inspect durable project identit
 keelmux groups --help                 Manage company/product navigation collections
 keelmux peers --help                  Explicit pinned SSH inventory
 keelmux usage --help                  Contextual source-qualified usage
+keelmux plugins --help                Reusable skill/rule/tool packs and toggles
+keelmux profiles --help               Exact reusable capability selections
+keelmux tools --help                  Selected tool declarations and explicit health
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

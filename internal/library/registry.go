@@ -300,6 +300,15 @@ func (r *registry) CreateProfile(ctx context.Context, id, name string) (Profile,
 	return out, err
 }
 func (r *registry) SelectPackage(ctx context.Context, profileID, packageID, digest string, enabled bool) (Profile, error) {
+	return r.selectPackage(ctx, profileID, packageID, digest, enabled, 0)
+}
+func (r *registry) SelectPackageAt(ctx context.Context, profileID, packageID, digest string, enabled bool, expectedRevision uint64) (Profile, error) {
+	if expectedRevision == 0 {
+		return Profile{}, ErrInvalid
+	}
+	return r.selectPackage(ctx, profileID, packageID, digest, enabled, expectedRevision)
+}
+func (r *registry) selectPackage(ctx context.Context, profileID, packageID, digest string, enabled bool, expectedRevision uint64) (Profile, error) {
 	if !validID(profileID) || !validID(packageID) || !digestPattern.MatchString(digest) {
 		return Profile{}, ErrInvalid
 	}
@@ -308,6 +317,9 @@ func (r *registry) SelectPackage(ctx context.Context, profileID, packageID, dige
 		p, ok := rs.Profiles[profileID]
 		if !ok {
 			return false, nil, ErrNotFound
+		}
+		if expectedRevision != 0 && p.Revision != expectedRevision {
+			return false, nil, ErrStale
 		}
 		pack, ok := rs.Packages[digest]
 		if !ok || pack.Manifest.ID != packageID {
@@ -334,6 +346,15 @@ func (r *registry) SelectPackage(ctx context.Context, profileID, packageID, dige
 	return out, err
 }
 func (r *registry) SelectComponent(ctx context.Context, profileID, packageID, key string, enabled bool) (Profile, error) {
+	return r.selectComponent(ctx, profileID, packageID, key, enabled, 0, "")
+}
+func (r *registry) SelectComponentAt(ctx context.Context, profileID, packageID, key string, enabled bool, expectedRevision uint64, expectedDigest string) (Profile, error) {
+	if expectedRevision == 0 || !digestPattern.MatchString(expectedDigest) {
+		return Profile{}, ErrInvalid
+	}
+	return r.selectComponent(ctx, profileID, packageID, key, enabled, expectedRevision, expectedDigest)
+}
+func (r *registry) selectComponent(ctx context.Context, profileID, packageID, key string, enabled bool, expectedRevision uint64, expectedDigest string) (Profile, error) {
 	if !validID(profileID) || !validID(packageID) {
 		return Profile{}, ErrInvalid
 	}
@@ -343,9 +364,15 @@ func (r *registry) SelectComponent(ctx context.Context, profileID, packageID, ke
 		if !ok {
 			return false, nil, ErrNotFound
 		}
+		if expectedRevision != 0 && p.Revision != expectedRevision {
+			return false, nil, ErrStale
+		}
 		sel, ok := p.Packages[packageID]
 		if !ok {
 			return false, nil, ErrNotFound
+		}
+		if expectedDigest != "" && sel.Digest != expectedDigest {
+			return false, nil, ErrStale
 		}
 		pack, active := rs.Packages[sel.Digest]
 		if !active {

@@ -99,3 +99,11 @@ type Registry interface {
 	PackageRoot(context.Context, string, string) (string, error)
 	Remove(context.Context, string, string) error
 }
+
+// GuardedSelections binds a displayed selection edit to the current profile
+// revision under the registry writer lock. A stale UI must refresh instead of
+// changing a newer pin or component preference selected by another client.
+type GuardedSelections interface {
+	SelectPackageAt(context.Context, string, string, string, bool, uint64) (Profile, error)
+	SelectComponentAt(context.Context, string, string, string, bool, uint64, string) (Profile, error)
+}

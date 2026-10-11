@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/seanheiney/keelmux/internal/adapters/providers"
 	"github.com/seanheiney/keelmux/internal/domain"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/runtime"
@@ -219,6 +220,11 @@ func (s *Service) Launch(ctx context.Context, in protocol.LaunchRequest) (protoc
 			return out, invalid("argv contains NUL")
 		}
 	}
+	if in.Library != nil {
+		if err := in.Library.Validate(); err != nil {
+			return out, invalid(err.Error())
+		}
+	}
 	prior, p, err := s.store.Operation(ctx, in.OperationID)
 	if err == nil {
 		if prior.Kind != "launch" || !bytes.Equal(p, payload(in)) {
@@ -241,7 +247,14 @@ func (s *Service) Launch(ctx context.Context, in protocol.LaunchRequest) (protoc
 	if err != nil || !info.IsDir() {
 		return out, invalid("workspace must be an existing directory")
 	}
+	if err := validateLaunchEnvironment(in.Provider); err != nil {
+		return out, invalid(err.Error())
+	}
 	v := domain.NewSession(s.hostID, in.Name, in.Workspace, in.Provider, in.ProviderVersion)
+	if in.Library != nil {
+		snapshot := *in.Library
+		v.Library = &snapshot
+	}
 	op := domain.Operation{ID: in.OperationID, Kind: "launch", SessionID: v.ID, ExecutionID: v.Execution.ID}
 	op, _, err = s.store.Record(ctx, op, payload(in), &v)
 	if err != nil {
@@ -258,6 +271,9 @@ func (s *Service) launchResponse(ctx context.Context, id domain.ID) (protocol.La
 	return protocol.LaunchResponse{Session: v, Operation: op}, err
 }
 func (s *Service) attemptLaunch(ctx context.Context, in protocol.LaunchRequest, op domain.Operation) (protocol.LaunchResponse, error) {
+	if err := validateLaunchEnvironment(in.Provider); err != nil {
+		return protocol.LaunchResponse{}, invalid(err.Error())
+	}
 	op, claimed, err := s.store.Attempt(ctx, op.ID)
 	if err != nil {
 		return protocol.LaunchResponse{}, err
@@ -295,6 +311,16 @@ func (s *Service) attemptLaunch(ctx context.Context, in protocol.LaunchRequest, 
 		return protocol.LaunchResponse{}, err
 	}
 	return s.launchResponse(dc, op.ID)
+}
+
+// The launch home supplies the inherited environment, which can differ from
+// the client. Native PTYs supply TTY input/output. Completed retries have no
+// new effect and must not be invalidated by a later environment change.
+func validateLaunchEnvironment(provider string) error {
+	if provider == "gemini" {
+		return providers.ValidateManagedEnvironment(provider, os.LookupEnv)
+	}
+	return nil
 }
 func validateRef(ref domain.RuntimeRef, execution, operation domain.ID) error {
 	if ref.ExecutionID != execution || ref.OperationID != operation || ref.Backend == "" || ref.Socket == "" || ref.Session == "" || (ref.Backend != "native" && ref.Pane == "") || ref.PID <= 0 || ref.BootID == "" || ref.ProcessStart == "" {

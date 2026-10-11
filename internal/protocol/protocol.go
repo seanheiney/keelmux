@@ -15,12 +15,13 @@ import (
 const Version = "bp/1"
 
 type LaunchRequest struct {
-	OperationID     domain.ID `json:"operation_id"`
-	Name            string    `json:"name"`
-	Workspace       string    `json:"workspace"`
-	Provider        string    `json:"provider"`
-	ProviderVersion string    `json:"provider_version"`
-	Argv            []string  `json:"argv"`
+	OperationID     domain.ID               `json:"operation_id"`
+	Name            string                  `json:"name"`
+	Workspace       string                  `json:"workspace"`
+	Provider        string                  `json:"provider"`
+	ProviderVersion string                  `json:"provider_version"`
+	Argv            []string                `json:"argv"`
+	Library         *domain.LibrarySnapshot `json:"library,omitempty"`
 }
 type SessionRequest struct {
 	SessionID   domain.ID `json:"session_id"`

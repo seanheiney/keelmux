@@ -63,3 +63,12 @@ The experimental Codex broker now has reviewed strict wire policy, durable share
 The owner authorized a public Keelmux product release on 2026-10-10, including a one-line installer and polished operational documentation. Naming searches found no exact public GitHub repository or npm/PyPI/crates.io/Homebrew package collision; this is not trademark clearance. The exact-source public release and anonymous default installation gates passed as recorded above.
 
 Planned/not run: authenticated model-turn evidence, verified account/model/native-thread attribution, real second-server acceptance, semantic Mattermost/IRC delivery, shared repairs/meters, subscription routing, native continuity, and optional captains. The local terminal release does not complete those roadmap capabilities.
+
+
+## Reusable capabilities development and retained v0.3.0 hold
+
+The isolated `codex/reusable-capabilities` branch implements the new plugin, rule, skill, tool and provider expansion. Five dedicated Plane lanes (#12–#16) are In Progress and mirrored in GitHub #22–#26. The core contract is `2e09b0e`; importing/toggling declarations never executes a tool or proves a running session loaded it. Gemini/Grok/OpenCode version-qualified argv preparation is integrated; native PTY and model workflows remain separate qualification.
+
+PR21 merged with main `4ef3c9afce086a07abd4646bd6c428abe8d43b90`, whose tracked tree equals the independently qualified `71db3ca2b17a570cbfdda51482e1d7566c8fc6d1`. Both candidate push/PR workflows passed all six jobs. Fresh macOS/Linux installed CLI25 and installer16, zero-turn macOS Codex/Claude, Linux terminal fixtures, IRC152, Mattermost11+7 and actual installed same-machine SSH passed; all original receipts and reproducible archives are retained.
+
+The later [main workflow](https://github.com/seanheiney/keelmux/actions/runs/38097395544) passed macOS and all four builds but failed Ubuntu race throughput: original slow-reader gate 8.12 seconds and full Unicode-tail gate 8.19 seconds, with unchanged eight-second deadlines. Original failed-log SHA-256: `959fa7c37afe7f2ce8567e05a79f8f19a30950e32e44a5fd42e607d1ef50145a`. This is an unresolved release gate. No v0.3.0 tag or release was created; v0.2.1 remains public/latest. A separate measured Linux throughput investigation follows registry handoff. Do not retag, weaken parser/output assertions or describe the source additions as publicly released.

@@ -53,6 +53,8 @@ A private entry can expose explicitly permitted sessions from multiple execution
 
 The [fuller feature batch](docs/user/feature-expansion.md) adds CLI group administration, a contextual usage panel, explicit SSH inventory enrollment and read-only diagnostics. These are source features newer than the published v0.2.1 installer. [Groups](docs/user/groups.md) · [Usage](docs/user/usage.md) · [SSH peers](docs/user/ssh-peers.md) · [Diagnostics](docs/user/diagnostics.md).
 
+The reusable-capabilities development branch adds pinned [plugin/skill/rule/tool packs](docs/user/plugins.md), per-component switches, workspace preview/application and version-reviewed [Gemini, Grok and OpenCode launches](docs/user/providers.md). OpenCode provides explicit native OpenRouter routing. Headroom is an optional MCP declaration. These additions remain under qualification and are not in the published installer.
+
 ## Operate with confidence
 
 | Need | Guide |

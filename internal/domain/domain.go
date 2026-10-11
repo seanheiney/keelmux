@@ -77,18 +77,19 @@ type Execution struct {
 }
 
 type Session struct {
-	ID           ID           `json:"id"`
-	HostID       ID           `json:"host_id"`
-	WorkID       ID           `json:"work_id"`
-	ThreadID     ID           `json:"thread_id"`
-	LaneID       ID           `json:"lane_id"`
-	Name         string       `json:"name"`
-	Workspace    string       `json:"workspace"`
-	Mode         Mode         `json:"mode"`
-	Capabilities Capabilities `json:"capabilities"`
-	Execution    Execution    `json:"execution"`
-	Linked       bool         `json:"linked"`
-	CreatedAt    time.Time    `json:"created_at"`
+	ID           ID               `json:"id"`
+	HostID       ID               `json:"host_id"`
+	WorkID       ID               `json:"work_id"`
+	ThreadID     ID               `json:"thread_id"`
+	LaneID       ID               `json:"lane_id"`
+	Name         string           `json:"name"`
+	Workspace    string           `json:"workspace"`
+	Mode         Mode             `json:"mode"`
+	Capabilities Capabilities     `json:"capabilities"`
+	Execution    Execution        `json:"execution"`
+	Linked       bool             `json:"linked"`
+	CreatedAt    time.Time        `json:"created_at"`
+	Library      *LibrarySnapshot `json:"library,omitempty"`
 }
 
 func NewSession(host ID, name, workspace, provider, version string) Session {

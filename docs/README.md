@@ -12,6 +12,8 @@ Start with [your first session](user/quickstart.md). Published v0.2.1 includes i
 | Bind a thread to Mattermost, Slack or IRC | [Channels](user/channels.md) |
 | Run and bind a private owned IRC server | [Managed IRC](user/managed-irc.md) |
 | Install the connection skill without overwriting my setup | [Skills and linking](user/skills.md) |
+| Share skill/rule/tool packs across native harnesses | [Reusable capabilities — development source](user/plugins.md) |
+| Launch Gemini, Grok or explicit OpenRouter sessions | [Additional providers — development source](user/providers.md) |
 | Organize company/product collections from the CLI | [Groups — newer source](user/groups.md) |
 | Review source-qualified local observations | [Usage — newer source](user/usage.md) |
 | Enroll permitted SSH inventory | [SSH peers — newer source](user/ssh-peers.md) |

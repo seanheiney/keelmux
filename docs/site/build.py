@@ -29,6 +29,8 @@ PAGES = [
     ("groups", "Company & product groups", "Work", "docs/user/groups.md"),
     ("usage", "Usage & evidence", "Work", "docs/user/usage.md"),
     ("skills", "Skills & linking", "Work", "docs/user/skills.md"),
+    ("plugins", "Reusable capabilities", "Work", "docs/user/plugins.md"),
+    ("providers", "Additional providers", "Work", "docs/user/providers.md"),
     ("operations", "Operations & recovery", "Operate", "docs/user/operations.md"),
     ("configuration", "Configuration", "Operate", "docs/user/configuration.md"),
     ("private-entry", "Private entry", "Operate", "docs/user/private-entry.md"),
