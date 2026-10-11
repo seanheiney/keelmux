@@ -40,6 +40,8 @@ type stdioEngine struct {
 	failed                        bool
 	exchangeFrames, exchangeBytes int
 	done                          chan struct{}
+	terminalReceiptDone           chan struct{}
+	terminalReceiptError          error // immutable after terminalReceiptDone closes
 	notify                        chan struct{}
 	codec                         ps.Codec
 	disk                          stdioDisk
@@ -125,7 +127,7 @@ func serveStdio(b *Backend, r receipt, m launchMessage, listener *net.UnixListen
 		_ = cmd.Wait()
 		return err
 	}
-	s := &stdioEngine{b: b, r: r, cmd: cmd, listener: listener, stdin: inputWR, stdout: outputRD, stderr: errorRD, state: state, done: make(chan struct{}), notify: make(chan struct{}, 1)}
+	s := &stdioEngine{b: b, r: r, cmd: cmd, listener: listener, stdin: inputWR, stdout: outputRD, stderr: errorRD, state: state, done: make(chan struct{}), terminalReceiptDone: make(chan struct{}), notify: make(chan struct{}, 1)}
 	if err = b.saveStdio(state); err != nil {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
@@ -171,7 +173,7 @@ func serveStdio(b *Backend, r receipt, m launchMessage, listener *net.UnixListen
 			s.r.Detail = "owned stdio child terminated"
 		}
 		s.markExitedLocked()
-		_ = b.writeReceipt(s.r)
+		s.commitTerminalReceiptLocked(b.writeReceipt)
 		s.mu.Unlock()
 		s.signal()
 		_ = listener.Close()
@@ -201,6 +203,23 @@ func (s *stdioEngine) signal() {
 func (s *stdioEngine) markExitedLocked() {
 	s.state.Snapshot = ps.Snapshot{}
 	close(s.done)
+}
+func (s *stdioEngine) commitTerminalReceiptLocked(write func(receipt) error) {
+	s.terminalReceiptError = write(s.r)
+	close(s.terminalReceiptDone)
+}
+func (s *stdioEngine) stopOutcome(ctx context.Context) error {
+	// Known child death is distinct from a durable terminal acknowledgment.
+	// Receiving this completion also publishes terminalReceiptError safely.
+	select {
+	case <-s.terminalReceiptDone:
+		if s.terminalReceiptError != nil {
+			return ps.ErrStorage
+		}
+		return nil
+	case <-ctx.Done():
+		return ps.ErrUncertain
+	}
 }
 func stdioFrameHash(raw []byte) string {
 	if len(raw) == 0 {
@@ -843,7 +862,7 @@ func (s *stdioEngine) stop(ctx context.Context, stop ps.StopRequest) error {
 		}
 		select {
 		case <-s.done:
-			return nil
+			return s.stopOutcome(ctx)
 		default:
 			return ps.ErrUncertain
 		}
@@ -872,7 +891,7 @@ func (s *stdioEngine) stop(ctx context.Context, stop ps.StopRequest) error {
 	}
 	select {
 	case <-s.done:
-		return nil
+		return s.stopOutcome(ctx)
 	case <-ctx.Done():
 		return ps.ErrUncertain
 	case <-time.After(500 * time.Millisecond):
@@ -889,7 +908,7 @@ func (s *stdioEngine) stop(ctx context.Context, stop ps.StopRequest) error {
 	}
 	select {
 	case <-s.done:
-		return nil
+		return s.stopOutcome(ctx)
 	case <-ctx.Done():
 		return ps.ErrUncertain
 	case <-time.After(time.Second):

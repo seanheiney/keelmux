@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"github.com/seanheiney/keelmux/internal/domain"
 	ps "github.com/seanheiney/keelmux/internal/primarystdio"
 	"io"
@@ -296,18 +297,38 @@ func (b *Backend) StopStdio(ctx context.Context, ref ps.ChannelRef, stop ps.Stop
 	if err != nil {
 		return err
 	}
+	return b.stopStdioFromReceipt(ctx, ref, stop, r)
+}
+func (b *Backend) stopStdioFromReceipt(ctx context.Context, ref ps.ChannelRef, stop ps.StopRequest, r receipt) error {
 	if r.Stage == "stopped" {
-		state, e := b.readStdio(r)
-		if e != nil {
-			return e
+		return b.terminalStdioStop(r, ref, stop)
+	}
+	reply, err := b.stdioCommand(ctx, ref, stdioRequest{Op: "stdio_stop", Stop: &stop})
+	if reply.Error == "" && (errors.Is(err, ErrUnavailable) || errors.Is(err, ps.ErrUncertain)) {
+		// The helper may finish while this caller holds an older stopping
+		// receipt, or exit before its final IPC acknowledgment is delivered.
+		// Reconcile once from exact durable evidence; never resend the request.
+		// An explicit failure remains authoritative even if a failed write
+		// made a terminal file visible before its directory sync failed.
+		terminal, readErr := b.stdioReceipt(ref)
+		if readErr == nil && terminal.Stage == "stopped" {
+			return b.terminalStdioStop(terminal, ref, stop)
 		}
-		if state.StopOperation == stop.OperationID && state.TermAttempted {
-			return nil
-		}
+	}
+	return err
+}
+func (b *Backend) terminalStdioStop(r receipt, ref ps.ChannelRef, stop ps.StopRequest) error {
+	if r.Stage != "stopped" || r.Stdio == nil || r.Stdio.Ref != ref {
 		return ps.ErrConflict
 	}
-	_, err = b.stdioCommand(ctx, ref, stdioRequest{Op: "stdio_stop", Stop: &stop})
-	return err
+	state, err := b.readStdio(r)
+	if err != nil {
+		return err
+	}
+	if state.StopOperation != stop.OperationID || !state.TermAttempted {
+		return ps.ErrConflict
+	}
+	return nil
 }
 func (b *Backend) WithStdioQuiescence(ctx context.Context, ref ps.ChannelRef, q ps.Quiescence, commit func(context.Context) error) error {
 	if commit == nil {
