@@ -190,6 +190,7 @@ type Ledger struct {
 	LastBatchSHA256 string
 	Continuity      Continuity
 	Pending         bool
+	Snapshot        Snapshot
 }
 
 // Supervisor retains native pipes across daemon IPC loss. Bootstrap attempts
