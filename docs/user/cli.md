@@ -31,6 +31,20 @@ Global flags precede the command. Flags belonging to `run` precede the provider 
 
 The CLI also provides `keelmux --version` and `keelmux version --json`. Version metadata identifies the application version, source commit and `bp/1` protocol; help and version return before state or daemon access. `daemon status` on absent state reports `running: false` without creating it. Use the exact `--instance` from a stop intent when retrying an uncertain stop; a replacement instance is preserved.
 
+## Fuller source commands
+
+These commands are newer than the published v0.2.1 archive. Build the reviewed source using the [contributor workflow](../../CONTRIBUTING.md); the default installer continues to select the published release.
+
+| Command | Behavior |
+| --- | --- |
+| `keelmux groups --help` | Nested optional company/product collections; membership, selection and removal preserve work and drafts |
+| `keelmux usage --help` | Read existing local qualified observations; exact filters and explicit atomic manual import |
+| `keelmux peers --help` | Explicit pinned SSH enrollment, permitted inventory, refresh, grant and revoke |
+| `keelmux diagnose --json` | Structured existing-state diagnosis; no startup or repair |
+| `keelmux diagnose --probe-versions` | Additionally permit bounded native Codex/Claude version subprocesses |
+
+Press **u** in the source switcher to read usage for the captured host/session. **r** rereads the local ledger; **Esc** returns to the same place. See [the source feature guides](feature-expansion.md).
+
 ## Native arguments
 
 `run` uses an argument array. It validates the selected interactive launch and preserves supported native arguments. Provider management commands such as login, logout, install, upgrade and app-server are separate native workflows; they are refused through managed `run`. Claude print/background workflows are outside this interactive path.

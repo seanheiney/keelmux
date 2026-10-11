@@ -42,6 +42,14 @@ func New(j *Journal, s Supervisor, u Upstream, g Gate, o Options) (*Controller, 
 	if j == nil || absent(s) || absent(u) || absent(g) {
 		return nil, ErrUnavailable
 	}
+	// A partially qualified real adapter must refuse construction before any
+	// supervisor launch. Fixtures and other reviewed implementations need not
+	// implement this optional readiness boundary.
+	if readiness, ok := u.(interface{ CheckPrimaryReady() error }); ok {
+		if readiness.CheckPrimaryReady() != nil {
+			return nil, ErrUnavailable
+		}
+	}
 	if !cleanPath(o.Binary) || !cleanPath(o.Home) || !cleanPath(o.CodexHome) || !validText(o.RealmRevision) || !digest(o.BinarySHA256) {
 		return nil, ErrInvalid
 	}
@@ -162,9 +170,34 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 	}
 	ctx, cancel := c.bounded(ctx)
 	defer cancel()
+	// An existing journal entry is a receipt, never permission to repeat its
+	// effects. Read it before gate admission; a fresh journal must claim a new
+	// incarnation in the common durable store before its callback can run.
+	j := c.journal
+	j.mu.Lock()
+	if !j.available() {
+		j.mu.Unlock()
+		return View{}, ErrStorage
+	}
+	if e, ok := j.entries[r.Target.ExecutionID]; ok {
+		out := e.view()
+		if e.Request != r || !c.sameOptions(e) {
+			j.mu.Unlock()
+			return out, ErrConflict
+		}
+		j.mu.Unlock()
+		if e.State != Ready && e.State != Stopped {
+			return out, ErrUncertain
+		}
+		return out, nil
+	}
+	j.mu.Unlock()
+	inc, err := nonce(16)
+	if err != nil {
+		return View{}, err
+	}
 	var out View
-	err := c.gateRun(ctx, LifecycleRequest{Action: StartPrimary, OperationID: r.OperationID, Target: r.Target, NativeThreadID: r.NativeThreadID, RealmRevision: r.RealmRevision}, func(ctx context.Context) error {
-		j := c.journal
+	err = c.gateRun(ctx, LifecycleRequest{Action: StartPrimary, OperationID: r.OperationID, Target: r.Target, NativeThreadID: r.NativeThreadID, RealmRevision: r.RealmRevision, Workspace: r.Workspace, StartIncarnation: domain.ID(inc)}, func(ctx context.Context) error {
 		j.mu.Lock()
 		defer j.mu.Unlock()
 		if !j.available() {
@@ -175,7 +208,7 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 		}
 		if e, ok := j.entries[r.Target.ExecutionID]; ok {
 			out = e.view()
-			if e.Request != r || !c.sameOptions(e) {
+			if e.Request != r || e.Incarnation != domain.ID(inc) || !c.sameOptions(e) {
 				return ErrConflict
 			}
 			if e.State != Ready && e.State != Stopped {
@@ -193,10 +226,6 @@ func (c *Controller) Start(ctx context.Context, r StartRequest) (View, error) {
 			}
 		}
 		if err := verifyBinary(c.options.Binary, c.options.BinarySHA256); err != nil {
-			return err
-		}
-		inc, err := nonce(16)
-		if err != nil {
 			return err
 		}
 		cap, err := nonce(32)
@@ -439,6 +468,10 @@ func (c *Controller) Stop(ctx context.Context, r StopRequest) (View, error) {
 	j.mu.Lock()
 	e, ok := j.entries[r.Target.ExecutionID]
 	available := j.available()
+	// Refuse stale requests before a gate can persist its stop fence. The
+	// callback retains the same checks after admission for concurrent changes.
+	identityOK := ok && e.Request.Target == r.Target && e.Incarnation == r.Incarnation && c.sameOptions(e)
+	operationOK := ok && (e.StopOperation == r.OperationID || e.StopOperation == "" && !j.operationUsed(r.OperationID) && e.State == Ready)
 	j.mu.Unlock()
 	if !available {
 		return View{}, ErrStorage
@@ -446,8 +479,11 @@ func (c *Controller) Stop(ctx context.Context, r StopRequest) (View, error) {
 	if !ok {
 		return View{}, ErrNotFound
 	}
+	if !identityOK || !operationOK {
+		return e.view(), ErrConflict
+	}
 	var out View
-	err := c.gateRun(ctx, LifecycleRequest{Action: StopPrimary, OperationID: r.OperationID, Target: r.Target, Agent: e.Evidence.Agent, NativeThreadID: e.Request.NativeThreadID, RealmRevision: e.Request.RealmRevision}, func(ctx context.Context) error {
+	err := c.gateRun(ctx, LifecycleRequest{Action: StopPrimary, OperationID: r.OperationID, Target: r.Target, Agent: e.Evidence.Agent, NativeThreadID: e.Request.NativeThreadID, RealmRevision: e.Request.RealmRevision, Workspace: e.Request.Workspace}, func(ctx context.Context) error {
 		j.mu.Lock()
 		defer j.mu.Unlock()
 		if !j.available() {

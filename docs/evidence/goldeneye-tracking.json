@@ -48,7 +48,7 @@
       "id": "745e3b29-62f4-4033-b6ba-baea5652cf98",
       "sequence_id": 5,
       "name": "Implement structured native agent controllers",
-      "state": "Backlog",
+      "state": "In Progress",
       "write_status": 201,
       "comment_status": 201,
       "comment_id": "8f52d8d4-b55b-4359-b7ff-88810d7a89be",
@@ -58,7 +58,7 @@
       "id": "305ab0cf-8529-4c2a-86bb-74769bd70aed",
       "sequence_id": 6,
       "name": "Deliver enrolled remote hosts and agent continuity",
-      "state": "Backlog",
+      "state": "In Progress",
       "write_status": 201,
       "comment_status": 201,
       "comment_id": "517f9520-70f7-45e5-9fc9-530602a1caf1",
@@ -83,6 +83,36 @@
       "comment_status": 201,
       "comment_id": "edb6104b-812a-473a-b923-6ece3eeecb7e",
       "get_verified": true
+    },
+    {
+      "id": "02558365-706e-4d4d-a29d-6a2de2c1ef62",
+      "sequence_id": 9,
+      "name": "Expose source-qualified agent usage and account readiness",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "6a999676-405d-4311-b2d4-0b85343131ec",
+      "get_verified": true
+    },
+    {
+      "id": "f2766d8e-0885-4aa1-8f47-89af517b2121",
+      "sequence_id": 10,
+      "name": "Manage company product groups and project navigation",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "c293907a-3507-464e-81a1-11e2450dbc07",
+      "get_verified": true
+    },
+    {
+      "id": "bd6ff3b4-deb2-41ff-8752-648afd356ce7",
+      "sequence_id": 11,
+      "name": "Provide contextual native runtime and communication diagnostics",
+      "state": "In Progress",
+      "write_status": 201,
+      "comment_status": 201,
+      "comment_id": "31b1671f-3f33-46c6-b4b6-3e46c00a442e",
+      "get_verified": true
     }
   ],
   "mattermost": {
@@ -104,7 +134,7 @@
     "id": "2e2f680e-bd3f-41ef-8ee7-b3047221e8fa",
     "http_status": 201
   },
-  "updated_at": "2026-10-10T22:37:56.903030+00:00",
+  "updated_at": "2026-10-10T21:04:30.033326+00:00",
   "scope": "Dedicated project coordination and acceptance evidence; no credentials included.",
   "native_milestone_comments": [
     {
@@ -286,5 +316,87 @@
     "write_status": 201,
     "read_status": 200,
     "exact_body_read_verified": true
+  },
+  "full_feature_progress_6a6b20c": [
+    {
+      "key": "native_controller",
+      "issue_id": "745e3b29-62f4-4033-b6ba-baea5652cf98",
+      "sequence_id": 5,
+      "state": "In Progress",
+      "comment_id": "1230b5ce-044e-4e00-99c7-664aaeec47b0",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true
+    },
+    {
+      "key": "remote_inventory",
+      "issue_id": "305ab0cf-8529-4c2a-86bb-74769bd70aed",
+      "sequence_id": 6,
+      "state": "In Progress",
+      "comment_id": "4dbea52f-23c1-472d-9519-2242deb987d8",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true
+    },
+    {
+      "key": "usage_visibility",
+      "issue_id": "02558365-706e-4d4d-a29d-6a2de2c1ef62",
+      "sequence_id": 9,
+      "state": "In Progress",
+      "comment_id": "2f638cc9-ccff-4139-b563-7cb37be29249",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true
+    },
+    {
+      "key": "project_administration",
+      "issue_id": "f2766d8e-0885-4aa1-8f47-89af517b2121",
+      "sequence_id": 10,
+      "state": "In Progress",
+      "comment_id": "4e862483-6f3a-4bd5-8427-8214e1cf2e3a",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true
+    },
+    {
+      "key": "runtime_diagnostics",
+      "issue_id": "bd6ff3b4-deb2-41ff-8752-648afd356ce7",
+      "sequence_id": 11,
+      "state": "In Progress",
+      "comment_id": "be0b2342-62b6-4d0c-a05e-65d9f606fe5e",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true
+    }
+  ],
+  "mattermost_full_feature_progress": {
+    "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+    "post_id": "9fkoz1uefbbzzr73ydjmmfbyea",
+    "url": "https://chat.sean.net/seannet/pl/9fkoz1uefbbzzr73ydjmmfbyea",
+    "message_sha256": "e95f40bd2cdd1f13c6c6f28048c3bfa957d240d99f27147f4397ac21a68166ec",
+    "read_status": 200,
+    "unique_exact_message": true
+  },
+  "fuller_feature_candidate_hold": {
+    "source_sha": "e80486f0fc7601db0608efaf8370d7bebd08ec82",
+    "plane": {
+      "issue_id": "b8a80090-fb8b-4e8f-a653-afcd056ac8d1",
+      "comment_id": "7abbc90f-db9f-481d-9580-c7c79e4b197a",
+      "write_status": 201,
+      "read_status": 200,
+      "exact_body_read_verified": true,
+      "source_sha": "e80486f0fc7601db0608efaf8370d7bebd08ec82",
+      "state": "In Progress",
+      "release_state": "held-no-tag"
+    },
+    "mattermost": {
+      "channel_id": "hw7it8tk33b4djhswdorbrqk1y",
+      "post_id": "y4m5kg9odtgqzjzci9wyagta4a",
+      "url": "https://chat.sean.net/seannet/pl/y4m5kg9odtgqzjzci9wyagta4a",
+      "message_sha256": "85346a0b9de7bb63cef40e97d7201f1478ad4ec5fa51415c33a1296d7b4703ef",
+      "read_status": 200,
+      "unique_exact_message": true
+    },
+    "publication": "held; no new tag or release"
   }
 }

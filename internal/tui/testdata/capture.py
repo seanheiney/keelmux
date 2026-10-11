@@ -109,7 +109,7 @@ def join_child(pid, fd, seconds):
     return False
 
 
-def capture(binary, output, width, height, mode):
+def capture(binary, output, width, height, mode, prepare_state=None):
     root=Path(tempfile.mkdtemp(prefix='km-tui-',dir='/tmp')).resolve();root.chmod(0o700)
     sock=root/'fixture.sock'
     requests=[]
@@ -130,6 +130,8 @@ def capture(binary, output, width, height, mode):
     state=root/'state';state.mkdir(mode=0o700)
     place=state/'place.json'
     place.write_text(json.dumps({'version':1,'client_id':'client_owned_capture','places':{},'groups':[{'id':'group_api','name':'API','members':[{'kind':'workspace','workspace':'/work/keelmux/api'}]},{'id':'group_infra','name':'Infrastructure','members':[{'kind':'workspace','workspace':'/work/keelmux/infra'}]}]}));place.chmod(0o600)
+    if prepare_state is not None:
+        prepare_state(state)
     pid,fd=pty.fork()
     if pid==0:
         fcntl.ioctl(0,termios.TIOCSWINSZ,struct.pack('HHHH',height,width,0,0))
@@ -138,7 +140,7 @@ def capture(binary, output, width, height, mode):
     raw=bytearray();deadline=time.monotonic()+12;last_data=time.monotonic();forced_shutdown=False
     try:
         edited=False;text_entered=False
-        expected={'inventory':'api / tests','empty':'No sessions yet.','offline':'OFFLINE','groups':'groups','draft':'local draft'}[mode]
+        expected={'inventory':'api / tests','empty':'No sessions yet.','offline':'OFFLINE','groups':'groups','draft':'local draft','usage':'User-entered calls: 1'}[mode]
         while time.monotonic()<deadline:
             if select.select([fd],[],[],0.1)[0]:
                 data=os.read(fd,65536);raw.extend(data);last_data=time.monotonic()
@@ -146,6 +148,7 @@ def capture(binary, output, width, height, mode):
                 if not edited and b'api / tests' in raw:
                     if mode=='groups': os.write(fd,b'g')
                     elif mode=='draft': os.write(fd,b'p')
+                    elif mode=='usage': os.write(fd,b'u')
                     edited=True
                 if mode=='draft' and not text_entered and b'local draft' in raw:
                     os.write(fd,b'Local addressed draft; no delivery.');text_entered=True
@@ -160,7 +163,7 @@ def capture(binary, output, width, height, mode):
             raise AssertionError('actual PTY did not show requested owned fixture mode: '+mode)
         screen.save(output)
         output.with_suffix('.ansi').write_bytes(raw)
-        if mode in ('groups','draft'):
+        if mode in ('groups','draft','usage'):
             os.write(fd,b'\x1b');time.sleep(0.15)
         os.write(fd,b'q')
         if not join_child(pid,fd,3):

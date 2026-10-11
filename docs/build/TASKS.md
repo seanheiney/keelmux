@@ -42,14 +42,30 @@ Five additional lanes have In Progress Plane issues and verified acceptance comm
 
 | Lane | Tracking | Owner and state | Acceptance |
 | --- | --- | --- | --- |
-| Native agent control | Plane #5; [GitHub #12](https://github.com/seanheiney/keelmux/issues/12) | feature_controller; implementing | Real common Service authority, durable reservation/stop/writer fencing and an owned native upstream boundary; explicit unavailable capabilities and zero-turn adverse/restart checks |
-| Remote inventory | Plane #6; [GitHub #7](https://github.com/seanheiney/keelmux/issues/7) | feature_remote; implementing | Explicit SSH peer enrollment, pinned host identity, scoped inventory/workspaces and truthful host-loss/revocation behavior; independent-server acceptance remains a separate gate |
-| Usage visibility | Plane #9; [GitHub #9](https://github.com/seanheiney/keelmux/issues/9) | feature_usage; implementing | Durable explicit-source observations, canonical request/attempt deduplication, scoped native token/quota dimensions, coverage/freshness and separate exact money totals |
-| Company/product groups | Plane #10; [GitHub #19](https://github.com/seanheiney/keelmux/issues/19) | Project navigation specialist; queued | Optional hierarchy and overlapping stable membership, remembered place, deduplicated counts and archive/removal preserving workers and drafts |
-| Runtime diagnostics | Plane #11; [GitHub #9](https://github.com/seanheiney/keelmux/issues/9) | Runtime specialist; queued | Read-only contextual native/daemon/provider/channel diagnosis with evidence source, freshness and direct next actions; no guessed authentication or replayed repair |
+| Native agent control | Plane #5; [GitHub #12](https://github.com/seanheiney/keelmux/issues/12) | feature_controller + fence reviewer; integrated internal Service boundary, native activation held | Real common Service authority, durable reservation/stop/writer fencing and an owned native upstream boundary; explicit unavailable capabilities and zero-turn adverse/restart checks |
+| Remote inventory | Plane #6; [GitHub #7](https://github.com/seanheiney/keelmux/issues/7) | feature_remote + captain; CLI/entry integrated, actual owned loopback SSH product workflow passed at 6a6b20c | Explicit SSH peer enrollment, pinned host identity, scoped inventory/workspaces and truthful host-loss/revocation behavior; independent-server acceptance remains a separate gate |
+| Usage visibility | Plane #9; [GitHub #9](https://github.com/seanheiney/keelmux/issues/9) | feature_usage + captain; ledger/import/CLI/TUI integrated, compiled CLI and three PTY sizes passed at 6a6b20c | Durable explicit-source observations, canonical request/attempt deduplication, scoped native token/quota dimensions, coverage/freshness and separate exact money totals |
+| Company/product groups | Plane #10; [GitHub #19](https://github.com/seanheiney/keelmux/issues/19) | captain + independent review; hierarchy/membership CLI integrated | Optional hierarchy and overlapping stable membership, remembered place, deduplicated counts and archive/removal preserving workers and drafts |
+| Runtime diagnostics | Plane #11; [GitHub #9](https://github.com/seanheiney/keelmux/issues/9) | feature_controller + captain; static/live read-only diagnosis integrated | Read-only contextual native/daemon/provider/channel diagnosis with evidence source, freshness and direct next actions; no guessed authentication or replayed repair |
 
 Fast-food deal discovery is excluded from this repository and its project tracking.
+
+The fuller source batch has fresh installed macOS/Linux CLI and installer, macOS native/IRC, owned SSH and Mattermost evidence at held candidate `e80486f`. Its hosted PR passed six jobs, while push macOS failed the unchanged eight-second throughput guard. The reviewed unused main-history correction passes local scoped race/vet and unchanged deadline controls; fresh integrated source/archive qualification is next. Both failures and their exact evidence remain retained. Public v0.2.1 remains the installer target until the new release passes.
 
 Tasks are implementation milestones, not shipped feature claims. Split them into small issues before parallel assignment. BP-008 remains an early experiment even while local terminal alpha is developed.
 
 Historical terminal acceptance was frozen at `4b36f4d773a31388c7ec8ade146eb1929a8d2a19`; its later test/document commits retained an empty implementation diff. Native acceptance checkout `498abebb` was implementation-equivalent and records its own executable/harness digests. Subsequent evidence qualifies only its stated exact source and environment. See STATUS before interpreting any task as accepted. Closing the bounded local core issues does not close full alpha, remote federation or communication work.
+
+## Reusable capabilities and additional providers
+
+Owner scope added 2026-10-10: reusable plugins, rules, skills and tools with explicit enable/disable, Headroom as a selectable integration, native Gemini/Grok adapters, and sessions through OpenRouter. Existing core qualification continues while the following bounded lanes establish interfaces and implementation. These are requirements and assignments, not shipped claims.
+
+| Lane | Owner | Required acceptance |
+| --- | --- | --- |
+| Plugin registry and profiles | Captain; capability specialist | Versioned pinned manifests, explicit scope and toggles, durable desired/applied/loaded states, ownership-aware removal and rollback |
+| Portable rules and skills | Skill integration specialist | One selected source/pin maps to each supported harness; native precedence and unrelated assets preserved; collisions and restart needs explicit |
+| Tools and Headroom | Tool runtime specialist | Explicit tool/MCP declarations, pinned optional Headroom, selected upstream routing, owned local processes, on/off restoration and no credential transfer |
+| Gemini/Grok/OpenRouter sessions | Provider specialist | Version-qualified native adapters and an explicit portable API harness; exact model/endpoint/credential realm, cancellation/reconnect, no inferred entitlement or silent billing fallback |
+| Product controls and guides | Interface/docs specialist; captain | Contextual terminal controls, concise inspect/preview/apply flow, practical guides and actual screenshots with evidence scope |
+
+The five lanes roll through the finite worker pool. Provider/tool declarations are model-neutral; each native mapping reports supported, applied and unknown fields separately. Native model turns and customer message destinations retain their existing independent authorization and qualification gates.

@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/vt"
 	"github.com/creack/pty"
+	"golang.org/x/sys/unix"
 )
 
 func TestSnapshotUnicodeStyleAltScreenAndControls(t *testing.T) {
@@ -90,23 +91,13 @@ func TestProtocolQueriesSplitBoundedAndNoReplay(t *testing.T) {
 func TestPreAttachQueriesBecomeReady(t *testing.T) {
 	b := testBackend(t, 0)
 	ready := filepath.Join(b.state, "query-ready")
-	spec := testSpec(`stty raw -echo; printf '\033[H\033[6n'; cpr=$(dd bs=1 count=6 2>/dev/null); printf '\033[c'; da=$(dd bs=1 count=7 2>/dev/null); printf '%s|%s' "$cpr" "$da" > "$1"; printf 'READY-WITHOUT-CLIENT'; exec cat`)
+	// Query answers acknowledge only preceding output. A second CPR after the
+	// full marker proves the tracker consumed it before the first attachment;
+	// publishing the file before printf races both child output and PTY drain.
+	spec := testSpec(`stty raw -echo; printf '\033[H\033[6n'; cpr=$(dd bs=1 count=6 2>/dev/null); printf '\033[c'; da=$(dd bs=1 count=7 2>/dev/null); printf 'READY-WITHOUT-CLIENT\033[6n'; rendered=$(dd bs=1 count=7 2>/dev/null); printf '%s|%s|%s' "$cpr" "$da" "$rendered" > "$1.pending"; mv "$1.pending" "$1"; exec cat`)
 	spec.Argv = append(spec.Argv, "test", ready)
 	ref := launchTest(t, b, spec, false)
-	deadline := time.Now().Add(3 * time.Second)
-	for {
-		data, err := os.ReadFile(ready)
-		if err == nil {
-			if string(data) != "\x1b[1;1R|\x1b[?1;2c" {
-				t.Fatalf("terminal protocol answers %q", data)
-			}
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("pre-attach terminal queries stalled")
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+	waitQueryAnswers(t, ready, "\x1b[1;1R|\x1b[?1;2c|\x1b[1;21R")
 	s := openWriter(t, b, ref)
 	if !bytes.Contains(s.Snapshot, []byte("READY-WITHOUT-CLIENT")) {
 		t.Fatalf("missing current screen snapshot %q", s.Snapshot)
@@ -120,6 +111,69 @@ func TestPreAttachQueriesBecomeReady(t *testing.T) {
 	s2 := openWriter(t, b, ref)
 	if !bytes.Contains(s2.Snapshot, []byte("future-input")) {
 		t.Fatal("reconnect visible screen lost")
+	}
+}
+
+func waitQueryAnswers(t *testing.T, path, want string) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			if string(data) != want {
+				t.Fatalf("terminal protocol answers %q", data)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("pre-attach terminal queries stalled")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// The old readiness marker acknowledged queries, not text printed afterward.
+// An owned FIFO deterministically holds that future text back, without sleeps
+// or scheduler assumptions, and proves a blank early snapshot is valid.
+func TestQueryAnswersDoNotAcknowledgeFutureOutput(t *testing.T) {
+	b := testBackend(t, 0)
+	queries, gate, rendered := filepath.Join(b.state, "queries"), filepath.Join(b.state, "render-gate"), filepath.Join(b.state, "rendered")
+	if err := unix.Mkfifo(gate, 0600); err != nil {
+		t.Fatal(err)
+	}
+	spec := testSpec(`stty raw -echo; printf '\033[H\033[6n'; cpr=$(dd bs=1 count=6 2>/dev/null); printf '\033[c'; da=$(dd bs=1 count=7 2>/dev/null); printf '%s|%s' "$cpr" "$da" > "$1.pending"; mv "$1.pending" "$1"; IFS= read -r release < "$2"; printf 'READY-WITHOUT-CLIENT\033[6n'; barrier=$(dd bs=1 count=7 2>/dev/null); printf '%s|%s|%s' "$cpr" "$da" "$barrier" > "$3.pending"; mv "$3.pending" "$3"; exec cat`)
+	spec.Argv = append(spec.Argv, "test", queries, gate, rendered)
+	ref := launchTest(t, b, spec, false)
+	waitQueryAnswers(t, queries, "\x1b[1;1R|\x1b[?1;2c")
+	s, err := b.Open(context.Background(), ref, true, 24, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	if bytes.Contains(s.Snapshot, []byte("READY-WITHOUT-CLIENT")) {
+		t.Fatal("snapshot contains output still blocked by the fixture gate")
+	}
+	release, err := os.OpenFile(gate, os.O_RDWR, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release.Close()
+	if _, err := release.WriteString("render\n"); err != nil {
+		release.Close()
+		t.Fatal(err)
+	}
+	waitQueryAnswers(t, rendered, "\x1b[1;1R|\x1b[?1;2c|\x1b[1;21R")
+	if err := release.Close(); err != nil {
+		t.Fatal(err)
+	}
+	readUntil(t, s, "READY-WITHOUT-CLIENT")
+	reconnected, err := b.Open(context.Background(), ref, true, 24, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reconnected.Close()
+	if !bytes.Contains(reconnected.Snapshot, []byte("READY-WITHOUT-CLIENT")) {
+		t.Fatal("acknowledged marker missing from reconnect snapshot")
 	}
 }
 func TestInstalledAttachHelperRawKeysAndDetach(t *testing.T) {

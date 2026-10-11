@@ -34,7 +34,14 @@ func codexGrant(ctx context.Context, q queryer, id domain.ID) (cb.Grant, cb.Agen
 func codexBound(ctx context.Context, q queryer, session, execution domain.ID) (bool, error) {
 	var n int
 	err := q.QueryRowContext(ctx, `SELECT COUNT(*) FROM codex_agents WHERE session_id=? AND execution_id=?`, session, execution).Scan(&n)
-	return n != 0, err
+	if err != nil || n != 0 {
+		return n != 0, err
+	}
+	_, err = primaryReservation(ctx, q, session, execution)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func (s *Store) CodexBound(ctx context.Context, session, execution domain.ID) (bool, error) {
@@ -116,6 +123,17 @@ func (s *Store) CodexAcquire(ctx context.Context, req cb.WriterRequest) (cb.Gran
 	}
 	if v.HostID != req.Agent.HostID || v.Execution.ID != req.Agent.ExecutionID || v.Execution.Generation != req.Agent.Generation {
 		return cb.Grant{}, conflict("stale app-server execution binding")
+	}
+	if _, e := primaryReservation(ctx, tx, v.ID, v.Execution.ID); e == nil {
+		fenced, err := primaryStopReserved(ctx, tx, v.ID, v.Execution.ID)
+		if err != nil {
+			return cb.Grant{}, err
+		}
+		if fenced || v.Execution.State != "primary_ready" {
+			return cb.Grant{}, conflict("reserved primary is not verified or admission is fenced")
+		}
+	} else if !errors.Is(e, ErrNotFound) {
+		return cb.Grant{}, e
 	}
 	var prior []byte
 	err = tx.QueryRowContext(ctx, `SELECT data FROM codex_agents WHERE session_id=? AND execution_id=?`, v.ID, v.Execution.ID).Scan(&prior)

@@ -1,0 +1,171 @@
+{
+  "schema": "keelmux-native-main-history-throughput/v1",
+  "base_source_commit": "e80486f0fc7601db0608efaf8370d7bebd08ec82",
+  "branch": "codex/native-throughput-v030",
+  "host": "Darwin arm64 Apple M4 Max Go1.26.6",
+  "qualification": "Scoped source change in isolated worktree; production main-screen history initialization only. No clean-release artifact or hosted post-fix claim.",
+  "production_scope": "Disable unused main-screen scrollback via exported zero value. Visible cells, parser, styles, modes, cursor, terminal replies and raw output ring are unchanged. Alternate-screen history remains the pinned library default.",
+  "original_hosted_failure": {
+    "log": "/Volumes/DataSSD1/agent-backplane/work/release-v030/push-macos-e80486f.log",
+    "sha256": "7723159bc968ff0a386466b0348da1515a0cb6a44df7bd1b375468063273ea47",
+    "test": "TestSlowReaderDoesNotBlockNativeOutput",
+    "seconds": 8.1,
+    "failure": "slow viewer blocked child output drain",
+    "deadline_seconds_unchanged": 8
+  },
+  "profiles": {
+    "payload_bytes": 2097152,
+    "race_enabled": true,
+    "iterations_each": 1,
+    "baseline": {
+      "nanoseconds": 2988437875,
+      "bytes_allocated": 284835688,
+      "allocations": 2123632,
+      "allocation_bytes_from_scrollback_clone_percent": 82.45,
+      "cpu_tsan_memoryrangeset_percent": 62.33
+    },
+    "fixed": {
+      "nanoseconds": 2336314375,
+      "bytes_allocated": 35807464,
+      "allocations": 2097401,
+      "cpu_tsan_memoryrangeset_percent": 6.94
+    },
+    "allocation_bytes_reduction_percent": 87.429,
+    "timing_limit": "Single retained profiled samples on the same local host; not hosted-runner throughput qualification."
+  },
+  "checks": [
+    {
+      "name": "unchanged_original_slow_reader_race",
+      "result": "pass",
+      "count": 3,
+      "seconds_each": [
+        2.93,
+        2.81,
+        2.82
+      ],
+      "deadline_seconds": 8
+    },
+    {
+      "name": "full_visible_state_history_reference_race",
+      "result": "pass",
+      "count": 3,
+      "seconds_each": [
+        0.53,
+        0.53,
+        0.53
+      ],
+      "sizes": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          80,
+          24
+        ]
+      ],
+      "stream_chunk_bytes": 13,
+      "full_snapshot_checkpoints": "logical control-step and resize boundaries",
+      "compares": [
+        "visible bytes",
+        "terminal replies",
+        "writer snapshot",
+        "read-only snapshot",
+        "main history capacity/row count"
+      ]
+    },
+    {
+      "name": "real_unread_viewer_2MiB_complete_unicode_tail_race",
+      "result": "pass",
+      "count": 3,
+      "acknowledgement_seconds_each": [
+        2.806,
+        2.726,
+        2.693
+      ],
+      "expected_CPR": "ESC[24;7R",
+      "exact_reply_bytes": 7,
+      "deadline_seconds": 8,
+      "native_child_alive": true
+    },
+    {
+      "name": "whole_nativepty_race",
+      "result": "pass",
+      "seconds": 11.267
+    },
+    {
+      "name": "nativepty_vet",
+      "result": "pass"
+    },
+    {
+      "name": "linux_amd64_compile",
+      "result": "pass",
+      "runtime_qualified": false
+    },
+    {
+      "name": "baseline_overlay_negative_control",
+      "result": "expected_fail",
+      "process_exit": 1,
+      "seconds": 0.698,
+      "main_history_maximum": 10000,
+      "retained_rows_by_size": [
+        18,
+        27,
+        36,
+        216
+      ]
+    },
+    {
+      "name": "original_screen_and_performance_tests_byte_identical_to_base",
+      "result": "pass"
+    },
+    {
+      "name": "git_diff_check",
+      "result": "pass"
+    }
+  ],
+  "first_new_fixture_failure": {
+    "preserved": true,
+    "overall_seconds": 37.333,
+    "differential_seconds": 28.1,
+    "native_tail_test_seconds": 8.33,
+    "cause": "Authored dd count8 blocked waiting beyond the exact7-byte CPR. Full-snapshot-per13-byte-chunk test also performed excessive cell visits.",
+    "repair": "Read exactly7 CPR bytes; compare all visible/reply chunks but complete snapshots only at bounded logical-step checkpoints. Original8-second gate unchanged.",
+    "log": "work/native-throughput-main-focused.log"
+  },
+  "files_sha256": {
+    "work/native-throughput-e804-profile.log": "5bfe4a9c8fba4dcc75620758002e0590c6165adb1b93d5f1fe5b64a42c02fa11",
+    "work/native-throughput-e804-cpu.pprof": "5a528e93ea24ae9d86310194829125e1be9658d101768cfd9487036ef01e7415",
+    "work/native-throughput-e804-mem.pprof": "aff5db12ee111dd4eb8b63810fe503e0b0020dc25c907bebbd6f2216c19e8a71",
+    "work/native-throughput-main-fixed-profile.log": "abf66b465392dfd8224120358fd511a35a194f89fb914df8bde2685b8b23a591",
+    "work/native-throughput-main-fixed-cpu.pprof": "c765e29c785433a766ffb603eb07c257dc4dc31587b438404c1d010f51eec759",
+    "work/native-throughput-main-fixed-mem.pprof": "86a237c779b5166b37c4f8602d28c0f6a2562d0d8e94ab9cbdcd752ddc520057",
+    "work/native-throughput-main-focused.log": "22d44f473c93cf39167715f1c646e5d3f9cb87111ad5ebe9f630aae73f3c145c",
+    "work/native-throughput-main-final-controls.log": "211131496baf64f4adfa17a72efdf09ffca9190318f1b2d343dc812b60ba7132",
+    "work/native-throughput-main-package.log": "2bab21a6e1e9b7fa320cdbe0eb8b5cc8bd59c12b6cd4463339f9860703e29d5d",
+    "work/native-throughput-main-baseline-negative.log": "b910005dd84ac542dcaee6afc86a3ad085f7fb540f2b521c9b677e9018998d47",
+    "internal/adapters/nativepty/screen.go": "6f8208ead46a8341439f6ca561330e9ace6b0e2394736dfd0da58c9a631f4173",
+    "internal/adapters/nativepty/throughput_test.go": "edb2f8b5a0ecfc033ffac54675297fec9629db42f77a899b6565e1b742a31e46"
+  },
+  "provider_launches": 0,
+  "model_turns": 0,
+  "customer_services_mutated": false,
+  "dependency_files_mutated": false,
+  "root_shared_checkout_mutated": false,
+  "missing_evidence": [
+    "Hosted post-fix source race/vet",
+    "Linux runtime of this source correction",
+    "Fresh release archive and installed SSH/native package proof at the integrated fix commit",
+    "Alternate-screen history disabling or alternate flood improvement",
+    "Independent physical second SSH host",
+    "Authenticated provider/model workflow and customer proof"
+  ]
+}

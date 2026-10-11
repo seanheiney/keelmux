@@ -257,9 +257,9 @@ func (m *model) switcherFooter() []viewLine {
 		}
 		out = append(out, m.footerText(action, accent)...)
 		if m.width >= 72 {
-			out = append(out, line("↑/↓ select  c inbox  g groups  p draft  r refresh  q quit", muted))
+			out = append(out, line("↑↓ select  c inbox  u usage  g groups  p draft  r refresh  q quit", muted))
 		} else if m.width >= 38 {
-			out = append(out, line("c inbox  g groups  p draft  q quit", muted))
+			out = append(out, line("c inbox  u usage  g groups  q quit", muted))
 		} else {
 			out = append(out, line("c inbox  g groups  q quit", muted))
 		}
@@ -275,6 +275,8 @@ func (m *model) View() string {
 		return m.render([]viewLine{line("Keelmux / new group", accent), line("Groups are optional local navigation.", muted), line("", normal), line("Name: "+m.input+"_", normal)}, []viewLine{line(m.status, warning), line("Enter create  Esc cancel", accent)})
 	case "draft":
 		return m.draftView()
+	case "usage":
+		return m.usageView()
 	case "channels", "channelbinding", "channelreply", "channelhelp":
 		return m.channelView()
 	}

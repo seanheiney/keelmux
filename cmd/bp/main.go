@@ -10,6 +10,7 @@ import (
 	"github.com/seanheiney/keelmux/internal/buildinfo"
 	"github.com/seanheiney/keelmux/internal/config"
 	"github.com/seanheiney/keelmux/internal/domain"
+	"github.com/seanheiney/keelmux/internal/peers"
 	"github.com/seanheiney/keelmux/internal/protocol"
 	"github.com/seanheiney/keelmux/internal/tui"
 	"os"
@@ -43,6 +44,12 @@ func run() error {
 		return err
 	}
 	args := fs.Args()
+	if len(args) > 0 && args[0] == "peer-export" {
+		if len(args) != 1 || fs.NFlag() != 0 {
+			return errors.New("peer-export accepts only its bounded stdin request, without flags or arguments")
+		}
+		return peers.Export(context.Background(), os.Stdin, os.Stdout)
+	}
 	if len(args) > 0 && (args[0] == "channels" || args[0] == "ircd" || args[0] == "projects") {
 		scopedHelp := channelHelp
 		if args[0] == "ircd" {
@@ -105,6 +112,18 @@ func run() error {
 	}
 	if len(args) > 0 && args[0] == "drive" {
 		return driveNative(*entry, args[1:])
+	}
+	if len(args) > 0 && args[0] == "groups" {
+		return groupsCommand(*state, *entry, args[1:])
+	}
+	if len(args) > 0 && args[0] == "peers" {
+		return peersCommand(*state, *entry, args[1:])
+	}
+	if len(args) > 0 && args[0] == "usage" {
+		return usageCommand(*state, *entry, args[1:])
+	}
+	if len(args) > 0 && args[0] == "diagnose" {
+		return diagnoseCommand(*state, *entry, args[1:])
 	}
 	p, err := config.Resolve(*state)
 	if err != nil {
@@ -350,11 +369,15 @@ keelmux stop SESSION [--operation ID]  Stop current execution; preserve ID on re
 keelmux reconcile                     Recheck surviving executions
 keelmux daemon status|stop|restart    Inspect or restart only the owned daemon
 keelmux doctor                        Check local binaries and daemon
+keelmux diagnose [--json]             Read existing state without starting services
 keelmux version [--json]              Print release and protocol provenance
 keelmux providers                     Inspect qualified native status without model work
 keelmux channels --help               Bind chat roots, read authored inbox and reply
 keelmux ircd --help                   Provision and manage a private IRC server
 keelmux projects --help               Create and inspect durable project identities
+keelmux groups --help                 Manage company/product navigation collections
+keelmux peers --help                  Explicit pinned SSH inventory
+keelmux usage --help                  Contextual source-qualified usage
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

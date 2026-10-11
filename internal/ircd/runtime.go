@@ -206,6 +206,10 @@ func unpack(raw []byte, prefix string) (map[string][]byte, error) {
 	return result, nil
 }
 func (m *Manager) runtimeInfo(ctx context.Context) (RuntimeInfo, error) {
+	return m.runtimeInfoWithDirectory(ctx, config.EnsurePrivateDirectory)
+}
+
+func (m *Manager) runtimeInfoWithDirectory(ctx context.Context, checkDirectory func(string) error) (RuntimeInfo, error) {
 	var r RuntimeInfo
 	e := readJSON(filepath.Join(m.dir, "runtime", "runtime.json"), &r)
 	if os.IsNotExist(e) {
@@ -214,7 +218,7 @@ func (m *Manager) runtimeInfo(ctx context.Context) (RuntimeInfo, error) {
 	if e != nil {
 		return r, e
 	}
-	if config.EnsurePrivateDirectory(filepath.Join(m.dir, "runtime")) != nil {
+	if checkDirectory(filepath.Join(m.dir, "runtime")) != nil {
 		return RuntimeInfo{}, ErrRepair
 	}
 	target, p, e := nativePin()

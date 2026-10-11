@@ -47,19 +47,26 @@ const (
 )
 
 type LifecycleRequest struct {
-	Action                        Action
-	OperationID                   domain.ID
-	Target                        Target
-	Agent                         cb.AgentBinding // Complete exact binding for stop; zero for start.
-	NativeThreadID, RealmRevision string
+	Action                                   Action
+	OperationID                              domain.ID
+	Target                                   Target
+	Agent                                    cb.AgentBinding // Complete exact binding for stop; zero for start.
+	NativeThreadID, RealmRevision, Workspace string
+	// StartIncarnation is generated once before start admission. The common
+	// store must durably claim it before invoking the start callback, and an
+	// already claimed incarnation must never authorize a second callback.
+	StartIncarnation domain.ID `json:",omitempty"`
 }
 
 // Gate is an adapter on the EXISTING Service/store authority, never another
 // lease or a controller-only mutex. It validates current managed execution and
 // exact thread/realm authorization, then holds the common admission gate through
-// the bounded callback. Stop must reject unresolved effects, callbacks, queued
-// work or writable projections and durably fence admission before the callback.
-// Errors before the callback must have no lifecycle effect. Nil fails closed.
+// the bounded callback. Start must atomically claim StartIncarnation once in the
+// common durable store before invoking the callback; an existing claim refuses
+// callback execution, even when its incarnation matches. Stop must reject
+// unresolved effects, callbacks, queued work or writable projections and durably
+// fence admission before the callback. Errors before the callback must have no
+// external lifecycle effect. Nil fails closed.
 // Product wiring must implement and test this contract; this package cannot
 // safely synthesize it from separate Authority.Observe and Authority.Revoke calls.
 type Gate interface {

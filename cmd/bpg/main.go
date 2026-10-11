@@ -29,8 +29,9 @@ import (
 type configuration struct {
 	Principal string `json:"principal"`
 	Peers     []struct {
-		HostID domain.ID `json:"host_id"`
-		Socket string    `json:"socket"`
+		HostID         domain.ID `json:"host_id"`
+		Socket         string    `json:"socket"`
+		InventoryStore string    `json:"inventory_store,omitempty"`
 	} `json:"peers"`
 	Grants []struct {
 		HostID   domain.ID   `json:"host_id"`
@@ -70,8 +71,14 @@ func readConfiguration(path string) (configuration, error) {
 		return conf, errors.New("entry configuration needs one principal and explicit peers")
 	}
 	for _, peer := range conf.Peers {
-		if !filepath.IsAbs(peer.Socket) || filepath.Clean(peer.Socket) != peer.Socket || len(peer.Socket) > 100 {
+		if (peer.Socket == "") == (peer.InventoryStore == "") {
+			return conf, errors.New("select exactly one peer socket or enrolled inventory_store")
+		}
+		if peer.Socket != "" && (!filepath.IsAbs(peer.Socket) || filepath.Clean(peer.Socket) != peer.Socket || len(peer.Socket) > 100) {
 			return conf, errors.New("peer sockets must be explicit clean absolute Unix paths")
+		}
+		if peer.InventoryStore != "" && (!filepath.IsAbs(peer.InventoryStore) || filepath.Clean(peer.InventoryStore) != peer.InventoryStore || len(peer.InventoryStore) > 4096 || !domain.ValidObjectID(peer.HostID, "host")) {
+			return conf, errors.New("SSH inventory needs an existing absolute inventory_store and exact host ID")
 		}
 	}
 	return conf, nil
@@ -120,10 +127,11 @@ func run() error {
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
 		return errors.New("entry companion executable unavailable")
 	}
-	var peers []federation.Peer
-	for _, peer := range conf.Peers {
-		peers = append(peers, federation.Peer{HostID: peer.HostID, Source: transport.NewClient(peer.Socket)})
+	peers, closePeers, err := entrySources(conf)
+	if err != nil {
+		return err
 	}
+	defer closePeers()
 	var grants []federation.Grant
 	for _, grant := range conf.Grants {
 		grants = append(grants, federation.Grant{Principal: conf.Principal, HostID: grant.HostID, Sessions: grant.Sessions})

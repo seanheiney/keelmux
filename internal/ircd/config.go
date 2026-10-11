@@ -242,6 +242,10 @@ func certificates(name string) ([]byte, []byte, []byte, error) {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDER}), pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: priv}), nil
 }
 func (m *Manager) readConfig(ctx context.Context) (configRecord, error) {
+	return m.readConfigWithRuntime(ctx, m.runtimeInfo)
+}
+
+func (m *Manager) readConfigWithRuntime(ctx context.Context, inspectRuntime func(context.Context) (RuntimeInfo, error)) (configRecord, error) {
 	var r configRecord
 	e := readJSON(filepath.Join(m.dir, "config.json"), &r)
 	if e != nil {
@@ -255,7 +259,7 @@ func (m *Manager) readConfig(ctx context.Context) (configRecord, error) {
 	if c.RealmID != realm || c.Endpoint != "ircs://"+realm || c.APIEndpoint != "https://127.0.0.1:"+strconv.Itoa(r.APIPort) || r.ServerName != "km"+strings.TrimPrefix(string(c.ID), "ircd_")+".local" {
 		return r, ErrRepair
 	}
-	runtime, e := m.runtimeInfo(ctx)
+	runtime, e := inspectRuntime(ctx)
 	if e != nil || runtime != c.Runtime {
 		return r, ErrRepair
 	}
