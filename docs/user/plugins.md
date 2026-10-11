@@ -114,6 +114,8 @@ MCP tools use `transport: "stdio"` with a structured `command` array, or `transp
 
 Existing canonical files and skill discovery aliases are preserved and reported as collisions. No automatic merge overwrites them. Grok's index is an instruction compatibility mapping; it does not establish native skill discovery or invocation. All mappings report native loaded state as **unknown** until independent native evidence proves more.
 
+Grok carries rules and its skill index as literal launch arguments. Preview counts JSON escaping and refuses an argument above 32 KiB of encoded text. The complete launch request retains its 64 KiB limit and is checked before a request or runtime launch effect; long additional arguments can still exceed it. Refusal preserves the prior applied files.
+
 [Architecture contract](../architecture/0003-reusable-capability-library.md), [additional providers](providers.md) and [support matrix](support-matrix.md) describe the boundaries and qualification state.
 
 ## Qualified library controls

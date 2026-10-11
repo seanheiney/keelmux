@@ -28,7 +28,7 @@ Portable skill assets follow the Agent Skills directory format. Rules remain Mar
 
 Gemini and Grok are native terminal adapters. OpenCode is the first additional portable terminal harness for explicit OpenRouter model selection; its native login and provider registry remain authoritative. The larger Pi continuity study remains separate. A requested model identifier does not prove the accepted provider/model, subscription or quota.
 
-[Gemini skills](https://geminicli.com/docs/cli/skills/) describes its interoperable skill directories; [OpenCode providers](https://opencode.ai/docs/providers/) describes explicit OpenRouter routing. Exact installed versions and native flags require local verification before adapter implementation.
+[Gemini skills](https://geminicli.com/docs/cli/skills/) describes its interoperable skill directories; [OpenCode providers](https://opencode.ai/docs/providers/) describes explicit OpenRouter routing. The [native contract evidence](../evidence/native-provider-contracts-2026-10-10.md) records reviewed installed versions and interactive flags. Account, model and native lifecycle proof remain separate.
 
 ## Optional Headroom integration
 
