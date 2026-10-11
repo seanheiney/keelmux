@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 REPO = "https://github.com/seanheiney/keelmux"
 TERMINAL_CAPTURE = "docs/site/evidence/runtime-ux-e81ddbd"
+LIBRARY_CAPTURE = "docs/site/evidence/reusable-capabilities-b730500"
 PAGES = [
     ("quickstart", "Your first session", "Start here", "docs/user/quickstart.md"),
     ("install", "Installation", "Start here", "docs/user/install.md"),
@@ -247,6 +248,19 @@ def build(output, base, root=ROOT, commit=None):
                 raise ValueError('terminal asset differs from frozen capture receipt: ' + path + suffix)
             shutil.copyfile(src,output/'assets'/(name+suffix));image_hashes[name+suffix]=digest
     shutil.copyfile(evidence_path,output/'terminal-evidence.json')
+    library_path = root / LIBRARY_CAPTURE / 'tui-receipt.json'
+    library_evidence = json.loads(library_path.read_text())
+    library_source = library_evidence['source_sha']
+    if not re.fullmatch('[0-9a-f]{40}', library_source): raise ValueError('expected full library capture source SHA')
+    library_images = {'library-pack': 'library-pack-on-80x24', 'library-component': 'library-component-off-80x24'}
+    for name,path in library_images.items():
+        for suffix in ('.png','.txt'):
+            src=root/LIBRARY_CAPTURE/(path+suffix)
+            digest=hashlib.sha256(src.read_bytes()).hexdigest()
+            if library_evidence['files_sha256'][path+suffix] != digest:
+                raise ValueError('library asset differs from frozen capture receipt: ' + path + suffix)
+            shutil.copyfile(src,output/'assets'/(name+suffix));image_hashes[name+suffix]=digest
+    shutil.copyfile(library_path,output/'library-evidence.json')
     install=(root/'docs/user/install.md').read_text()
     command=re.search(r'```sh\n(curl[^\n]+\| sh)\n```',install)
     if not command: raise ValueError('canonical one-line install command not found')
@@ -269,6 +283,10 @@ def build(output, base, root=ROOT, commit=None):
         if slug=='channels':content=terminal(base,'channel-inbox','Thread inbox with one explicit destination, intake gap and authored fixture notes',scope)+content
         if slug=='daily-use':content=terminal(base,'switcher','Terminal work switcher with selected native runtime and unknown model/account evidence',scope+f' <a href="{base}assets/switcher-wide.png">120×32</a> · <a href="{base}assets/switcher-compact.png">40×14</a>.')+content
         if slug=='troubleshooting':content=terminal(base,'runtime-repair','40 by 14 terminal fixture retaining the selected work, uncertain runtime, repair guidance and navigation',scope,436,358)+content
+        if slug=='plugins':
+            content+=terminal(base,'library-pack','80 by 24 library with the Headroom pack selected and enabled','Pack enabled in the local default profile.')
+            content+=terminal(base,'library-component','80 by 24 library with the Headroom MCP component selected and disabled','MCP component disabled; the pack stays enabled.')
+            content+=f'<p class="image-caption">Development UI, source {library_source[:7]}. Actual owned PTY and Registry; fixture inventory. Interpreted cell rasters. Native loaded state remains unknown. <a href="{base}library-evidence.json">Exact capture scope</a>.</p>'
         source_link=REPO+'/blob/'+commit+'/'+source
         toc=''.join(f'<a href="#{esc(ident)}">{esc(re.sub(r"[`*]", "",name))}</a>' for level,name,ident in headings if level==2)
         pager=''
@@ -281,7 +299,9 @@ def build(output, base, root=ROOT, commit=None):
         source_hashes[source]=hashlib.sha256((root/source).read_bytes()).hexdigest()
     (output/'search-index.json').write_text(json.dumps(index,ensure_ascii=False,separators=(',',':')))
     builder_sources = {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for path in (HERE/'build.py', HERE/'assets/site.css', HERE/'assets/site.js', HERE/'assets/favicon.svg')}
-    (output/'build-manifest.json').write_text(json.dumps({'source_commit':commit,'base_path':base,'canonical_sources':source_hashes,'builder_sources':builder_sources,'image_hashes':image_hashes,'image_sources':{name:terminal_source for name in images},'terminal_receipt_sha256':hashlib.sha256(evidence_path.read_bytes()).hexdigest(),'pages':len(PAGES)+1,'runtime':'static; local search; no analytics/CDN'},indent=2)+'\n')
+    image_sources={name:terminal_source for name in images}
+    image_sources.update({name:library_source for name in library_images})
+    (output/'build-manifest.json').write_text(json.dumps({'source_commit':commit,'base_path':base,'canonical_sources':source_hashes,'builder_sources':builder_sources,'image_hashes':image_hashes,'image_sources':image_sources,'terminal_receipt_sha256':hashlib.sha256(evidence_path.read_bytes()).hexdigest(),'library_receipt_sha256':hashlib.sha256(library_path.read_bytes()).hexdigest(),'pages':len(PAGES)+1,'runtime':'static; local search; no analytics/CDN'},indent=2)+'\n')
     (output/'.nojekyll').touch()
     return {'output':str(output),'pages':len(PAGES)+1,'source_commit':commit,'base_path':base}
 

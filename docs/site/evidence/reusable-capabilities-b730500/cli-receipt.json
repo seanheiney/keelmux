@@ -1,0 +1,255 @@
+{
+  "schema": 1,
+  "source_sha": "b730500f5fcf1382c0e292c0a088e0f6ace9cf6f",
+  "source_archive_sha256": "68e1d26982ecfe9694c0cd30930582c6c7c64618395f8e2f17f51a547dfad450",
+  "binary_sha256": "10434ba0ad9da04af1509714c9fbf91a91a66b134501650d48a1db27749ae838",
+  "version": {
+    "name": "Keelmux",
+    "version": "development",
+    "commit": "b730500f5fcf1382c0e292c0a088e0f6ace9cf6f",
+    "built_at": "2026-10-11T00:00:00Z",
+    "protocol": "bp/1",
+    "go_version": "go1.26.6",
+    "os": "darwin",
+    "arch": "arm64"
+  },
+  "scope": "Actual compiled CLI, real private Registry/profile/application files, owned fixture workspaces; native loading remains unknown",
+  "result": "pass",
+  "checks": [
+    {
+      "check": "empty-plugins",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "empty-profiles",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "empty-tools",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "builtin-import",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "builtin-on",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "component-off",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "off-resolution",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "disabled-tool-refused",
+      "result": "pass",
+      "expected_exit": "nonzero",
+      "actual_exit": 1
+    },
+    {
+      "check": "component-on",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "on-resolution",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "profile-create",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "profile-on",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "profile-show",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "ordinary-check-no-execution",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "ordinary-installed-wheel-check",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "preview",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "apply-reviewed-plan",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "status",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "apply-idempotent",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "preview-before-toggle",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "toggle-off-after-preview",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "stale-plan-refused",
+      "result": "pass",
+      "expected_exit": "nonzero",
+      "actual_exit": 1
+    },
+    {
+      "check": "apply-disabled-selection",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "component-restored",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "reapply",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "clear-reviewed-receipt",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "status-cleared",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "health-pack-import",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "health-profile-create",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "health-profile-select",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "health-profile-resolve",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    },
+    {
+      "check": "actual-headroom-health",
+      "result": "pass",
+      "expected_exit": "zero",
+      "actual_exit": 0
+    }
+  ],
+  "checks_count": 32,
+  "builtin_package_digest": "c9dc779bb8ae7fc9cf12a466a678558781be9712b423c05a84e9c2135ade9679",
+  "health_package_digest": "dcc8f46314258c7526b4835d410505cc1c89b15e77283969512b57aca1d1413a",
+  "health_receipt": {
+    "package_id": "headroom-proof",
+    "package_digest": "dcc8f46314258c7526b4835d410505cc1c89b15e77283969512b57aca1d1413a",
+    "tool_id": "mcp",
+    "transport": "stdio",
+    "observed_at": "2026-10-11T00:31:45.673926Z",
+    "declared": true,
+    "availability": "available",
+    "health": "healthy",
+    "started": true,
+    "initialized": true,
+    "tools_listed": true,
+    "tool_count": 3,
+    "protocol_version": "2025-11-25",
+    "invoked": false,
+    "cleanup": "complete",
+    "code": "health_ok"
+  },
+  "headroom_wheel_sha256": "f7b0186ad5e76d5c8f75e5de6c57e001637258ead75481575ccca4d57557f5fb",
+  "builtin_declared_source_revision": "976aa714ef3e19174dc0cb586cee7b20d064e4ef",
+  "wheel_matches_builtin_source_revision": false,
+  "model_turns": 0,
+  "tool_calls": 0,
+  "native_provider_launches": 0,
+  "daemon_launches": 0,
+  "native_application_fixture": "Claude supplemental MCP workspace file only; no native process started",
+  "network_policy": "Headroom child only uses Darwin deny-network wrapper; explicit offline refs",
+  "private_original_health_stdout_sha256": "2d5014e7ad748a6dcc1e823b704a053df779bc01b14d7cd757e35acb4ccecb99",
+  "owned_fixture_removed": true,
+  "binary_postcheck_sha256": "10434ba0ad9da04af1509714c9fbf91a91a66b134501650d48a1db27749ae838",
+  "helper_sha256": "9ef730ff2e12bdb10921f4a9c5e283a66bbc1671e16f978bc4302b0f6c2727e2",
+  "headroom_installed_wheel_files_match_after_check": 579,
+  "headroom_mcp_sdk_version": "1.30.0",
+  "headroom_python_version": "3.14.7",
+  "retained_helper_failure": {
+    "stage": "initial empty plugins read",
+    "reason": "helper state path exceeded existing Unix socket path limit",
+    "corrected_using_short_owned_fixture": true,
+    "source_change_required": false
+  }
+}

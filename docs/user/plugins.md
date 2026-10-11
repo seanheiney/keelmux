@@ -115,3 +115,9 @@ MCP tools use `transport: "stdio"` with a structured `command` array, or `transp
 Existing canonical files and skill discovery aliases are preserved and reported as collisions. No automatic merge overwrites them. Grok's index is an instruction compatibility mapping; it does not establish native skill discovery or invocation. All mappings report native loaded state as **unknown** until independent native evidence proves more.
 
 [Architecture contract](../architecture/0003-reusable-capability-library.md), [additional providers](providers.md) and [support matrix](support-matrix.md) describe the boundaries and qualification state.
+
+## Qualified library controls
+
+Development source `b730500` passed 32 compiled CLI checks and six actual PTY captures at 120×32, 80×24 and 40×14. The [qualification record](../evidence/reusable-capabilities-b730500.md) binds the exact source, executable and sanitized receipts. This does not establish native loading or qualify a released build.
+
+The 80×24 [pack view](../site/evidence/reusable-capabilities-b730500/library-pack-on-80x24.png) and [component view](../site/evidence/reusable-capabilities-b730500/library-component-off-80x24.png) show real saved Registry changes against a deterministic inventory fixture. The images rasterize captured terminal cells. No native provider or model was started; loaded state remains **unknown**.

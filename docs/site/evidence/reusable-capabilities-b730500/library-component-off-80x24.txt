@@ -1,0 +1,24 @@
+  LIBRARY
+  Local default profile · reusable across native harnesses
+  headroom / component preferences
+  › tool/mcp                                                               off
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Saved for next explicit apply/launch. Running sessions need reload; loaded
+  state unknown.
+  Enter/Space toggle  Tab components  r refresh  Esc return
+  Saved selection only · use plugins --help for component and profile controls

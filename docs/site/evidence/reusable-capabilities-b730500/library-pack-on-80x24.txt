@@ -1,0 +1,24 @@
+  LIBRARY
+  Local default profile · reusable across native harnesses
+  › headroom 0.40.0                                                         on
+  0 skills · 0 rules · 1 tools · pin c9dc779bb8ae
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Saved for next explicit apply/launch. Running sessions need reload; loaded
+  state unknown.
+  Enter/Space toggle  Tab components  r refresh  Esc return
+  Saved selection only · use plugins --help for component and profile controls
