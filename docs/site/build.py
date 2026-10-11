@@ -31,6 +31,7 @@ PAGES = [
     ("usage", "Usage & evidence", "Work", "docs/user/usage.md"),
     ("skills", "Skills & linking", "Work", "docs/user/skills.md"),
     ("plugins", "Reusable capabilities", "Work", "docs/user/plugins.md"),
+    ("authoring-packs", "Author a capability pack", "Work", "docs/user/authoring-packs.md"),
     ("providers", "Additional providers", "Work", "docs/user/providers.md"),
     ("operations", "Operations & recovery", "Operate", "docs/user/operations.md"),
     ("configuration", "Configuration", "Operate", "docs/user/configuration.md"),

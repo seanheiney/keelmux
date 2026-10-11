@@ -86,6 +86,8 @@ Ordinary check reads declaration, executable metadata and required environment a
 
 ## Author a portable pack
 
+The [complete authoring guide and careful-review sample](authoring-packs.md) walk through exact hashes, named profiles, tool switches, provider mappings and safe removal.
+
 Create a directory with a `keelmux-plugin.json` manifest. Every other bundled file needs its exact SHA-256 in `files`. A skill points at a directory containing `SKILL.md`; a rule points at a Markdown file. For example:
 
 ```json

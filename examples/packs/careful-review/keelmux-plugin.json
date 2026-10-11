@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "careful-review",
+  "version": "1.0.0",
+  "description": "Small portable source-review instructions and a separately installed optional MCP declaration.",
+  "files": {
+    "rules/preserve-files.md": "6ae72b052e840f4cebf5a3b2d8e00dc037ec8abcb1aa9a283619c6de9d3bc320",
+    "skills/bounded-review/SKILL.md": "1db3ee0dd7645b268d85d835ffd0ce6a8d2979dcd043d49c0e92a5d49611ddd4",
+    "skills/bounded-review/checklist.md": "d0e742e612d6fa0d7b1e978f38a9fe344759b844847f393bf423113d3642cda4"
+  },
+  "skills": [
+    {
+      "id": "bounded-review",
+      "path": "skills/bounded-review",
+      "description": "Bounded source review with a text checklist."
+    }
+  ],
+  "rules": [
+    {
+      "id": "preserve-files",
+      "path": "rules/preserve-files.md",
+      "description": "Preserve existing work and qualify claims."
+    }
+  ],
+  "tools": [
+    {
+      "id": "headroom",
+      "description": "Separately installed Headroom stdio MCP server; this pack does not install or invoke it.",
+      "transport": "stdio",
+      "command": [
+        "headroom",
+        "mcp",
+        "serve"
+      ],
+      "env_refs": [
+        "LANG"
+      ]
+    }
+  ]
+}
