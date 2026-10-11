@@ -40,6 +40,7 @@ PAGES = [
     ("troubleshooting", "Troubleshooting", "Operate", "docs/user/troubleshooting.md"),
     ("cli", "CLI reference", "Reference", "docs/user/cli.md"),
     ("architecture", "Architecture & trust", "Reference", "docs/user/architecture.md"),
+    ("primary-stdio", "Primary control architecture", "Reference", "docs/primary-stdio.md"),
     ("support-matrix", "Support & evidence", "Reference", "docs/user/support-matrix.md"),
     ("roadmap", "Roadmap & full vision", "Reference", "docs/user/roadmap.md"),
     ("security", "Security", "Project", "SECURITY.md"),
