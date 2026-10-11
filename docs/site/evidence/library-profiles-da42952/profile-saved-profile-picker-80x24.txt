@@ -1,0 +1,24 @@
+  LIBRARY
+  Editing profile: default r2 · Default
+  Choose a saved profile
+    default · Default                                                       r2
+  › review · Code review                                                    r2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ↑↓/j/k browse  Enter edit  Esc back
+  r refresh · local saved profiles only

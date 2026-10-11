@@ -78,6 +78,18 @@ func (s *Service) Handler() http.Handler {
 		}
 		writeJSON(w, http.StatusOK, v)
 	})
+	mux.HandleFunc("POST /v1/launch/retry", func(w http.ResponseWriter, r *http.Request) {
+		var in protocol.LaunchRetryRequest
+		if !decode(w, r, &in) {
+			return
+		}
+		v, err := s.RetryLaunch(r.Context(), in.OperationID)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, v)
+	})
 	mux.HandleFunc("POST /v1/link", func(w http.ResponseWriter, r *http.Request) {
 		var in protocol.LinkRequest
 		if !decode(w, r, &in) {
@@ -233,15 +245,7 @@ func (s *Service) Launch(ctx context.Context, in protocol.LaunchRequest) (protoc
 		if prior.Kind != "launch" || !bytes.Equal(p, payload(in)) {
 			return out, conflict("operation ID already names a different request")
 		}
-		if prior.Outcome == domain.Recorded {
-			return s.attemptLaunch(ctx, in, prior)
-		}
-		if prior.Outcome == domain.Attempted || prior.Outcome == domain.Uncertain {
-			if err := s.reconcileOperation(ctx, prior); err != nil {
-				return out, err
-			}
-		}
-		return s.launchResponse(ctx, in.OperationID)
+		return s.retryLaunchByIDLocked(ctx, in.OperationID)
 	}
 	if !errors.Is(err, store.ErrNotFound) {
 		return out, err
@@ -254,6 +258,13 @@ func (s *Service) Launch(ctx context.Context, in protocol.LaunchRequest) (protoc
 		return out, invalid(err.Error())
 	}
 	v := domain.NewSession(s.hostID, in.Name, in.Workspace, in.Provider, in.ProviderVersion)
+	// This is the original caller's explicit argv declaration, never a native
+	// default, observed routing, accepted model or account-eligibility claim.
+	// Unsupported contracts and values that cannot be displayed safely remain
+	// unknown without changing the existing native launch validation boundary.
+	if requested, inspectErr := providers.RequestedModel(in.Provider, in.ProviderVersion, in.Argv[1:]); inspectErr == nil && requested != "" {
+		v.Execution.RequestedModel = domain.Evidence{Value: requested, Source: "native-argv-declaration", ObservedAt: v.CreatedAt}
+	}
 	if in.Library != nil {
 		snapshot := *in.Library
 		v.Library = &snapshot

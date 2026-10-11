@@ -196,6 +196,20 @@ func run() error {
 		}
 		rest := rfs.Args()
 		if len(rest) == 0 {
+			if *operation != "" {
+				// Retry the original home-recorded intent before inspecting current
+				// library selections, native files, PATH or provider versions.
+				otherFlags := false
+				rfs.Visit(func(f *flag.Flag) { otherFlags = otherFlags || f.Name != "operation" })
+				if otherFlags {
+					return errors.New("operation-only retry accepts only --operation ID; the recorded original selects its workspace, provider and profile")
+				}
+				r, retryErr := c.RetryLaunch(ctx, domain.ID(*operation))
+				if retryErr != nil {
+					return fmt.Errorf("launch operation %s: %w", *operation, retryErr)
+				}
+				return printJSON(r)
+			}
 			return errors.New("run needs codex, claude, gemini, grok or opencode; flags precede provider")
 		}
 		provider := rest[0]
@@ -231,7 +245,7 @@ func run() error {
 		}
 		r, err := c.Launch(ctx, protocol.LaunchRequest{OperationID: domain.ID(*operation), Name: *name, Workspace: *workspace, Provider: provider, ProviderVersion: version, Argv: argv, Library: snapshot})
 		if err != nil {
-			return fmt.Errorf("launch operation %s: %w; retry only with this same --operation", *operation, err)
+			return fmt.Errorf("launch operation %s: %w; retry the recorded original with keelmux run --operation %s", *operation, err, *operation)
 		}
 		return printJSON(r)
 	case "link":
@@ -380,6 +394,7 @@ keelmux --state CLIENTDIR --entry SOCKET
 keelmux run [--name NAME] [--workspace PATH] [--operation ID] PROVIDER [native args]
                                  Providers: codex, claude, gemini, grok, opencode
                                  Profile: --profile ID --application ID
+keelmux run --operation ID            Retry only the original recorded launch
 keelmux list                          Inspect registered work as JSON
 keelmux directory                     Inspect home availability and permitted inventory
 keelmux attach SESSION [--read-only]   Enter native terminal; Ctrl-G d returns
@@ -400,7 +415,7 @@ keelmux peers --help                  Explicit pinned SSH inventory
 keelmux usage --help                  Contextual source-qualified usage
 keelmux plugins --help                Reusable skill/rule/tool packs and toggles
 keelmux profiles --help               Exact reusable capability selections
-keelmux tools --help                  Selected tool declarations and explicit health
+keelmux tools --help                  Tool switches, declarations and explicit health
 keelmux setup [--root DIR] [--scope user|project] [--providers codex,claude] [--apply]
                                  Preview or install owned connection skills
 keelmux skills remove --root DIR [--scope user|project] [--providers codex,claude]

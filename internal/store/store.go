@@ -244,6 +244,17 @@ func (s *Store) Operation(ctx context.Context, id domain.ID) (domain.Operation, 
 	defer s.mu.Unlock()
 	return operation(ctx, s.db, id)
 }
+
+// OperationBinding reads the indexed lifetime retained with the original
+// intent. A terminal outcome must not be projected onto a later generation.
+func (s *Store) OperationBinding(ctx context.Context, id domain.ID) (domain.ID, uint64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var sessionID domain.ID
+	var generation uint64
+	err := s.db.QueryRowContext(ctx, `SELECT session_id,generation FROM operations WHERE id=?`, id).Scan(&sessionID, &generation)
+	return sessionID, generation, missing(err)
+}
 func (s *Store) Sessions(ctx context.Context) ([]domain.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

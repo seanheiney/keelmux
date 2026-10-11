@@ -42,6 +42,12 @@ type LaunchRequest struct {
 	Argv            []string                `json:"argv"`
 	Library         *domain.LibrarySnapshot `json:"library,omitempty"`
 }
+
+// LaunchRetryRequest selects only an already recorded original launch. It
+// cannot supply new argv, native version, workspace or capability selections.
+type LaunchRetryRequest struct {
+	OperationID domain.ID `json:"operation_id"`
+}
 type SessionRequest struct {
 	SessionID   domain.ID `json:"session_id"`
 	ExecutionID domain.ID `json:"execution_id"`
@@ -149,6 +155,11 @@ func (c *Client) Directory(ctx context.Context) (Inventory, error) {
 func (c *Client) Launch(ctx context.Context, r LaunchRequest) (LaunchResponse, error) {
 	var v LaunchResponse
 	err := c.Call(ctx, "POST", "/v1/launch", r, &v)
+	return v, err
+}
+func (c *Client) RetryLaunch(ctx context.Context, operation domain.ID) (LaunchResponse, error) {
+	var v LaunchResponse
+	err := c.Call(ctx, "POST", "/v1/launch/retry", LaunchRetryRequest{OperationID: operation}, &v)
 	return v, err
 }
 func (c *Client) Link(ctx context.Context, r LinkRequest) (domain.Session, error) {

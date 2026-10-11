@@ -120,7 +120,10 @@ func (m *model) selectionDetails() []viewLine {
 			lines = append(lines, line(repair, warning))
 		}
 		if m.height >= 16 {
-			lines = append(lines, line("Model: "+evidence(s.Execution.ActualModel)+"  Account: "+evidence(s.Execution.Account), muted))
+			if m.height >= 18 && s.Execution.RequestedModel.Source != "unknown" && s.Execution.RequestedModel.Value != "" {
+				lines = append(lines, line("Requested: "+evidence(s.Execution.RequestedModel), muted))
+			}
+			lines = append(lines, line("Actual model: "+evidence(s.Execution.ActualModel)+"  Account: "+evidence(s.Execution.Account), muted))
 		}
 		if m.height >= 20 {
 			lines = append(lines, line("Thread: "+string(s.ThreadID)+"  Generation: "+fmt.Sprint(s.Execution.Generation), muted))

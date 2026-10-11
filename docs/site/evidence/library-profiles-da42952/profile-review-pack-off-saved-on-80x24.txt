@@ -1,0 +1,24 @@
+  LIBRARY
+  Editing profile: review r5 · Code review
+  headroom / component preferences
+  Pack off; saved choices inactive.
+  › tool/mcp                                               saved on · inactive
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Enter toggle  Tab components  p profiles
+  r refresh  Esc return
+  Saved selection · apply/reload needed

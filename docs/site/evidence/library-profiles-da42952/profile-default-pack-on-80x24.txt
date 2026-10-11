@@ -1,0 +1,24 @@
+  LIBRARY
+  Editing profile: default r2 · Default
+  › headroom 0.40.0                                                         on
+  0 skills · 0 rules · 1 tools · pin c9dc779bb8ae
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Enter toggle  Tab components  p profiles
+  r refresh  Esc return
+  Saved selection · apply/reload needed

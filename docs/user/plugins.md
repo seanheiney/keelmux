@@ -1,10 +1,10 @@
 # Reusable capabilities
 
-Keep one versioned pack of skills, Markdown rules and MCP tools, then select it for several native agent harnesses. A profile pins exact pack bytes and remembers individual switches. Press **l** in the terminal switcher to inspect the local default profile and toggle a pack.
+Keep one versioned pack of skills, Markdown rules and MCP tools, then select it for several native agent harnesses. A profile pins exact pack bytes and remembers individual switches. Press **l** in the terminal switcher to inspect the local library and toggle a pack. Press **p** to choose a saved profile; the library shows the profile and revision you are editing. Browsing profiles never changes a running session.
 
-Press **Tab** in the library to inspect that pack's component switches; **Enter** toggles the selected skill, rule or tool. Component preferences remain saved while the whole pack is off.
+Press **Tab** in the library to inspect that pack's component switches; **Enter** toggles the selected skill, rule or tool. Component preferences remain saved while the whole pack is off. An inactive row distinguishes that saved preference from the pack's effective gate. A different unselected revision does not borrow the selected revision's preferences.
 
-**Development source:** these commands are being qualified on the reusable-capabilities branch. Published v0.2.1 does not include them. Saving a selection, applying native files, native loading, tool health and tool invocation are separate observations.
+**Development source:** these commands are implemented on the reusable-capabilities and capability-control branches. Published v0.2.1 does not include them. Saving a selection, applying native files, native loading, tool health and tool invocation are separate observations.
 
 ## Try the optional Headroom pack
 
@@ -13,8 +13,8 @@ Import its bundled declaration and switch its MCP component on or off:
 ```sh
 keelmux plugins import --builtin headroom
 keelmux plugins on headroom
-keelmux plugins off --component tool/mcp headroom
-keelmux plugins on --component tool/mcp headroom
+keelmux tools off headroom/mcp
+keelmux tools on headroom/mcp
 keelmux profiles show default
 ```
 
@@ -37,12 +37,22 @@ Preview creates nothing. It lists generated files, structured launch arguments, 
 
 Launch checks the matching applied receipt and records the profile revision, resolution digest and application digest on the session. It refuses stale, edited, incompatible or partially mapped applications. It never silently applies files. A native CLI may still combine user, parent, managed or environment-selected configuration; its trust and permission controls remain authoritative.
 
+An interrupted launch can be retried from its original recorded intent:
+
+```sh
+keelmux run --operation ORIGINAL_OPERATION_ID
+```
+
+This operation-only form accepts no workspace, provider or profile overrides and does not inspect today's provider version or saved selections. A recorded intent may be attempted once; an attempted or uncertain intent is reconciled against its exact runtime. A completed retry returns the original result. Missing operations refuse without creating a launch. Retrying after a profile toggle therefore retains the original snapshot; use a new operation for a deliberately changed launch.
+
 To turn Headroom off for this workspace, save the switch and apply again:
 
 ```sh
 keelmux plugins off headroom
 keelmux plugins apply --harness claude --workspace /path/to/project
 ```
+
+Use `tools off --profile review headroom/mcp` to disable only its MCP component in a named profile. `tools on` restores that component preference without changing the pinned version or enabling a disabled pack. These shortcuts use the same guarded selection API as `plugins on/off --component tool/mcp headroom`; neither runs Headroom nor applies native files.
 
 To remove this application's unchanged owned files, use `plugins clear --harness claude --workspace /path/to/project`. This preserves other native files and does not stop a running harness. Edited owned content causes a refusal. `plugins recover` explicitly finishes a valid interrupted application; ordinary status and preview never recover it implicitly.
 
@@ -62,7 +72,11 @@ Importing an update leaves selected pins intact. Use `plugins on --digest SHA PA
 
 ## Inspect tools without invoking them
 
+These commands inspect the enabled default-profile selection. After the off workflow above, explicitly enable the pack and its component first; this saves selection only and does not apply or execute anything.
+
 ```sh
+keelmux plugins on headroom
+keelmux tools on headroom/mcp
 keelmux tools list
 keelmux tools check headroom/mcp
 keelmux tools check --health --workspace /path/to/empty-workspace headroom/mcp
@@ -110,7 +124,7 @@ MCP tools use `transport: "stdio"` with a structured `command` array, or `transp
 | Claude Code | Project `.claude/skills` | Namespaced `.claude/rules` | Supplemental receipt-bound `--mcp-config` |
 | Gemini CLI | Project `.gemini/skills` | Owned `GEMINI.md` | Owned `.gemini/settings.json` |
 | OpenCode | Project `.opencode/skills` | Explicit instructions file | Owned `opencode.json` |
-| Grok | Immutable instruction index | Literal `--rules` text | Unsupported by the reviewed installed contract |
+| Grok | Applied instruction index | Literal `--rules` text | Unsupported by the reviewed installed contract |
 
 Existing canonical files and skill discovery aliases are preserved and reported as collisions. No automatic merge overwrites them. Grok's index is an instruction compatibility mapping; it does not establish native skill discovery or invocation. All mappings report native loaded state as **unknown** until independent native evidence proves more.
 
@@ -120,7 +134,11 @@ Grok carries rules and its skill index as literal launch arguments. Preview coun
 
 ## Qualified library controls
 
-Current development source `00c6b52` passed 31 compiled CLI checks, six actual PTY captures at three sizes, complete local and hosted source checks, and fresh installed macOS Codex/Claude terminal lifecycle. A separate current-source development executable passed actual Headroom initialize/list-only health with three tools listed, zero invoked and complete owned cleanup. The [current qualification record](../evidence/reusable-capabilities-00c6b52.md) distinguishes those executables, receipts and remaining native-loading/provider gates. Published v0.2.1 does not include the library commands.
+Development source `da42952` adds saved-profile selection and direct tool switches. Complete local normal/race tests, vet, development builds and twelve site checks passed. Fifteen actual PTY captures across three sizes verified profile independence and exact cleanup; the [control qualification record](../evidence/capability-controls-da42952.md) keeps this scope separate from native loading and release qualification.
+
+The 80×24 [saved-profile picker](../site/evidence/library-profiles-da42952/profile-saved-profile-picker-80x24.png), [review-only tool switch](../site/evidence/library-profiles-da42952/profile-review-tool-off-80x24.png) and [saved-on component in a disabled pack](../site/evidence/library-profiles-da42952/profile-review-pack-off-saved-on-80x24.png) rasterize actual PTY cells from a deterministic inventory fixture and real Registry. No provider or tool ran; native loaded state remains **unknown**. The [capture bundle](../site/evidence/library-profiles-da42952/README.md) includes text equivalents and the original receipt.
+
+Earlier development source `00c6b52` passed 31 compiled CLI checks, six actual PTY captures at three sizes, complete local and hosted source checks, and fresh installed macOS Codex/Claude terminal lifecycle. A separate executable from that source passed actual Headroom initialize/list-only health with three tools listed, zero invoked and complete owned cleanup. The [qualification record for that source](../evidence/reusable-capabilities-00c6b52.md) distinguishes those executables, receipts and remaining native-loading/provider gates. Published v0.2.1 does not include the library commands.
 
 Development source `b730500` passed 32 compiled CLI checks and six actual PTY captures at 120×32, 80×24 and 40×14. The [qualification record](../evidence/reusable-capabilities-b730500.md) binds the exact source, executable and sanitized receipts. This does not establish native loading or qualify a released build.
 
