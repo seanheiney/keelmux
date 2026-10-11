@@ -4,7 +4,7 @@ Keep one versioned pack of skills, Markdown rules and MCP tools, then select it 
 
 Press **Tab** in the library to inspect that pack's component switches; **Enter** toggles the selected skill, rule or tool. Component preferences remain saved while the whole pack is off. An inactive row distinguishes that saved preference from the pack's effective gate. A different unselected revision does not borrow the selected revision's preferences.
 
-**Development source:** these commands are being qualified on the reusable-capabilities branch. Published v0.2.1 does not include them. Saving a selection, applying native files, native loading, tool health and tool invocation are separate observations.
+**Development source:** these commands are implemented on the reusable-capabilities and capability-control branches. Published v0.2.1 does not include them. Saving a selection, applying native files, native loading, tool health and tool invocation are separate observations.
 
 ## Try the optional Headroom pack
 
@@ -72,7 +72,11 @@ Importing an update leaves selected pins intact. Use `plugins on --digest SHA PA
 
 ## Inspect tools without invoking them
 
+These commands inspect the enabled default-profile selection. After the off workflow above, explicitly enable the pack and its component first; this saves selection only and does not apply or execute anything.
+
 ```sh
+keelmux plugins on headroom
+keelmux tools on headroom/mcp
 keelmux tools list
 keelmux tools check headroom/mcp
 keelmux tools check --health --workspace /path/to/empty-workspace headroom/mcp
@@ -120,7 +124,7 @@ MCP tools use `transport: "stdio"` with a structured `command` array, or `transp
 | Claude Code | Project `.claude/skills` | Namespaced `.claude/rules` | Supplemental receipt-bound `--mcp-config` |
 | Gemini CLI | Project `.gemini/skills` | Owned `GEMINI.md` | Owned `.gemini/settings.json` |
 | OpenCode | Project `.opencode/skills` | Explicit instructions file | Owned `opencode.json` |
-| Grok | Immutable instruction index | Literal `--rules` text | Unsupported by the reviewed installed contract |
+| Grok | Applied instruction index | Literal `--rules` text | Unsupported by the reviewed installed contract |
 
 Existing canonical files and skill discovery aliases are preserved and reported as collisions. No automatic merge overwrites them. Grok's index is an instruction compatibility mapping; it does not establish native skill discovery or invocation. All mappings report native loaded state as **unknown** until independent native evidence proves more.
 
@@ -130,7 +134,7 @@ Grok carries rules and its skill index as literal launch arguments. Preview coun
 
 ## Qualified library controls
 
-Current development source `00c6b52` passed 31 compiled CLI checks, six actual PTY captures at three sizes, complete local and hosted source checks, and fresh installed macOS Codex/Claude terminal lifecycle. A separate current-source development executable passed actual Headroom initialize/list-only health with three tools listed, zero invoked and complete owned cleanup. The [current qualification record](../evidence/reusable-capabilities-00c6b52.md) distinguishes those executables, receipts and remaining native-loading/provider gates. Published v0.2.1 does not include the library commands.
+Earlier development source `00c6b52` passed 31 compiled CLI checks, six actual PTY captures at three sizes, complete local and hosted source checks, and fresh installed macOS Codex/Claude terminal lifecycle. A separate executable from that source passed actual Headroom initialize/list-only health with three tools listed, zero invoked and complete owned cleanup. The [qualification record for that source](../evidence/reusable-capabilities-00c6b52.md) distinguishes those executables, receipts and remaining native-loading/provider gates. Published v0.2.1 does not include the library commands.
 
 Development source `b730500` passed 32 compiled CLI checks and six actual PTY captures at 120×32, 80×24 and 40×14. The [qualification record](../evidence/reusable-capabilities-b730500.md) binds the exact source, executable and sanitized receipts. This does not establish native loading or qualify a released build.
 
