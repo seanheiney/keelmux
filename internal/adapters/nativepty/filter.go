@@ -164,6 +164,9 @@ func (s *terminalScreen) trackCSIWrap(cmd ansi.Cmd, params ansi.Params) {
 		if end < 1 {
 			end = limit
 		}
+		if cmd.Final() == 'r' && end > limit {
+			return // rejected DECSTBM does not reset delayed wrap
+		}
 		if max(1, n) < end {
 			s.pendingWrap = false
 		}

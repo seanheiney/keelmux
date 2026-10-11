@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "result": "pass",
+  "base_source_sha": "4ef3c9afce086a07abd4646bd6c428abe8d43b90",
+  "environment": {
+    "os": "darwin",
+    "architecture": "arm64"
+  },
+  "scope": "Provider-free terminal screen/parser correctness and existing owned shell/helper PTY fixtures; not installed provider or release qualification.",
+  "reproducer": {
+    "cols": 1,
+    "rows": 2,
+    "input_bytes": 15,
+    "input_hex": "1b5b323b33721b5b323b31481b5b4d"
+  },
+  "baseline": {
+    "result": "expected-panic",
+    "exit_code": 1,
+    "production_screen_sha256": "6f8208ead46a8341439f6ca561330e9ace6b0e2394736dfd0da58c9a631f4173",
+    "argv": [
+      "go",
+      "test",
+      "-race",
+      "-count=1",
+      "-run",
+      "^TestDECSTBMOutOfScreenDeleteLineReproducer$",
+      "./internal/adapters/nativepty"
+    ],
+    "log_sha256": "9cd3dcc7b101530d795086a00dbfc17fe477bda7311ff3bd8a1f88971be019d1",
+    "panic": "runtime error: index out of range [2] with length 2"
+  },
+  "change": {
+    "files": {
+      "internal/adapters/nativepty/screen.go": "5ae54fc61e3cd896c11ff1bade0c864a7404fd9740b5174024b271d03384522c",
+      "internal/adapters/nativepty/filter.go": "343c8a093be9cd06ec1dc2aef0aec62bdf209f5e93bd167e48e89a749b7f4e1e",
+      "internal/adapters/nativepty/margins_test.go": "57f3c5dbf9c1d1f1079184699b3fcdcbdcbb029ed1e5220af4f0aa2f65d7c1cd"
+    },
+    "behavior": "The existing CSI handler rejects out-of-screen DECSTBM before the pinned emulator installs a scroll rectangle; delayed-wrap tracking retains its prior state for the same rejection. Valid/default bounds continue through the pinned handler. Visible output forwarding remains unchanged.",
+    "dependency_updates": false,
+    "panic_recovery": false,
+    "deadline_changes": false
+  },
+  "negative_control": {
+    "result": "expected-fail",
+    "exit_code": 1,
+    "baseline_filter_sha256": "c7fac861fadbd01321d4ab36977505fa782a47c0356c5ca969b30156e48dcb25",
+    "screen_guard_retained": true,
+    "log_sha256": "1ea86fcd046990e29f4a1bab0fdf78ac05b73d5c98a859c6ebbd26686e12ac82",
+    "scope": "A read-only Go overlay substitutes only the baseline wrap tracker while retaining the screen bounds guard; the chunked Unicode/delayed-wrap test fails."
+  },
+  "tests": [
+    "exact 15-byte DeleteLine panic reproducer",
+    "invalid bounds preserve prior region, cursor and replies",
+    "valid/default bounds match pinned parser under both origin modes",
+    "chunk sizes 1, 2, 7 and whole trace preserve delayed wrap, Unicode, visible/reply bytes and snapshots",
+    "current height after shrink/growth",
+    "finite malformed bounds through scrolling operations",
+    "alternate/main regions remain independent"
+  ],
+  "gates": [
+    {
+      "gate": "race",
+      "argv": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "./internal/adapters/nativepty"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 11.759,
+      "log_sha256": "6f42d8421431c1fe30e431afb0f4f78f41351a2e8653e497016d7049f6cd7a5a"
+    },
+    {
+      "gate": "vet",
+      "argv": [
+        "go",
+        "vet",
+        "./internal/adapters/nativepty"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.187,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "gate": "linux-compile",
+      "argv": [
+        "go",
+        "test",
+        "-c",
+        "-o",
+        "<private proof>/nativepty-linux-amd64.test",
+        "./internal/adapters/nativepty"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.702,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": {
+        "GOOS": "linux",
+        "GOARCH": "amd64",
+        "CGO_ENABLED": "0"
+      }
+    }
+  ],
+  "private_controls_sha256": "2bbd98e98197c8176d33d4ec598440a7804e3ad3b0941c3221729553e181b204",
+  "independent_review": {
+    "reviewer": "feature_remote",
+    "result": "no source blocker found",
+    "duplicate_runtime_workloads": false
+  },
+  "remote_baseline_receipt_sha256": "32ef56f2654e9279bf5504dedeecf68f4d0716631775da844e4f33e1232d3628",
+  "model_turns": 0,
+  "provider_process_launches": 0,
+  "customer_activity": false,
+  "limits": [
+    "Exact isolated source tests; captain owns integration and release qualification.",
+    "No claim that the separate scrollback throughput change caused the pre-existing baseline panic."
+  ]
+}

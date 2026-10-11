@@ -75,9 +75,9 @@ func newTerminalScreen(cols, rows int) *terminalScreen {
 	}})
 	s.emulator.RegisterCsiHandler('m', func(params ansi.Params) bool { uv.ReadStyle(params, &s.pen); return false })
 	s.emulator.RegisterCsiHandler('r', func(params ansi.Params) bool {
-		// Mirror the pinned DECSTBM handler's defaults and refusal. Recording
-		// rejected margins would move origin-relative grapheme rewrites to a
-		// different row from the emulator's still-active scroll region.
+		// Mirror DECSTBM defaults, but refuse out-of-screen margins before the
+		// pinned handler installs an unchecked scroll rectangle. Valid margins
+		// still use that handler; rejected margins preserve region and cursor.
 		top, _, _ := params.Param(0, 1)
 		bottom, _, _ := params.Param(1, s.emulator.Height())
 		if top < 1 {
@@ -85,6 +85,9 @@ func newTerminalScreen(cols, rows int) *terminalScreen {
 		}
 		if bottom < 1 {
 			bottom = s.emulator.Height()
+		}
+		if top > s.emulator.Height() || bottom > s.emulator.Height() {
+			return true
 		}
 		if top < bottom {
 			s.top, s.bottom = top, bottom
