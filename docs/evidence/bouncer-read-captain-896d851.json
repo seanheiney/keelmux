@@ -1,0 +1,257 @@
+{
+  "actual_corrected_product_gate": {
+    "binaries_unchanged": true,
+    "binary_vcs_modified": false,
+    "cleanup_limit": "test-owned exact Signal/Wait, observer-reader join and child Stop assertions; no independent whole-system PID census",
+    "command": [
+      "go",
+      "test",
+      "./internal/peers",
+      "-run",
+      "^TestOwnedLoopbackSSHProductReadBridge$",
+      "-count=1",
+      "-v",
+      "-timeout",
+      "150s"
+    ],
+    "independent_physical_second_server": "unqualified",
+    "log_sha256": "cc4d694548cd64168d3507cb69e1c7eff5af5fab57c041e26076a22004ccb87b",
+    "model_turns": 0,
+    "native_model_providers": "unqualified",
+    "observations": [
+      "actual exact Ready and Unicode/ANSI output",
+      "zero forbidden native input and resize",
+      "disconnect and explicit entry restart with original-operation refusal",
+      "quiet home-policy revocation and exact cleanup through disabled scope",
+      "regrant with explicit new operation and exact release",
+      "missing home daemon refuses without creating state",
+      "test-owned process/reader cleanup assertions passed"
+    ],
+    "package_seconds": 4.338,
+    "private_original_receipt_sha256": "81c46d71c9c9db669e8407f2837425eca7c378d4404b823cabd5ed10cfc29137",
+    "result": "pass",
+    "run": "product003",
+    "run_record_sha256": "c2032efd435d5b37c417c709f558471e65e46498edc78fc7fafdb41df0b924ca",
+    "scope": "one owned same-machine loopback actual product SSH fixture; no native vendor/model providers/customer chat",
+    "source_sha": "896d851705035da8071978d64a75e4b90f94734d",
+    "source_tree": "6a7cad32c4b6e5f11f0fe38cea1009e5e806a6b0",
+    "test_and_child_sources": {
+      "internal/peers/read_ssh_product_integration_test.go": {
+        "bytes": 29424,
+        "sha256": "1cc15938e0257c6d3fb6504e43cb86eec0819d92301f7376657d74f54123850e",
+        "unchanged_from_product002": true
+      },
+      "internal/peers/testdata/read-child/main.go": {
+        "bytes": 3314,
+        "sha256": "37d6728113e2359501f67ff8ea2f7b525d6cf8ea77c21b9e384ec30c1a487c62",
+        "unchanged_from_product002": true
+      }
+    },
+    "test_seconds": 4.04,
+    "wall_seconds": 5.937
+  },
+  "development_build": {
+    "binaries": {
+      "keelmux": {
+        "bytes": 18277378,
+        "sha256": "e7f92a19a00bdcf69ec8b115a88c7b5aef38fea00b573bd0e0d227d515ff4a0f"
+      },
+      "keelmux-entry": {
+        "bytes": 16042594,
+        "sha256": "9dd54b8ea1d1a26d866a824dc0f70c119b9e82f4e8015fda1925c482aef55f22"
+      },
+      "keelmux-supervisor": {
+        "bytes": 7466194,
+        "sha256": "e0a61dbab9acb61dbdb7f7417bd07caa80a6e597807b480d5cc52bdaa455a554"
+      },
+      "keelmuxd": {
+        "bytes": 18316770,
+        "sha256": "cefe12884ca6ec76f9dcd3c4e31780166c653725b9907b967a16cd0e8ca7136e"
+      }
+    },
+    "private_original_receipt_sha256": "a795e3911810b3af722a80e58701273e0f033638479c44e2d2dcb919c685704b",
+    "result": "pass",
+    "source_sha": "896d851705035da8071978d64a75e4b90f94734d",
+    "summed_command_seconds": 3.304
+  },
+  "limits": [
+    "public installer remains v0.2.1",
+    "new installed-release qualification unavailable",
+    "no independent physical second-server qualification",
+    "native model providers through bridge unqualified",
+    "captain is Store-only without production authenticated caller, scheduler, model invocation or dispatch",
+    "same-OS-user cooperating boundary; no team-authentication or sandbox claim",
+    "unknown costs and provider turns are not zero",
+    "Go accepted cache is not a fresh complete-suite rerun"
+  ],
+  "public_derivative_policy": "no local paths, process IDs, private config, SSH keys, lease tokens, accounts, terminal captures or raw stderr",
+  "retained_failed_product_runs": [
+    {
+      "log_sha256": "1c72faf5c840ae6cdb7d4fee6f89b1763e41bf449e84a2ff23c0c5e8f4f95877",
+      "private_original_receipt_sha256": "5a5b4c8eac143e095368d41a0759c112a495e0c6f3013d6c1c7e227010d0f007",
+      "result": "fail",
+      "run": "product001",
+      "source_sha": "c5dda375645f55386e750b0f68cf38dda0e8759d",
+      "stage": "binary preflight refused missing VCS metadata; no product/native fixture launch"
+    },
+    {
+      "log_sha256": "400c6f2c86e465ff5fcf38ddab4d5beff90804cebb6f1921ea696aaddc63200d",
+      "private_original_receipt_sha256": "e90a53bb7bb2c7430e455d018f2b62324358d9581c02f7dba8a877a6b521381a",
+      "result": "fail",
+      "run": "product002",
+      "source_sha": "c5dda375645f55386e750b0f68cf38dda0e8759d",
+      "stage": "actual same-machine product path reached quiet revocation but observer did not close within the original two-second assertion"
+    }
+  ],
+  "schema": "keelmux-bouncer-read-captain-source-evidence/1",
+  "scope": "development-source local commands, Store lifecycle fixtures and inherited-pipe subprocess controls; not a released/installed/native-provider/two-physical-server or captain-model qualification",
+  "source_gate_receipts": [
+    {
+      "cache_policy": "ordinary Go test caching accepted; commands did not include -count=1",
+      "gates": [
+        {
+          "accepted_cached_package_results": 8,
+          "command": [
+            "go",
+            "test",
+            "-p",
+            "1",
+            "-tags",
+            "library_registry",
+            "./..."
+          ],
+          "exit_code": 0,
+          "label": "normal",
+          "log_sha256": "ac6510797c3f7d1d514acddfa735c2b4407a752135c168b15aee8bd351536d79",
+          "passing_package_results": 37,
+          "seconds": 103.795
+        },
+        {
+          "accepted_cached_package_results": 7,
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-p",
+            "1",
+            "-tags",
+            "library_registry",
+            "./..."
+          ],
+          "exit_code": 0,
+          "label": "race",
+          "log_sha256": "9a4ad237ecc753534fd834e87caf655b6c53c1324dd9d508631a3f477a9ea233",
+          "passing_package_results": 37,
+          "seconds": 238.876
+        },
+        {
+          "command": [
+            "go",
+            "vet",
+            "-tags",
+            "library_registry",
+            "./..."
+          ],
+          "exit_code": 0,
+          "label": "vet",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "seconds": 1.025
+        },
+        {
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/site/tests",
+            "-v"
+          ],
+          "exit_code": 0,
+          "label": "site",
+          "log_sha256": "65a75baf199056a66f629d2ce2e9eee5b83b12ba2dda3e1c8de6c3df4d261eda",
+          "seconds": 0.303
+        }
+      ],
+      "private_original_receipt_sha256": "023aca0a6c4389037ee77c6500d476705495572d7b8e85f7394aeb35f7f5e902",
+      "result": "pass",
+      "source_sha": "c5dda375645f55386e750b0f68cf38dda0e8759d",
+      "source_tree": "75f6f49f85d3b6bcdd910436886d8953e88357e6"
+    },
+    {
+      "cache_policy": "ordinary Go test caching accepted; commands did not include -count=1",
+      "gates": [
+        {
+          "accepted_cached_package_results": 36,
+          "command": [
+            "go",
+            "test",
+            "-p",
+            "1",
+            "-tags",
+            "library_registry",
+            "./..."
+          ],
+          "exit_code": 0,
+          "label": "normal",
+          "log_sha256": "fda873402ae9f13c37b75772bcb97c315a0dcd62f68066dc60965fa6207b973d",
+          "passing_package_results": 37,
+          "seconds": 6.281
+        },
+        {
+          "accepted_cached_package_results": 36,
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-p",
+            "1",
+            "-tags",
+            "library_registry",
+            "./..."
+          ],
+          "exit_code": 0,
+          "label": "race",
+          "log_sha256": "afa05b2801a8fcfb7933bedf1bec75c91458232c57186ccdca4cdd13c04c41c1",
+          "passing_package_results": 37,
+          "seconds": 9.307
+        },
+        {
+          "command": [
+            "go",
+            "vet",
+            "-tags",
+            "library_registry",
+            "./..."
+          ],
+          "exit_code": 0,
+          "label": "vet",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "seconds": 0.307
+        },
+        {
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/site/tests",
+            "-v"
+          ],
+          "exit_code": 0,
+          "label": "site",
+          "log_sha256": "b670d9afc2392c364040ace8683c672c93f74157c827aa680c0592d0dd23dc0a",
+          "seconds": 0.251
+        }
+      ],
+      "private_original_receipt_sha256": "b7483cd29912c83be26ba4003ac89b1874305a7dc87a9a9395ab280b74fdfc05",
+      "result": "pass",
+      "source_sha": "896d851705035da8071978d64a75e4b90f94734d",
+      "source_tree": "6a7cad32c4b6e5f11f0fe38cea1009e5e806a6b0"
+    }
+  ],
+  "source_sha": "896d851705035da8071978d64a75e4b90f94734d",
+  "source_tree": "6a7cad32c4b6e5f11f0fe38cea1009e5e806a6b0",
+  "state": "draft for captain copying; source checks and actual same-machine product003 passed"
+}
