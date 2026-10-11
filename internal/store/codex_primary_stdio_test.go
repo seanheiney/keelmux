@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	cb "github.com/seanheiney/keelmux/internal/codexbroker"
 	cc "github.com/seanheiney/keelmux/internal/codexcontroller"
@@ -412,6 +414,9 @@ func TestPrimaryStdioCallbackAfterStopFenceRetainedWithoutUnfencingOrReplay(t *t
 	}
 	fault := stdioBatch(t, c, "late-callback", ready.Observation.Through, []ps.Event{{Kind: ps.EventCallback, Reason: ps.ReasonPendingCallback, FrameBytes: 1, FrameSHA256: strings.Repeat("4", 64)}}, nil)
 	importStdio(t, s, fault)
+	if err := s.FenceCodexPrimaryStop(context.Background(), stop); err == nil {
+		t.Fatal("attempted stop retry leaped newly retained callback")
+	}
 	if err := s.PublishCodexPrimary(context.Background(), a); err == nil {
 		t.Fatal("stop fence cleared")
 	}
@@ -420,6 +425,18 @@ func TestPrimaryStdioCallbackAfterStopFenceRetainedWithoutUnfencingOrReplay(t *t
 	}
 	if err := s.CompleteCodexPrimaryStop(context.Background(), cc.StopRequest{OperationID: "stop", Target: req.Target, Incarnation: req.StartIncarnation}); err != nil {
 		t.Fatal(err)
+	}
+	before := stdioDurableBytes(t, s)
+	if err := s.FenceCodexPrimaryStop(context.Background(), stop); err != nil {
+		t.Fatal("completed retry lost original stopped receipt", err)
+	}
+	if !bytes.Equal(before, stdioDurableBytes(t, s)) {
+		t.Fatal("completed retry mutated retained evidence")
+	}
+	changed := stop
+	changed.Agent.AppServerIncarnation = "11111111111111111111111111111111"
+	if err := s.FenceCodexPrimaryStop(context.Background(), changed); err == nil {
+		t.Fatal("changed completed retry accepted")
 	}
 	current, err := s.Session(context.Background(), v.ID)
 	if err != nil || current.Execution.State != "primary_stopped" {
@@ -584,6 +601,155 @@ func TestPrimaryStdioSnapshotReadinessRequiresEveryDimensionAndAcceptsTerminalEv
 			got, err := s.CodexPrimaryStdio(context.Background(), c.Spec.Binding)
 			if err != nil || got.Snapshot != batch.Observation.Snapshot {
 				t.Fatal("negative/terminal evidence was discarded", err)
+			}
+		})
+	}
+}
+
+func TestPrimaryStdioCorruptBoundedRowsCannotAccumulateBeyondRetainedBudget(t *testing.T) {
+	s, _, _, c, _ := stdioStoreFixture(t, true)
+	bindStdio(t, s, c)
+	tx, err := s.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC()
+	// Each padded payload fits the independent per-row ceiling. These corrupt
+	// import rows have valid canonical metadata but no decodable batch; the scan
+	// must reject cumulative retention before attempting chain reconstruction.
+	for i := 0; i < 65; i++ {
+		id := domain.ID(fmt.Sprintf("padded_%02d", i))
+		op := domain.Operation{ID: id, Kind: primaryStdioImportKind, SessionID: c.Spec.Binding.SessionID, ExecutionID: c.Spec.Binding.ExecutionID, Outcome: domain.Completed, Detail: "immutable primary stdio import receipt", CreatedAt: now, UpdatedAt: now}
+		if _, err = tx.Exec(`INSERT INTO operations(id,session_id,generation,data,payload) VALUES(?,?,?,?,zeroblob(?))`, id, op.SessionID, c.Spec.Binding.Generation, encoded(op), maxPrimaryStdioRecordBytes-1); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.CodexPrimaryStdio(context.Background(), c.Spec.Binding); err == nil || !strings.Contains(err.Error(), "retained evidence exceeds lifetime bound") {
+		t.Fatal("scan reached replay without enforcing cumulative bound", err)
+	}
+	var rows int
+	if err = s.db.QueryRow(`SELECT COUNT(*) FROM operations WHERE id LIKE 'padded_%'`).Scan(&rows); err != nil || rows != 65 {
+		t.Fatal("refusal modified corrupt evidence", rows, err)
+	}
+}
+
+func TestPrimaryStdioCurrentnessInvalidationIsScopedAndDoesNotMakeReceiveFault(t *testing.T) {
+	s, v, _, c, _ := stdioStoreFixture(t, true)
+	l := bindStdio(t, s, c)
+	batch := stdioBatch(t, c, "ready", l.Cursor, nil, nil)
+	importStdio(t, s, batch)
+	if err := s.PublishCodexPrimary(context.Background(), stdioAgent(c)); err != nil {
+		t.Fatal(err)
+	}
+	ready, err := s.Session(context.Background(), v.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger, err := s.CodexPrimaryStdio(context.Background(), c.Spec.Binding)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := stdioDurableBytes(t, s)
+	for _, change := range []func(*ps.Binding){
+		func(b *ps.Binding) { b.HostID = "foreign" },
+		func(b *ps.Binding) { b.Generation++ },
+		func(b *ps.Binding) { b.StartOperationID = "other" },
+		func(b *ps.Binding) { b.PrimaryIncarnation = "11111111111111111111111111111111" },
+		func(b *ps.Binding) { b.NativeThreadID = "foreign" },
+		func(b *ps.Binding) { b.RealmRevision = "foreign" },
+	} {
+		b := c.Spec.Binding
+		change(&b)
+		if err = s.InvalidateCodexPrimaryStdio(context.Background(), b); err == nil {
+			t.Fatal("foreign invalidation accepted")
+		}
+	}
+	if !bytes.Equal(before, stdioDurableBytes(t, s)) {
+		t.Fatal("foreign invalidation changed receipt journal")
+	}
+	if err = s.InvalidateCodexPrimaryStdio(context.Background(), c.Spec.Binding); err != nil {
+		t.Fatal(err)
+	}
+	current, err := s.Session(context.Background(), v.ID)
+	if err != nil || current.Execution.State != "primary_uncertain" || current.Execution.NativeThread != ready.Execution.NativeThread {
+		t.Fatal("currentness invalidation changed identity evidence", err)
+	}
+	after, err := s.CodexPrimaryStdio(context.Background(), c.Spec.Binding)
+	if err != nil || !bytes.Equal(encoded(after), encoded(ledger)) || !primaryStdioReady(after) {
+		t.Fatal("currentness loss fabricated sticky receive fault", err)
+	}
+	events, err := s.Events(context.Background(), v.ThreadID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.InvalidateCodexPrimaryStdio(context.Background(), c.Spec.Binding); err != nil {
+		t.Fatal(err)
+	}
+	nowEvents, err := s.Events(context.Background(), v.ThreadID, 0)
+	if err != nil || len(nowEvents) != len(events) || !bytes.Equal(before, stdioDurableBytes(t, s)) {
+		t.Fatal("idempotent invalidation changed retained evidence", err)
+	}
+	if err = s.PublishCodexPrimary(context.Background(), stdioAgent(c)); err != nil {
+		t.Fatal("fresh guarded caller cannot republish structural evidence", err)
+	}
+}
+
+func TestPrimaryStdioCurrentnessInvalidationPreservesStopFencesAndRollsBackFailure(t *testing.T) {
+	for _, state := range []string{"reserved", "stopping", "stopped", "write-failure"} {
+		t.Run(state, func(t *testing.T) {
+			s, v, req, c, _ := stdioStoreFixture(t, true)
+			l := bindStdio(t, s, c)
+			if state != "reserved" {
+				importStdio(t, s, stdioBatch(t, c, "ready", l.Cursor, nil, nil))
+				if err := s.PublishCodexPrimary(context.Background(), stdioAgent(c)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if state == "stopping" || state == "stopped" {
+				stop := cc.LifecycleRequest{Action: cc.StopPrimary, OperationID: "stop", Target: req.Target, Agent: stdioAgent(c), Workspace: req.Workspace, NativeThreadID: req.NativeThreadID, RealmRevision: req.RealmRevision}
+				if err := s.FenceCodexPrimaryStop(context.Background(), stop); err != nil {
+					t.Fatal(err)
+				}
+				if state == "stopped" {
+					if err := s.CompleteCodexPrimaryStop(context.Background(), cc.StopRequest{OperationID: "stop", Target: req.Target, Incarnation: req.StartIncarnation}); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			before := stdioDurableBytes(t, s)
+			original, err := s.Session(context.Background(), v.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if state == "write-failure" {
+				if _, err = s.db.Exec(`CREATE TRIGGER fail_currentness BEFORE UPDATE ON sessions BEGIN SELECT RAISE(ABORT,'fixture currentness write failure'); END`); err != nil {
+					t.Fatal(err)
+				}
+			}
+			err = s.InvalidateCodexPrimaryStdio(context.Background(), c.Spec.Binding)
+			current, getErr := s.Session(context.Background(), v.ID)
+			if getErr != nil {
+				t.Fatal(getErr)
+			}
+			if state == "write-failure" {
+				if err == nil || !bytes.Equal(encoded(original), encoded(current)) {
+					t.Fatal("failed invalidation changed session", err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if state == "reserved" && current.Execution.State != "primary_uncertain" {
+				t.Fatal("reserved currentness not invalidated")
+			}
+			if (state == "stopping" || state == "stopped") && current.Execution.State != original.Execution.State {
+				t.Fatal("invalidation cleared stop fence")
+			}
+			if !bytes.Equal(before, stdioDurableBytes(t, s)) {
+				t.Fatal("invalidation rewrote immutable operation/fence/ledger")
 			}
 		})
 	}

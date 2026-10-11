@@ -20,10 +20,11 @@ const (
 	primaryStdioChannelKind = "codex.primary.stdio.channel"
 	primaryStdioImportKind  = "codex.primary.stdio.import"
 	// These lifetime caps never compact or forget established continuity.
-	MaxPrimaryStdioImports     = 4096
-	MaxPrimaryStdioEvents      = 4096
-	MaxPrimaryStdioBytes       = 32 << 20
-	maxPrimaryStdioRecordBytes = 512 << 10
+	MaxPrimaryStdioImports       = 4096
+	MaxPrimaryStdioEvents        = 4096
+	MaxPrimaryStdioBytes         = 32 << 20
+	maxPrimaryStdioRecordBytes   = 512 << 10
+	maxPrimaryStdioMetadataBytes = 4096
 )
 
 // PrimaryStdioAnchor names the complete retained journal, not the greatest row
@@ -131,6 +132,8 @@ func primaryStdioRecords(ctx context.Context, q primaryStdioQuery, sessionID, ex
 	defer rows.Close()
 	out := map[domain.ID]primaryStdioRecord{}
 	foreign := map[domain.ID]bool{}
+	var retainedBytes uint64
+	stdioRows := 0
 	for rows.Next() {
 		var id, sid domain.ID
 		var generation uint64
@@ -145,9 +148,16 @@ func primaryStdioRecords(ctx context.Context, q primaryStdioQuery, sessionID, ex
 		if !strings.HasPrefix(op.Kind, "codex.primary.stdio.") {
 			continue
 		}
-		if op.Kind != primaryStdioChannelKind && op.Kind != primaryStdioImportKind || !bytes.Equal(encoded(op), raw) || op.ID != id || op.SessionID != sid || op.ExecutionID == "" || op.Outcome != domain.Completed || op.CreatedAt.IsZero() || op.UpdatedAt != op.CreatedAt || len(payload) > maxPrimaryStdioRecordBytes {
+		if op.Kind != primaryStdioChannelKind && op.Kind != primaryStdioImportKind || len(raw) > maxPrimaryStdioMetadataBytes || !bytes.Equal(encoded(op), raw) || op.ID != id || op.SessionID != sid || op.ExecutionID == "" || op.Outcome != domain.Completed || op.CreatedAt.IsZero() || op.UpdatedAt != op.CreatedAt || len(payload) > maxPrimaryStdioRecordBytes {
 			return nil, repair("invalid primary stdio operation")
 		}
+		// Bound all selected stdio payloads BEFORE retaining a row or foreign
+		// identity. Individually bounded corrupt rows must not add up to GiB.
+		stdioRows++
+		if stdioRows > MaxPrimaryStdioImports+1 || uint64(len(payload)) > MaxPrimaryStdioBytes-retainedBytes {
+			return nil, repair("primary stdio retained evidence exceeds lifetime bound")
+		}
+		retainedBytes += uint64(len(payload))
 		if op.ExecutionID != executionID {
 			foreign[op.ExecutionID] = true
 			continue
@@ -156,10 +166,6 @@ func primaryStdioRecords(ctx context.Context, q primaryStdioQuery, sessionID, ex
 			return nil, repair("missing primary stdio generation")
 		}
 		out[id] = primaryStdioRecord{op: op, payload: payload, generation: generation}
-		// Retained row count is independently bounded before walking the chain.
-		if len(out) > MaxPrimaryStdioImports+1 {
-			return nil, repair("primary stdio journal exceeds lifetime bound")
-		}
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
@@ -249,6 +255,51 @@ func (s *Store) CodexPrimaryStdio(ctx context.Context, b ps.Binding) (ps.Ledger,
 		return ps.Ledger{}, ps.ErrConflict
 	}
 	return primaryStdioLedger(ctx, s.db, r)
+}
+
+// InvalidateCodexPrimaryStdio records loss of operational currentness only.
+// It neither fabricates receive evidence nor retires a blocker or stop fence.
+// Fresh imported evidence and the Service's live helper guard may publish again.
+func (s *Store) InvalidateCodexPrimaryStdio(ctx context.Context, b ps.Binding) error {
+	if ps.ValidateBinding(b) != nil {
+		return ps.ErrInvalid
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	r, err := primaryReservation(ctx, tx, b.SessionID, b.ExecutionID)
+	if err != nil {
+		return err
+	}
+	v, err := session(ctx, tx, b.SessionID)
+	if err != nil {
+		return err
+	}
+	if b != primaryStdioBinding(r) || v.HostID != b.HostID || v.Execution.ID != b.ExecutionID || v.Execution.Generation != b.Generation || v.Mode != domain.Managed || v.Execution.Provider != "codex" || v.Workspace != r.Request.Workspace {
+		return ps.ErrConflict
+	}
+	if _, err = primaryStdioLedger(ctx, tx, r); err != nil {
+		return err
+	}
+	switch v.Execution.State {
+	case "primary_reserved", "primary_ready":
+		v.Execution.State = "primary_uncertain"
+	case "primary_uncertain", "primary_stopping", "primary_stopped":
+		return nil
+	default:
+		return ps.ErrConflict
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE sessions SET data=? WHERE id=?`, encoded(v), v.ID); err != nil {
+		return err
+	}
+	if err = event(ctx, tx, v, r.Request.OperationID, "codex.primary.stdio.currentness_lost", "current stdio verification unavailable; retained evidence and admission fences preserved"); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Store) BindCodexPrimaryStdio(ctx context.Context, c ps.Channel) (ps.Ledger, error) {

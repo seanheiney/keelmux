@@ -177,11 +177,13 @@ func (s *Store) FenceCodexPrimaryStop(ctx context.Context, req cc.LifecycleReque
 		return conflict("primary stop differs from durable selection")
 	}
 	retry := false
+	var priorOutcome domain.Outcome
 	if old, raw, e := operation(ctx, tx, req.OperationID); e == nil {
 		if old.Kind != "codex.primary.stop" || !bytes.Equal(raw, encoded(req)) {
 			return conflict("stop operation already used")
 		}
 		retry = true
+		priorOutcome = old.Outcome
 	} else if !errors.Is(e, ErrNotFound) {
 		return e
 	}
@@ -191,6 +193,11 @@ func (s *Store) FenceCodexPrimaryStop(ctx context.Context, req cc.LifecycleReque
 	}
 	if !bytes.Equal(agent, encoded(req.Agent)) {
 		return conflict("stop requires original verified primary")
+	}
+	// Observed death is an immutable receipt, not another stop admission.
+	// Late retained blockers remain unresolved; they cannot erase this outcome.
+	if retry && priorOutcome == domain.Completed && v.Execution.State == "primary_stopped" {
+		return nil
 	}
 	blocked, err := codexEffectsBlocked(ctx, tx, v.ID, nil)
 	if err != nil {
