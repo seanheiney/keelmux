@@ -28,7 +28,7 @@ func TestDiscoverParsesOnlySafeStatusFieldsAndQualifiedCoverage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(records) != 3 || records[0].Version.Value != "0.159.0" || records[1].Version.Value != "2.1.296" {
+	if len(records) != 5 || records[0].Version.Value != "0.159.0" || records[1].Version.Value != "2.1.296" {
 		t.Fatalf("wrong versions: %+v", records)
 	}
 	if records[0].Auth.Method.Value != "api_key" || records[1].Auth.Method.Value != "claude.ai" || records[1].Auth.State.Value != "credentials_present" {
@@ -90,7 +90,7 @@ func TestSupportedLaunchPreservesArgvAndRejectsImplicitAuthChanges(t *testing.T)
 		}
 	}
 	if _, _, err := SupportedLaunch(context.Background(), "grok", nil); err == nil {
-		t.Fatal("unverified Grok mapping claimed support")
+		t.Fatal("missing Grok executable claimed support")
 	}
 	executable(t, dir, "codex", `printf '%s\n' 'SENSITIVE not a version'`)
 	if _, _, err := SupportedLaunch(context.Background(), "codex", nil); err == nil || strings.Contains(err.Error(), "SENSITIVE") {
