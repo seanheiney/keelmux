@@ -202,6 +202,9 @@ type Supervisor interface {
 	LaunchStdio(context.Context, LaunchSpec) (ChannelRef, error)
 	BootstrapStdioOnce(context.Context, ChannelRef) (Observation, error)
 	ObserveStdio(context.Context, ChannelRef, Cursor) (Observation, error)
+	// RetainedStdio imports retained evidence only, including after stop/exit.
+	// It never writes a native inspection request or starts lifecycle work.
+	RetainedStdio(context.Context, ChannelRef, Cursor) (Observation, error)
 	AckStdioImported(context.Context, ChannelRef, ImportAck) error
 	WithStdioQuiescence(context.Context, ChannelRef, Quiescence, func(context.Context) error) error
 	StopStdio(context.Context, ChannelRef, StopRequest) error
