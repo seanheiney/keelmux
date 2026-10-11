@@ -49,6 +49,7 @@ type entry struct {
 	StopOperation                                               domain.ID
 	Reason                                                      string
 	UpdatedAt                                                   time.Time
+	Stdio                                                       *stdioRecord `json:",omitempty"`
 }
 type disk struct {
 	Version int

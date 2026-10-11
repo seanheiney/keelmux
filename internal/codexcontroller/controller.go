@@ -93,6 +93,9 @@ func validRequest(r StartRequest) bool {
 	return validTarget(r.Target) && validText(string(r.OperationID)) && validText(r.NativeThreadID) && validText(r.RealmRevision) && cleanPath(r.Workspace)
 }
 func validEntry(e entry, dir string) bool {
+	if e.Stdio != nil {
+		return validStdioEntry(e)
+	}
 	if !validRequest(e.Request) || !validText(string(e.Incarnation)) || !digest(e.Capability) || !digest(e.BinarySHA256) || !cleanPath(e.Binary) || !cleanPath(e.Home) || !cleanPath(e.CodexHome) || e.HomeIdentity.Inode == 0 || e.CodexHomeIdentity.Inode == 0 || e.Endpoint != filepath.Join(dir, "app-"+string(e.Incarnation)+".sock") {
 		return false
 	}
@@ -315,7 +318,7 @@ func validEvidence(e entry, v Evidence) bool {
 	return validProcess(e, r) && a.HostID == t.HostID && a.SessionID == t.SessionID && a.ExecutionID == t.ExecutionID && a.Generation == t.Generation && a.AppServerIncarnation == e.Incarnation && a.AppServerPID == r.PID && a.AppServerBootID == r.BootID && a.AppServerProcessStart == r.ProcessStart && a.ProtocolVersion == ProtocolVersion && a.NativeThreadID == e.Request.NativeThreadID && v.CapabilitySHA256 == e.launch().CapabilitySHA256() && validText(v.SocketIdentity) && (e.Evidence.SocketIdentity == "" || e.Evidence.SocketIdentity == v.SocketIdentity)
 }
 func (c *Controller) sameOptions(e entry) bool {
-	return e.Binary == c.options.Binary && e.BinarySHA256 == c.options.BinarySHA256 && e.Home == c.options.Home && e.CodexHome == c.options.CodexHome && e.HomeIdentity == c.homeIdentity && e.CodexHomeIdentity == c.codexHomeIdentity && e.Request.RealmRevision == c.options.RealmRevision && c.sameDirectories()
+	return e.Stdio == nil && e.Binary == c.options.Binary && e.BinarySHA256 == c.options.BinarySHA256 && e.Home == c.options.Home && e.CodexHome == c.options.CodexHome && e.HomeIdentity == c.homeIdentity && e.CodexHomeIdentity == c.codexHomeIdentity && e.Request.RealmRevision == c.options.RealmRevision && c.sameDirectories()
 }
 func (c *Controller) sameDirectories() bool {
 	return sameDirectory(c.options.Home, c.homeIdentity) && sameDirectory(c.options.CodexHome, c.codexHomeIdentity)
