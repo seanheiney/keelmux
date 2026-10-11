@@ -104,7 +104,10 @@ func (s *Store) CheckpointCaptainQuiet(ctx context.Context, caller c.AuthCaller,
 	if err = appendCaptainEntry(ctx, tx, a, &st, e); err != nil {
 		return c.Status{}, err
 	}
-	return st, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Status{}, err
+	}
+	return st, nil
 }
 
 func (s *Store) ReserveCaptainWork(ctx context.Context, caller c.AuthCaller, id domain.ID, scan c.Scan) (c.Reservation, error) {
@@ -158,7 +161,10 @@ func (s *Store) ReserveCaptainWork(ctx context.Context, caller c.AuthCaller, id 
 	if err = appendCaptainEntry(ctx, tx, a, &st, e); err != nil {
 		return c.Reservation{}, err
 	}
-	return r, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Reservation{}, err
+	}
+	return r, nil
 }
 
 func (s *Store) CommitCaptainReport(ctx context.Context, caller c.AuthCaller, res c.ReservationRef, id domain.ID) (c.Report, error) {
@@ -223,7 +229,10 @@ func (s *Store) CommitCaptainReport(ctx context.Context, caller c.AuthCaller, re
 	if err = appendCaptainEntry(ctx, tx, a, &st, e); err != nil {
 		return c.Report{}, err
 	}
-	return r, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Report{}, err
+	}
+	return r, nil
 }
 
 // Cancellation is metadata-only owner control: it can retire stale/paused work
@@ -265,7 +274,10 @@ func (s *Store) CancelCaptainReservation(ctx context.Context, caller c.AuthCalle
 	if err = appendCaptainEntry(ctx, tx, a, &st, e); err != nil {
 		return c.Status{}, err
 	}
-	return st, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Status{}, err
+	}
+	return st, nil
 }
 
 func captainRead(ctx context.Context, tx *sql.Tx, a *captainAuthority, caller c.AuthCaller, v c.Assignment) error {

@@ -234,12 +234,29 @@ func validateCaptainSchema(ctx context.Context, db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	var orphan int
-	if err = tx.QueryRowContext(ctx, `SELECT count(*) FROM captain_entries e LEFT JOIN captain_assignments a ON a.id=e.assignment_id WHERE a.id IS NULL`).Scan(&orphan); err != nil {
+	// Bound even foreign/orphan row inventory before per-assignment replay.
+	rows, err := tx.QueryContext(ctx, `SELECT assignment_id FROM captain_entries LIMIT 65537`)
+	if err != nil {
 		return err
 	}
-	if orphan != 0 {
-		return c.ErrCorrupt
+	count := 0
+	for rows.Next() {
+		var id domain.ID
+		if err = rows.Scan(&id); err != nil {
+			break
+		}
+		count++
+		if count > c.MaxAssignments*c.MaxEntries {
+			err = c.ErrCapacity
+			break
+		}
+		if _, ok := a.assignments[id]; !ok {
+			err = c.ErrCorrupt
+			break
+		}
+	}
+	if err = closeChannelRows(rows, err); err != nil {
+		return err
 	}
 	for id := range a.assignments {
 		var entries []captainEntry

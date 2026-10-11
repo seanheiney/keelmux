@@ -46,7 +46,7 @@ func captainSourceRow(ctx context.Context, q captainQuery, g c.ReadGrant, sequen
 	if err != nil {
 		return c.Event{}, 0, err
 	}
-	if v.Sequence != sequence || v.ThreadID != g.Source.Target.ThreadID || v.SessionID != g.Source.Target.SessionID || v.OperationID != "" && !c.ValidID(v.OperationID, "op") || v.At.IsZero() || v.At.Location() != time.UTC || !c.SafeKind(v.Kind) {
+	if v.Sequence != sequence || v.ThreadID != g.Source.Target.ThreadID || v.SessionID != g.Source.Target.SessionID || v.At.IsZero() || v.At.Location() != time.UTC || !c.SafeKind(v.Kind) {
 		return c.Event{}, 0, c.ErrCorrupt
 	}
 	d, category := c.Classify(v.Kind)
@@ -54,7 +54,11 @@ func captainSourceRow(ctx context.Context, q captainQuery, g c.ReadGrant, sequen
 	if d == c.Unsupported {
 		kind = "unsupported"
 	}
-	e := c.Event{Key: c.EventKey{HostID: g.Source.Target.HostID, ThreadID: v.ThreadID, Sequence: sequence}, SessionID: v.SessionID, OperationID: v.OperationID, RowDigest: c.Hash("captain.source.row.v1", raw), Kind: kind, Category: category, Disposition: d, At: v.At}
+	operationID := v.OperationID
+	if !c.ValidOperationID(operationID) {
+		operationID = ""
+	}
+	e := c.Event{Key: c.EventKey{HostID: g.Source.Target.HostID, ThreadID: v.ThreadID, Sequence: sequence}, SessionID: v.SessionID, OperationID: operationID, RowDigest: c.Hash("captain.source.row.v1", raw), Kind: kind, Category: category, Disposition: d, At: v.At}
 	return e, int(n), nil
 }
 

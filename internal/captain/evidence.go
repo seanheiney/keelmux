@@ -181,7 +181,7 @@ func ValidateScan(s Scan) error {
 	seen := map[EventKey]bool{}
 	for _, e := range s.Events {
 		d, category := Classify(e.Kind)
-		if !domain.ValidObjectID(e.Key.HostID, "host") || !domain.ValidObjectID(e.Key.ThreadID, "thread") || e.Key.Sequence < 1 || !domain.ValidObjectID(e.SessionID, "session") || e.OperationID != "" && !domain.ValidObjectID(e.OperationID, "op") || !ValidDigest(e.RowDigest) || e.At.IsZero() || e.At.Location() != timeUTC || seen[e.Key] || e.Disposition != d || e.Category != category {
+		if !domain.ValidObjectID(e.Key.HostID, "host") || !domain.ValidObjectID(e.Key.ThreadID, "thread") || e.Key.Sequence < 1 || !domain.ValidObjectID(e.SessionID, "session") || e.OperationID != "" && !ValidOperationID(e.OperationID) || !ValidDigest(e.RowDigest) || e.At.IsZero() || e.At.Location() != time.UTC || seen[e.Key] || e.Disposition != d || e.Category != category {
 			return ErrConflict
 		}
 		if d == Unsupported {
@@ -198,13 +198,10 @@ func ValidateScan(s Scan) error {
 	return nil
 }
 
-// UTC offsets must serialize consistently. time.Location pointer equality is
-// deliberately avoided for decoded JSON; offset zero and Z are canonical.
-var timeUTC = utcLocation()
-
-func utcLocation() *time.Location { return time.UTC }
-
 func ValidID(id domain.ID, kind string) bool { return domain.ValidObjectID(id, kind) }
+
+// Arbitrary legacy labels stay in the source row digest, never in captions.
+func ValidOperationID(id domain.ID) bool { return ValidID(id, "op") || ValidID(id, "operation") }
 
 func ValidateReservation(r Reservation) error {
 	if r.Version != Version || !ValidID(r.Ref.ID, ReservationIDKind) || !ValidDigest(r.Ref.Digest) || ReservationDigest(r) != r.Ref.Digest || !ValidRef(r.Assignment, AssignmentIDKind) || r.Ordinal == 0 || !ValidID(r.RunnerPrincipal, PrincipalIDKind) || r.RoleRevision == 0 || r.RoleRevision > math.MaxInt64 || ValidateScan(r.Scan) != nil || r.Scan.Assignment != r.Assignment || len(Findings(r.Scan)) == 0 || r.CreatedAt.IsZero() {

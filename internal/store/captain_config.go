@@ -79,7 +79,7 @@ func (s *Store) BootstrapCaptainOwner(ctx context.Context, id domain.ID) (c.Prin
 		return p, nil
 	}
 	var entries int
-	if err = tx.QueryRowContext(ctx, `SELECT count(*) FROM captain_entries`).Scan(&entries); err != nil {
+	if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM captain_entries LIMIT 1)`).Scan(&entries); err != nil {
 		return c.Principal{}, err
 	}
 	if len(a.commands) != 0 || entries != 0 {
@@ -94,7 +94,10 @@ func (s *Store) BootstrapCaptainOwner(ctx context.Context, id domain.ID) (c.Prin
 	if err != nil {
 		return c.Principal{}, err
 	}
-	return p, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Principal{}, err
+	}
+	return p, nil
 }
 
 func (s *Store) PutCaptainPrincipal(ctx context.Context, caller c.AuthCaller, m c.Mutation, p c.Principal) (c.Principal, error) {
@@ -134,7 +137,10 @@ func (s *Store) PutCaptainPrincipal(ctx context.Context, caller c.AuthCaller, m 
 	if err != nil {
 		return c.Principal{}, err
 	}
-	return p, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Principal{}, err
+	}
+	return p, nil
 }
 
 func (s *Store) PutCaptainGrant(ctx context.Context, caller c.AuthCaller, m c.Mutation, g c.ReadGrant) (c.ReadGrant, error) {
@@ -193,7 +199,10 @@ func (s *Store) PutCaptainGrant(ctx context.Context, caller c.AuthCaller, m c.Mu
 	if err != nil {
 		return c.ReadGrant{}, err
 	}
-	return g, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.ReadGrant{}, err
+	}
+	return g, nil
 }
 
 func (s *Store) CreateCaptainAssignment(ctx context.Context, caller c.AuthCaller, m c.Mutation, v c.Assignment) (c.Status, error) {
@@ -247,7 +256,10 @@ func (s *Store) CreateCaptainAssignment(ctx context.Context, caller c.AuthCaller
 	if err != nil {
 		return c.Status{}, err
 	}
-	return st, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Status{}, err
+	}
+	return st, nil
 }
 
 func (s *Store) SetCaptainControl(ctx context.Context, caller c.AuthCaller, m c.Mutation, ref c.Ref, state c.Control) (c.Status, error) {
@@ -303,5 +315,8 @@ func (s *Store) SetCaptainControl(ctx context.Context, caller c.AuthCaller, m c.
 	if err != nil {
 		return c.Status{}, err
 	}
-	return st, tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return c.Status{}, err
+	}
+	return st, nil
 }
