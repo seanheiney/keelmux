@@ -10,6 +10,7 @@ import (
 	ps "github.com/seanheiney/keelmux/internal/primarystdio"
 	"io"
 	"net"
+	"os"
 	"time"
 	"unicode/utf8"
 )
@@ -301,23 +302,24 @@ func (b *Backend) StopStdio(ctx context.Context, ref ps.ChannelRef, stop ps.Stop
 }
 func (b *Backend) stopStdioFromReceipt(ctx context.Context, ref ps.ChannelRef, stop ps.StopRequest, r receipt) error {
 	if r.Stage == "stopped" {
-		return b.terminalStdioStop(r, ref, stop)
+		return b.terminalStdioStop(ctx, r, ref, stop)
 	}
 	reply, err := b.stdioCommand(ctx, ref, stdioRequest{Op: "stdio_stop", Stop: &stop})
 	if reply.Error == "" && (errors.Is(err, ErrUnavailable) || errors.Is(err, ps.ErrUncertain)) {
 		// The helper may finish while this caller holds an older stopping
 		// receipt, or exit before its final IPC acknowledgment is delivered.
-		// Reconcile once from exact durable evidence; never resend the request.
+		// Reconcile once from exact evidence, confirming local persistence;
+		// never resend the request or rewrite its contents.
 		// An explicit failure remains authoritative even if a failed write
 		// made a terminal file visible before its directory sync failed.
 		terminal, readErr := b.stdioReceipt(ref)
 		if readErr == nil && terminal.Stage == "stopped" {
-			return b.terminalStdioStop(terminal, ref, stop)
+			return b.terminalStdioStop(ctx, terminal, ref, stop)
 		}
 	}
 	return err
 }
-func (b *Backend) terminalStdioStop(r receipt, ref ps.ChannelRef, stop ps.StopRequest) error {
+func (b *Backend) terminalStdioStop(ctx context.Context, r receipt, ref ps.ChannelRef, stop ps.StopRequest) error {
 	if r.Stage != "stopped" || r.Stdio == nil || r.Stdio.Ref != ref {
 		return ps.ErrConflict
 	}
@@ -328,7 +330,7 @@ func (b *Backend) terminalStdioStop(r receipt, ref ps.ChannelRef, stop ps.StopRe
 	if state.StopOperation != stop.OperationID || !state.TermAttempted {
 		return ps.ErrConflict
 	}
-	return nil
+	return b.confirmTerminalStdio(ctx, r, state, (*os.File).Sync)
 }
 func (b *Backend) WithStdioQuiescence(ctx context.Context, ref ps.ChannelRef, q ps.Quiescence, commit func(context.Context) error) error {
 	if commit == nil {

@@ -202,6 +202,14 @@ func TestStdioStopExplicitFailureIsNotOverriddenByVisibleReceipt(t *testing.T) {
 			if e = <-served; e != nil {
 				t.Fatal("owned IPC fixture failed", e)
 			}
+			if code == "storage" {
+				_ = listener.Close()
+				// A separate call may reconcile the earlier visible bytes only
+				// after independently confirming file and directory persistence.
+				if e = s.b.StopStdio(context.Background(), ref, ps.StopRequest{OperationID: op}); e != nil {
+					t.Fatal("fresh local persistence reconciliation failed", e)
+				}
+			}
 		})
 	}
 }
