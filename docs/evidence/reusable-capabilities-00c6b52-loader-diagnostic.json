@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "source_sha": "00c6b5225f1c6d239581c10674235fc691789e7c",
+  "result": "fail",
+  "scope": "read-only loader diagnosis of one correlated owned Go confinement control",
+  "control_binary_sha256": "338610de2732da12c2f67f1f57a2a0f96165b965cdbfc73a8f97f5e28eee47b3",
+  "source_hashes": {
+    "private_diagnostic_sha256": "22e52a3bcb07cd130c7b7428b4e499ba205c880e535c47d0d3b7b28379582c00",
+    "original_crash_report_sha256": "fb70f4887f976287f09b7ee89e4e743041adc0c5258c966d6a8a7798287a7c7d",
+    "retained_owned_identity_sha256": "ca5d4ffa0ba2c272adb6d29c1fffd75a8b5af05a9d0576dc42347be527e84b3a",
+    "original_go_attempt_receipt_sha256": "c47a39f57d7fd894453695fd1883d65d42e4a2e99ff59673c75396fa4081dcea",
+    "prepared_go_source_sha256": "f213b28c90d7db9b206a4cf5f29bd16ec5c8fa326955d30ed0683eb98adcee97",
+    "prepared_go_driver_sha256": "9145c767522c386ac028e61b6b6ea7c2804697428a3c46bbaabf43623af7f564"
+  },
+  "correlation": {
+    "current_user_uid_match": true,
+    "retained_live_owned_process_identity_match": true,
+    "parent_identity_match": true,
+    "fractional_process_start_match": true,
+    "reported_launch_delta_from_retained_start_seconds": -6.2e-05,
+    "capture_from_retained_start_seconds": 0.380838,
+    "original_command_elapsed_seconds": 0.38,
+    "contradictory_identity_fields": false,
+    "basis": "exact retained live-owned process and parent identities, matching current-user UID and fractional start, compatible redacted control path, and capture interval",
+    "path_limitation": "macOS redacts the temporary fixture prefix in procPath; literal owned-root path match is unavailable",
+    "captain_correlation_review": "accepted for this single report; no unrelated reports extracted"
+  },
+  "exception": {
+    "codes": "0x0000000000000000, 0x0000000000000000",
+    "rawCodes": [
+      0,
+      0
+    ],
+    "type": "EXC_CRASH",
+    "signal": "SIGABRT"
+  },
+  "termination": {
+    "namespace": "<0x23>",
+    "flags": 582,
+    "code": 2
+  },
+  "signaled_thread_frame_names": [
+    "__abort_with_payload",
+    "abort_with_payload_wrapper_internal",
+    "abort_with_reason",
+    "ignition_halt",
+    "boot_boot",
+    "ignite",
+    "dyld4::CacheFinder::CacheFinder(dyld4::ProcessConfig::Process const&, dyld4::ProcessConfig::Logging const&, dyld4::SyscallDelegate&)",
+    "dyld4::ProcessConfig::DyldCache::DyldCache(dyld4::ProcessConfig::Process&, dyld4::ProcessConfig::Security const&, dyld4::ProcessConfig::Logging const&, dyld4::SyscallDelegate&, lsl::Allocator&, dyld4::ProcessConfig const&)",
+    "dyld4::ProcessConfig::ProcessConfig(dyld4::KernelArgs const*, dyld4::SyscallDelegate&, lsl::Allocator&)",
+    "dyld4::start(dyld4::KernelArgs*, void*, void*, unsigned long long)::$_1::operator()() const",
+    "start"
+  ],
+  "frame_images": "all 11 frames are dyld",
+  "primary_source_context": [
+    {
+      "url": "https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/sys/reason.h",
+      "finding": "Apple public reason.h maps namespace 35 (0x23) to OS_REASON_LIBIGNITION"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/apple-oss-distributions/dyld/main/dyld/DyldProcessConfig.cpp",
+      "finding": "Apple public CacheFinder source checks libignition and calls ignite while configuring the dyld shared cache"
+    }
+  ],
+  "finding": "the owned control aborted during dyld ignition/shared-cache startup before Go child markers were observed",
+  "cause_limits": {
+    "libignition_code2_decoded": false,
+    "specific_loader_or_library_read_path_identified": false,
+    "signing_failure_inferred": false,
+    "mach_lookup_denial_inferred": false,
+    "go_child_assertions_observed": false,
+    "exact_installed_dyld_source_verified": false,
+    "public_apple_main_context_only": true
+  },
+  "retained_failures": {
+    "other_failed_attempts_remain_failures": true,
+    "earlier_python_sigabrt_cause_not_retconned": true,
+    "native_provider_lifecycle_authentication_models_unqualified": true
+  },
+  "new_actions": {
+    "control_executions": 0,
+    "product_provider_daemon_executions": 0,
+    "permission_or_policy_changes": 0,
+    "source_fixes": 0
+  },
+  "next_gate": {
+    "kind": "read_only",
+    "action": "Identify actual shared-cache and loader read paths used by the observed OS, then compare those paths with the existing finite read allowlist. Record inaccessible or missing paths as evidence.",
+    "prohibited": "Do not grant access, change policy, rerun controls, or launch providers."
+  }
+}

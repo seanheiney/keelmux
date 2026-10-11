@@ -1,0 +1,63 @@
+{
+  "schema": "keelmux-go-control-qualification/v1",
+  "source_sha": "00c6b5225f1c6d239581c10674235fc691789e7c",
+  "result": "fail",
+  "scope": "One benign Go control under unchanged prospective policy; no product/provider/daemon",
+  "driver_sha256": "9145c767522c386ac028e61b6b6ea7c2804697428a3c46bbaabf43623af7f564",
+  "control_source_sha256": "f213b28c90d7db9b206a4cf5f29bd16ec5c8fa326955d30ed0683eb98adcee97",
+  "compiler_sha256": "b864b4e768f365fd271aafca2ac1ecc4d72ab6a07e94e4b72bc9baa7a21abc0b",
+  "compiler_version": "go1.26.6",
+  "build_result": "pass",
+  "control_sha256": "338610de2732da12c2f67f1f57a2a0f96165b965cdbfc73a8f97f5e28eee47b3",
+  "control_bytes": 3188386,
+  "control_command": {
+    "label": "confinement",
+    "return_code": -6,
+    "exit_kind": "signal",
+    "exit_status": null,
+    "signal_number": 6,
+    "signal_name": "SIGABRT",
+    "helper_requested_kill": false,
+    "parent_guard_failure": null,
+    "elapsed_seconds": 0.38,
+    "captures": {
+      "stdout": {
+        "bytes": 0,
+        "within_bound": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "bytes": 0,
+        "within_bound": true,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "child_assertion_progress": "not_inferred",
+    "underlying_cause": "not_inferred"
+  },
+  "checks": [
+    {
+      "name": "confinement_control",
+      "result": "fail",
+      "code": "command_failed_confinement"
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "issues": [],
+    "tracked_processes": 1,
+    "no_persisted_pid_signals": true,
+    "escaped_descendants": "not guaranteed absent if never observed in live ancestry",
+    "owned_fixture_removed": true
+  },
+  "policy_unchanged": true,
+  "provider_binary_executions": 0,
+  "product_binary_executions": 0,
+  "daemon_starts": 0,
+  "model_prompts_submitted": 0,
+  "native_lifecycle": "not_tested",
+  "control_policy_qualified": false,
+  "originals_unchanged": true,
+  "private_original_receipt_sha256": "c47a39f57d7fd894453695fd1883d65d42e4a2e99ff59673c75396fa4081dcea",
+  "limitation": "The Go child also ended with SIGABRT and empty streams. No child assertion progress or underlying cause is inferred; this does not establish a Python-specific cause."
+}

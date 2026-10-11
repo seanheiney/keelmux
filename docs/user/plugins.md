@@ -120,6 +120,8 @@ Grok carries rules and its skill index as literal launch arguments. Preview coun
 
 ## Qualified library controls
 
+Current development source `00c6b52` passed 31 compiled CLI checks, six actual PTY captures at three sizes, complete local and hosted source checks, and fresh installed macOS Codex/Claude terminal lifecycle. A separate current-source development executable passed actual Headroom initialize/list-only health with three tools listed, zero invoked and complete owned cleanup. The [current qualification record](../evidence/reusable-capabilities-00c6b52.md) distinguishes those executables, receipts and remaining native-loading/provider gates. Published v0.2.1 does not include the library commands.
+
 Development source `b730500` passed 32 compiled CLI checks and six actual PTY captures at 120×32, 80×24 and 40×14. The [qualification record](../evidence/reusable-capabilities-b730500.md) binds the exact source, executable and sanitized receipts. This does not establish native loading or qualify a released build.
 
 The 80×24 [pack view](../site/evidence/reusable-capabilities-b730500/library-pack-on-80x24.png) and [component view](../site/evidence/reusable-capabilities-b730500/library-component-off-80x24.png) show real saved Registry changes against a deterministic inventory fixture. The images rasterize captured terminal cells. No native provider or model was started; loaded state remains **unknown**.
