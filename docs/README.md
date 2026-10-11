@@ -28,6 +28,7 @@ Start with [your first session](user/quickstart.md). Published v0.2.1 includes i
 | Understand identity, input ownership and trust | [Architecture](user/architecture.md) |
 | Review the local captain ledger and its runtime limits | [Captain ledger boundary](architecture/0005-captain-ledger.md) |
 | Understand what comes next | [Roadmap](user/roadmap.md) |
+| Review current requirements and paused release gates | [Current PRD](product/PRD.md) |
 | Review the selected name and collision checks | [Naming](user/naming.md) |
 
 [Security](../SECURITY.md), [support](../SUPPORT.md), [contributing](../CONTRIBUTING.md) and the [changelog](../CHANGELOG.md) cover project operations. The [product specification](product/PRODUCT_SPEC.md) and [build plan](build/BUILD_PLAN.md) preserve the full direction; proposed commands there are not a command reference.

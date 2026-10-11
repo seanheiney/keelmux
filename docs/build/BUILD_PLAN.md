@@ -2,7 +2,7 @@
 
 Source: https://chatgpt.com/space/page_f423896d21548191b10beb588787574f
 
-Snapshot imported on 2026-10-10. This repository owns implementation decisions and evidence; the source Page remains the reviewed product brief.
+Snapshot imported on 2026-10-10. This repository owns implementation decisions and evidence; the source Page remains the reviewed product brief. The current [Keelmux PRD](../product/PRD.md) records later owner decisions and closeout status. It supersedes the historical tmux-first proposal and undecided IRC path below: Keelmux owns native PTY supervision, tmux is optional compatibility, and managed Ergo uses project channels with stable per-thread bots. The imported body remains preserved as a dated snapshot; the source Pages are maintained separately.
 
 Proposed release plan revised October 10, 2026. Build an open-source terminal bouncer for solo power users: federated execution servers run real model CLIs, logins, threads, and environments; one client connection reaches their permitted work. Preload skills, link from inside the CLI, switch quickly, and keep one task/shared thread through supported model, subscription, harness, or host changes.
 
