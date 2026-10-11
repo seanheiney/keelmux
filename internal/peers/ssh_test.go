@@ -214,20 +214,61 @@ func TestConfigRejectsShellHostOptionsAndInvalidScopes(t *testing.T) {
 
 func TestProcessRunnerBoundsTimeAndBothOutputStreams(t *testing.T) {
 	for _, test := range []struct {
-		script string
-		want   error
+		name    string
+		script  string
+		timeout time.Duration
+		want    error
 	}{
-		{"exec sleep 30", ErrTimeout},
-		{"head -c 1100000 /dev/zero", ErrMalformed},
-		{"head -c 9000 /dev/zero >&2", ErrMalformed},
+		{"timeout", "exec sleep 30", 50 * time.Millisecond, ErrTimeout},
+		{"stdout", "exec head -c 1100000 /dev/zero", FetchTimeout, ErrMalformed},
+		{"stderr", "exec head -c 9000 /dev/zero >&2", FetchTimeout, ErrMalformed},
 	} {
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-		start := time.Now()
-		out, err := (ProcessRunner{}).Run(ctx, "/bin/sh", []string{"-c", test.script}, nil)
-		cancel()
-		if !errors.Is(err, test.want) || len(out.Stdout) > SnapshotLimit || len(out.Stderr) > 8192 || time.Since(start) > time.Second {
-			t.Fatal("process bounds failed", err, len(out.Stdout), len(out.Stderr))
-		}
+		t.Run(test.name, func(t *testing.T) {
+			// Only the timeout control requires cancellation before output. The
+			// overflow controls retain the product deadline and the original
+			// one-second wall bound, without racing a 50ms process-start budget.
+			ctx, cancel := context.WithTimeout(context.Background(), test.timeout)
+			start := time.Now()
+			out, err := (ProcessRunner{}).Run(ctx, "/bin/sh", []string{"-c", test.script}, nil)
+			cancel()
+			elapsed := time.Since(start)
+			if !errors.Is(err, test.want) || len(out.Stdout) > SnapshotLimit || len(out.Stderr) > 8192 || elapsed > time.Second {
+				t.Fatal("process bounds failed", err, len(out.Stdout), len(out.Stderr), elapsed)
+			}
+		})
+	}
+}
+
+func TestBoundedWriterExactLimitAndOverflowCancellation(t *testing.T) {
+	for _, stream := range []struct {
+		name  string
+		limit int
+	}{{"stdout", SnapshotLimit}, {"stderr", 8192}} {
+		t.Run(stream.name, func(t *testing.T) {
+			t.Run("exact-limit-then-one-byte", func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				w := &boundedWriter{limit: stream.limit, cancel: cancel}
+				allowed := bytes.Repeat([]byte{'x'}, stream.limit)
+				n, err := w.Write(allowed)
+				if n != stream.limit || err != nil || w.exceeded || ctx.Err() != nil || !bytes.Equal(w.b.Bytes(), allowed) {
+					t.Fatal("exact limit must be retained without cancellation", n, err, w.exceeded, ctx.Err(), w.b.Len())
+				}
+				n, err = w.Write([]byte{'y'})
+				if n != 0 || !errors.Is(err, ErrMalformed) || !w.exceeded || !errors.Is(ctx.Err(), context.Canceled) || !bytes.Equal(w.b.Bytes(), allowed) {
+					t.Fatal("limit+1 must cancel immediately without retaining excess", n, err, w.exceeded, ctx.Err(), w.b.Len())
+				}
+			})
+			t.Run("one-oversized-write", func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				w := &boundedWriter{limit: stream.limit, cancel: cancel}
+				n, err := w.Write(bytes.Repeat([]byte{'x'}, stream.limit+1))
+				if n != 0 || !errors.Is(err, ErrMalformed) || !w.exceeded || !errors.Is(ctx.Err(), context.Canceled) || w.b.Len() != 0 {
+					t.Fatal("oversized first write must cancel without retaining output", n, err, w.exceeded, ctx.Err(), w.b.Len())
+				}
+			})
+		})
 	}
 }
 
