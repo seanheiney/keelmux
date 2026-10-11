@@ -155,7 +155,11 @@ generation. An unknown acquisition without a confirmed token needs home repair;
 it cannot be reconstructed with a new Attach request under revoked scope.
 
 The journal has finite lifetime capacity and preserves uncertain records. Keep
-the private authority and its locks with the home backup. Do not delete them to
+the private authority and its provisioned `.lock` and `.serve` files together
+with the home backup, after stopping the entry/exporter and home. These two
+bridge files are an exception to the general advice to exclude live process
+locks: an offline restore requires the original owned private files. Do not
+reprovision over the retained journal. Do not delete them to
 clear an error, reuse an attempted operation ID, copy lease capabilities between
 homes or replace execution identity. The [architecture contract](../architecture/0004-bouncer-read-bridge.md)
 describes limits and the distinct two-server/native-provider acceptance gates.

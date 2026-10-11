@@ -70,7 +70,7 @@ chmod 600 "$KEELMUX_BACKUP/registry.sqlite" "$KEELMUX_BACKUP/host-id"
 
 `quick_check` should return `ok`. A snapshot made during live work is consistent at its capture point; later operations are outside that snapshot.
 
-Close the switcher before copying `place.json` to keep its saved navigation and drafts. For a full coordinated authority bundle, also preserve private `native/` supervisor receipts, optional `irc/` configuration/account/database/journals, legacy `tmux.sock.bp/` receipts and any entry receipts. Those files are not in SQLite and are captured at a separate instant during an online backup. For a custom home, inspect and stop `keelmux --state "$KEELMUX_STATE" daemon status` and `keelmux --state "$KEELMUX_STATE" daemon stop`; default-state commands can address a different home. Stop the exact owned entry through its verified foreground lifecycle before taking a coordinated offline bundle. Copy owned regular state files and directories, excluding live sockets and lock files. Treat the whole backup as private: runtime receipts can contain launch correlation.
+Close the switcher before copying `place.json` to keep its saved navigation and drafts. For a full coordinated authority bundle, also preserve private `native/` supervisor receipts, optional `irc/` configuration/account/database/journals, legacy `tmux.sock.bp/` receipts and any entry receipts. Those files are not in SQLite and are captured at a separate instant during an online backup. For a custom home, inspect and stop `keelmux --state "$KEELMUX_STATE" daemon status` and `keelmux --state "$KEELMUX_STATE" daemon stop`; default-state commands can address a different home. Stop the exact owned entry through its verified foreground lifecycle before taking a coordinated offline bundle. Copy owned regular state files and directories, excluding live sockets and process lock files. An explicitly provisioned development [SSH read bridge](ssh-read-bridge.md) is an exception: preserve its authority record and required `.lock` and `.serve` files together after stopping its entry/exporter; serving never recreates these files. Treat the whole backup as private: runtime receipts can contain launch correlation.
 
 ## Restore conservatively
 
@@ -85,6 +85,12 @@ There is no automatic schema downgrade or merge of two authority databases. If t
 Keep the previous release and a private backup, read the release's schema/runtime notes, then install the chosen exact version. Preserve state selection. Updating application files does not prove a surviving daemon now runs the new version; verify the process/build and its reconciled behavior separately.
 
 The 0.2 release upgrades older registries to schema 4 and the switcher's `place.json` from version 1 to 2. Schema 4 adds explicit projects, immutable thread membership and addressed-recipient routing while preserving historical binding JSON and delivery hashes. Existing sessions, navigation and native drafts are preserved. The v0.1.0 daemon and client, and earlier schema 3 binaries, refuse unsupported newer state rather than erasing it. Take a compatible backup before loading the new daemon/client. Selecting old application files does not downgrade a database or saved reply intent; restore a compatible offline backup for rollback and reconcile any chat posts created since that snapshot.
+
+Newer development source adds schema 5 with empty captain metadata. It seeds no
+owner, grants or assignments. Published v0.2.1 binaries refuse schema 5. Take a
+compatible offline backup before opening an existing home with that source, and
+use matching state for rollback. The [captain ledger boundary](../architecture/0005-captain-ledger.md)
+describes the Store-only prerequisite and separate runtime gates.
 
 The installer contract uses an atomic `current` link and unchanged owned command links. A checksum failure leaves the existing installation available. Do not replace a custom `bp` command or edit shell profiles to hide a collision.
 
