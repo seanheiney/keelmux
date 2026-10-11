@@ -81,7 +81,7 @@ func DiagnoseExisting(ctx context.Context, dir *diagnosticfs.Dir) (DiagnosticSna
 	if err = db.QueryRowContext(ctx, "PRAGMA quick_check(1)").Scan(&integrity); err != nil || integrity != "ok" {
 		return out, repair("diagnostic integrity failed")
 	}
-	for _, check := range []func(context.Context, *sql.DB) error{validateCodexSchema, validateChannelSchema, validateProjectSchema} {
+	for _, check := range []func(context.Context, *sql.DB) error{validateCodexSchema, validateChannelSchema, validateProjectSchema, validatePrimaryStdioSchema} {
 		if err = check(ctx, db); err != nil {
 			return out, err
 		}

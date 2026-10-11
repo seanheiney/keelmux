@@ -21,6 +21,7 @@ type PrimaryReservation struct {
 	Name    string
 	Request cc.StartRequest
 	Start   *PrimaryStartAttempt `json:",omitempty"`
+	Stdio   *PrimaryStdioAnchor  `json:",omitempty"`
 }
 
 func primaryReservation(ctx context.Context, q queryer, sessionID, executionID domain.ID) (PrimaryReservation, error) {
@@ -30,7 +31,7 @@ func primaryReservation(ctx context.Context, q queryer, sessionID, executionID d
 	if !ok {
 		return PrimaryReservation{}, repair("primary query unavailable")
 	}
-	rows, err := reader.QueryContext(ctx, `SELECT data,payload FROM operations WHERE session_id=?`, sessionID)
+	rows, err := reader.QueryContext(ctx, `SELECT id,session_id,generation,data,payload FROM operations WHERE session_id=?`, sessionID)
 	if err != nil {
 		return PrimaryReservation{}, err
 	}
@@ -38,8 +39,10 @@ func primaryReservation(ctx context.Context, q queryer, sessionID, executionID d
 	var found *PrimaryReservation
 	for rows.Next() {
 		var raw, data []byte
+		var id, sid domain.ID
+		var generation uint64
 		var op domain.Operation
-		if err = rows.Scan(&raw, &data); err != nil {
+		if err = rows.Scan(&id, &sid, &generation, &raw, &data); err != nil {
 			return PrimaryReservation{}, err
 		}
 		if json.Unmarshal(raw, &op) != nil {
@@ -49,7 +52,7 @@ func primaryReservation(ctx context.Context, q queryer, sessionID, executionID d
 			continue
 		}
 		var r PrimaryReservation
-		if json.Unmarshal(data, &r) != nil || !bytes.Equal(encoded(r), data) || r.Request.OperationID != op.ID || r.Request.Target.SessionID != sessionID || r.Request.Target.ExecutionID != executionID || !validPrimaryStartAttempt(r.Start) || found != nil {
+		if json.Unmarshal(data, &r) != nil || !bytes.Equal(encoded(r), data) || !bytes.Equal(encoded(op), raw) || op.ID != id || op.SessionID != sid || r.Request.OperationID != op.ID || r.Request.Target.SessionID != sessionID || r.Request.Target.ExecutionID != executionID || r.Request.Target.Generation != generation || !validPrimaryStartAttempt(r.Start) || !validPrimaryStdioAnchor(r.Stdio) || found != nil {
 			return PrimaryReservation{}, repair("invalid or duplicate primary reservation")
 		}
 		found = &r
@@ -100,6 +103,23 @@ func (s *Store) PublishCodexPrimary(ctx context.Context, a cb.AgentBinding) erro
 	}
 	if r.Start == nil || r.Start.Incarnation != a.AppServerIncarnation || a.HostID != v.HostID || a.Generation != v.Execution.Generation || a.ExecutionID != v.Execution.ID || a.NativeThreadID != r.Request.NativeThreadID || a.ProtocolVersion != cc.ProtocolVersion || v.Execution.State == "primary_stopping" || v.Execution.State == "primary_stopped" {
 		return conflict("primary binding differs from current reservation or is fenced")
+	}
+	blocked, err := codexEffectsBlocked(ctx, tx, v.ID, nil)
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return conflict("primary has outstanding or incomplete evidence")
+	}
+	if r.Stdio != nil {
+		l, err := primaryStdioLedger(ctx, tx, r)
+		if err != nil {
+			return err
+		}
+		runtime := l.Channel.Ref.Runtime
+		if !primaryStdioReady(l) || a.AppServerPID != runtime.PID || a.AppServerBootID != runtime.BootID || a.AppServerProcessStart != runtime.ProcessStart {
+			return conflict("primary stdio requires exact complete imported readiness")
+		}
 	}
 	var prior []byte
 	err = tx.QueryRowContext(ctx, `SELECT data FROM codex_agents WHERE session_id=? AND execution_id=?`, a.SessionID, a.ExecutionID).Scan(&prior)
@@ -157,11 +177,13 @@ func (s *Store) FenceCodexPrimaryStop(ctx context.Context, req cc.LifecycleReque
 		return conflict("primary stop differs from durable selection")
 	}
 	retry := false
+	var priorOutcome domain.Outcome
 	if old, raw, e := operation(ctx, tx, req.OperationID); e == nil {
 		if old.Kind != "codex.primary.stop" || !bytes.Equal(raw, encoded(req)) {
 			return conflict("stop operation already used")
 		}
 		retry = true
+		priorOutcome = old.Outcome
 	} else if !errors.Is(e, ErrNotFound) {
 		return e
 	}
@@ -171,6 +193,11 @@ func (s *Store) FenceCodexPrimaryStop(ctx context.Context, req cc.LifecycleReque
 	}
 	if !bytes.Equal(agent, encoded(req.Agent)) {
 		return conflict("stop requires original verified primary")
+	}
+	// Observed death is an immutable receipt, not another stop admission.
+	// Late retained blockers remain unresolved; they cannot erase this outcome.
+	if retry && priorOutcome == domain.Completed && v.Execution.State == "primary_stopped" {
+		return nil
 	}
 	blocked, err := codexEffectsBlocked(ctx, tx, v.ID, nil)
 	if err != nil {

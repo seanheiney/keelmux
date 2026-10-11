@@ -113,7 +113,11 @@ func Serve(state string, execution domain.ID, input io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if r.Executable != message.Executable || r.EnvDigest != environmentDigest(message.Env) || r.Stage != "intent" || r.Ref.ExecutionID != message.Spec.Session.Execution.ID || r.Ref.OperationID != message.Spec.OperationID || r.Digest != launchDigest(message.Spec, r.Mode) || subtle.ConstantTimeCompare([]byte(r.Auth), []byte(message.Auth)) != 1 {
+	digestMatches := r.Digest == launchDigest(message.Spec, r.Mode)
+	if r.Mode == "stdio" {
+		digestMatches = message.Stdio != nil && r.Stdio != nil && r.Stdio.Spec == *message.Stdio && r.Digest == stdioLaunchDigest(*message.Stdio)
+	}
+	if r.Executable != message.Executable || r.EnvDigest != environmentDigest(message.Env) || r.Stage != "intent" || r.Ref.ExecutionID != message.Spec.Session.Execution.ID || r.Ref.OperationID != message.Spec.OperationID || !digestMatches || subtle.ConstantTimeCompare([]byte(r.Auth), []byte(message.Auth)) != 1 {
 		return conflict("helper packet does not match unconsumed launch intent")
 	}
 	boot, err := bootID()
@@ -144,6 +148,9 @@ func Serve(state string, execution domain.ID, input io.Reader) error {
 	defer listener.Close()
 	if err = os.Chmod(r.Ref.Socket, 0600); err != nil {
 		return err
+	}
+	if r.Mode == "stdio" {
+		return serveStdio(b, r, message, listener)
 	}
 	cmd := exec.Command(message.Executable, message.Spec.Argv[1:]...)
 	cmd.Dir = message.Spec.Session.Workspace

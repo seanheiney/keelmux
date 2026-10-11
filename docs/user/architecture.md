@@ -28,6 +28,8 @@ The switcher's selected runtime line reads the recorded backend and execution st
 
 The entry routes permitted access to the home. It does not move the process, merge credentials or become that home's execution authority. Current entries use explicit private sockets and configuration; independent-server enrollment remains unfinished.
 
+Development source adds an experimental [supervisor-owned primary control channel](../primary-stdio.md). Its native stdin, stdout and stderr belong to the per-execution helper; the existing home authority imports durable receive evidence before acknowledgement and uses a guarded publication boundary. This host-internal path has no product launcher or writer route. Native provider and confinement qualification remain separate from protocol fixtures.
+
 ## Authored channels
 
 The channel service uses the same stable host, work and thread identities, with a separate authored-message sequence and delivery journal. It has no terminal-input or model-submit dependency. A note that contains a shell command, approval or prompt remains text. Each outbound reply selects one immutable binding; there is no automatic fanout between channels attached to a thread.

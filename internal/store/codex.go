@@ -124,7 +124,13 @@ func (s *Store) CodexAcquire(ctx context.Context, req cb.WriterRequest) (cb.Gran
 	if v.HostID != req.Agent.HostID || v.Execution.ID != req.Agent.ExecutionID || v.Execution.Generation != req.Agent.Generation {
 		return cb.Grant{}, conflict("stale app-server execution binding")
 	}
-	if _, e := primaryReservation(ctx, tx, v.ID, v.Execution.ID); e == nil {
+	if reservation, e := primaryReservation(ctx, tx, v.ID, v.Execution.ID); e == nil {
+		if reservation.Stdio != nil {
+			if _, err := primaryStdioLedger(ctx, tx, reservation); err != nil {
+				return cb.Grant{}, err
+			}
+			return cb.Grant{}, conflict("primary stdio writer and observer acquisition unavailable")
+		}
 		fenced, err := primaryStopReserved(ctx, tx, v.ID, v.Execution.ID)
 		if err != nil {
 			return cb.Grant{}, err
@@ -586,7 +592,12 @@ func codexEffectsBlocked(ctx context.Context, tx *sql.Tx, id domain.ID, agent *c
 			blocked = true
 		}
 	}
-	return blocked, rows.Err()
+	if err = rows.Err(); err != nil {
+		return true, err
+	}
+	rows.Close()
+	stdioBlocked, err := primaryStdioBlocked(ctx, tx, id, agent)
+	return blocked || stdioBlocked, err
 }
 func (s *Store) CodexBlocked(ctx context.Context, a cb.AgentBinding) (bool, error) {
 	s.mu.Lock()
