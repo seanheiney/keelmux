@@ -35,6 +35,9 @@ jobs:
           cd third_party/bubbletea
           go test -race -mod=readonly ./...
           go vet -mod=readonly ./...
+      - name: Linux production helper and running-image controls
+        if: runner.os == 'Linux'
+        run: go test -race -count=1 -tags library_registry -v -run '^TestStdioLinux' ./internal/adapters/nativepty
       - name: Pinned terminal source and unchanged upstream tests
         run: |
           python3 third_party/vt/verify.py
