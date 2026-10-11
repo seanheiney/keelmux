@@ -58,7 +58,7 @@ Historical terminal acceptance was frozen at `4b36f4d773a31388c7ec8ade146eb1929a
 
 ## Reusable capabilities and additional providers
 
-Owner scope added 2026-10-10: reusable plugins, rules, skills and tools with explicit enable/disable, Headroom as a selectable integration, native Gemini/Grok adapters, and sessions through OpenRouter. Existing core qualification continues while the following bounded lanes establish interfaces and implementation. These are requirements and assignments, not shipped claims.
+Owner scope added 2026-10-10: reusable plugins, rules, skills and tools with explicit enable/disable, Headroom as a selectable integration, native Gemini/Grok adapters, and sessions through OpenRouter. All five bounded lanes are integrated in development source and remain In Progress while hosted and native qualification continues. Exact `b730500` passed complete local race/vet, 32 compiled CLI checks and six actual terminal captures. These development results do not change the public v0.2.1 support matrix.
 
 | Lane | Owner | Required acceptance |
 | --- | --- | --- |
