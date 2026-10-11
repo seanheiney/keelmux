@@ -49,7 +49,17 @@ The home service's shared callback registration barrier and the helper's receive
 
 For publication, the helper holds a bounded receive-registration guard on the same authenticated IPC connection at the exact imported cursor and snapshot digest. Inside that guard, the common store rechecks its blockers and stop fence before publication; the journal records the result. The controller requires one bounded closure invocation and an observed guard result. Lost guard acknowledgement remains uncertainty even if a local commit succeeded.
 
-For stop, the home first commits its original durable stop fence and the controller records its attempt. The helper checks the current receive frontier, then durably records its signal attempt before acting on its retained direct child handle. A callback registered before that final check must block the signal or leave the operation uncertain. These barriers order cooperating control; they do not freeze future native activity or prevent an arbitrary same-user process from acting outside Keelmux.
+For stop, the home first commits its original durable stop fence and the controller records its attempt. The helper checks the current receive frontier, then durably records its signal attempt before acting on its retained direct child handle. A callback registered before that final check must block the signal or leave the operation uncertain. The helper also waits for terminal receipt persistence before acknowledging completed stop; child death alone is insufficient. These barriers order cooperating control; they do not freeze future native activity or prevent an arbitrary same-user process from acting outside Keelmux.
+
+## Confirm terminal persistence before acknowledging stop
+
+The helper separates observed child death from completion of the terminal receipt write. It invalidates live readiness and retains exit evidence, then completes terminal receipt persistence before acknowledging stop. If that persistence fails, the caller receives a storage failure; if it does not finish within the caller's context, the result remains uncertain. A visible file produced by atomic rename does not prove that its following directory sync succeeded.
+
+An explicit authenticated storage, conflict or uncertainty reply remains the result of that call. The caller cannot turn it into success merely because a stopped receipt is visible. When IPC is lost without an explicit failure, the caller may check the original retained terminal receipt once. A later exact invocation can reconcile retained terminal evidence, including after an earlier explicit failure, only after the fresh current durability confirmation below. Both receipt-only paths require the same channel/reference, original stop operation and retained signal-attempt marker. Receipt-only confirmation sends no additional native request or signal, creates no replacement helper, and does not resume the native thread.
+
+Before accepting terminal stop from retained files, the backend independently confirms their local persistence. It opens the existing owned private state directory and the receipt and retained stdio spool sidecar through no-follow handles, verifies exact canonical bytes and file/directory identities, syncs both files and the state directory, and rechecks those identities and bytes across the sync boundaries. It does not rewrite receipt or spool contents or create missing state. Missing, changed or unsafe evidence and a failed sync return a storage failure. Context is checked before and after each sync; observed cancellation leaves uncertainty. These checks cannot interrupt a blocked kernel filesystem syscall.
+
+This is **local storage reconciliation with durability effects**, not a purely read-only inspection. Fresh sync confirms persistence of the exact retained evidence under the filesystem's sync contract; it does not prove that the earlier helper write succeeded. It does not clear a callback, repair a receive gap, reopen admission or turn stopped evidence into Ready. Reading retained observations and confirming terminal stop persistence remain distinct operations.
 
 ## Recovery preserves the original attempt
 
@@ -57,11 +67,12 @@ For stop, the home first commits its original durable stop fence and the control
 | --- | --- |
 | Daemon IPC loss with a surviving helper | Authenticate the original channel, import its retained evidence, and obtain fresh guarded inspection. No new launch or bootstrap. |
 | Lost bootstrap or import acknowledgement | Preserve the attempted operation and reconcile known replies/committed cursors. No native request replay. |
-| Stop refused or acknowledgement lost | Keep the stop fence. Import retained late events without native reads, then inspect exact process death. No second signal. |
+| Explicit stop failure | Preserve that call's error and the stop fence. Visible terminal bytes cannot override the authenticated failure. No second signal. |
+| Stop acknowledgement lost without an explicit failure | Import retained late events without native reads. Exact original terminal evidence may confirm death only after fresh local receipt/sidecar/directory sync. No second native request or signal. |
 | Child exited | Retained-only evidence may be read from validated terminal receipts and private helper state. It cannot publish Ready. |
 | Missing/corrupt journal, helper receipt or unknown child lifetime | Report uncertainty or repair. A saved PID is not replacement or signal authority. |
 
-A matching stopped Start/Stop request remains a reconciliation of the original operation. It cannot reopen admission. Host reboot, native provider resume and execution movement remain separate recovery boundaries.
+A matching stopped Start/Stop request remains a reconciliation of the original operation. It cannot reopen admission. Confirming terminal persistence may perform new local sync work while preserving all original native attempts. Host reboot, native provider resume and execution movement remain separate recovery boundaries.
 
 ## Keep proof tags distinct
 
