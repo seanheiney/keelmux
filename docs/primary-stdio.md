@@ -49,7 +49,7 @@ The home service's shared callback registration barrier and the helper's receive
 
 For publication, the helper holds a bounded receive-registration guard on the same authenticated IPC connection at the exact imported cursor and snapshot digest. Inside that guard, the common store rechecks its blockers and stop fence before publication; the journal records the result. The controller requires one bounded closure invocation and an observed guard result. Lost guard acknowledgement remains uncertainty even if a local commit succeeded.
 
-For stop, the home first commits its original durable stop fence and the controller records its attempt. The helper checks the current receive frontier, then durably records its signal attempt before acting on its retained direct child handle. A callback arriving before that final check must block the signal or leave the operation uncertain. These barriers order cooperating control; they do not freeze future native activity or prevent an arbitrary same-user process from acting outside Keelmux.
+For stop, the home first commits its original durable stop fence and the controller records its attempt. The helper checks the current receive frontier, then durably records its signal attempt before acting on its retained direct child handle. A callback registered before that final check must block the signal or leave the operation uncertain. These barriers order cooperating control; they do not freeze future native activity or prevent an arbitrary same-user process from acting outside Keelmux.
 
 ## Recovery preserves the original attempt
 
