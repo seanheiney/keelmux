@@ -220,6 +220,8 @@ func profileArgsCompatible(provider string, args []string) error {
 		}
 	case "grok":
 		blocked["--rules"] = true
+	case "gemini":
+		blocked["--allowed-mcp-server-names"] = true
 	}
 	for _, a := range args {
 		flag, _, _ := strings.Cut(a, "=")

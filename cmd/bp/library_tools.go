@@ -19,11 +19,16 @@ import (
 const toolsHelp = `Usage: keelmux [--state DIR] tools COMMAND
 
 tools list [--profile ID]                 List enabled pinned declarations
+tools on [--profile ID] PACK/TOOL         Save one tool's enabled preference
+tools off [--profile ID] PACK/TOOL        Save one tool's disabled preference
 tools check [--profile ID] PACK/TOOL       Inspect availability; runs nothing
 tools check --health --workspace PATH [--timeout 5s] PACK/TOOL
                                         Explicit stdio MCP initialize/tools-list
 
-Flags precede PACK/TOOL. Check requires an enabled tool in the selected profile.
+Flags precede PACK/TOOL. On/off preserve the selected pack pin and do not
+enable a disabled pack. Select the pack with plugins on before editing tools.
+Changes require explicit native apply and supported reload or a new session.
+Check requires an enabled tool in the selected profile.
 Health starts only that declared executable in a fresh private home, using
 listed environment references. It never invokes a tool or makes a model turn.
 HTTPS health is unqualified and performs no request. Running native sessions
@@ -39,7 +44,7 @@ func toolsCommand(ctx context.Context, state, entry string, args []string, diagn
 	if entry != "" {
 		return errors.New("tool checks belong to the local execution home")
 	}
-	if args[0] != "list" && args[0] != "check" {
+	if args[0] != "list" && args[0] != "check" && args[0] != "on" && args[0] != "off" {
 		return errors.New("unknown tools command; use tools --help")
 	}
 	fs := flag.NewFlagSet("keelmux tools "+args[0], flag.ContinueOnError)
@@ -54,8 +59,20 @@ func toolsCommand(ctx context.Context, state, entry string, args []string, diagn
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
-	if args[0] == "list" && len(fs.Args()) != 0 || args[0] == "check" && len(fs.Args()) != 1 {
-		return errors.New("list takes no argument; check takes PACK/TOOL")
+	if args[0] == "list" && len(fs.Args()) != 0 || args[0] != "list" && len(fs.Args()) != 1 {
+		return errors.New("list takes no argument; on, off and check take PACK/TOOL")
+	}
+	if args[0] == "on" || args[0] == "off" {
+		parts := strings.Split(fs.Args()[0], "/")
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return errors.New("select one pinned PACK/TOOL")
+		}
+		// Reuse the revision-and-pin guarded selection boundary. This never
+		// resolves an enabled-only list, which would make an off tool impossible
+		// to turn back on, and never selects a different package revision.
+		return manageLibrary(ctx, state, entry, "plugins", []string{
+			args[0], "--profile", *profile, "--component", "tool/" + parts[1], parts[0],
+		}, diagnostics, out)
 	}
 	if health && workspace == "" || !health && workspace != "" || timeout <= 0 || timeout > 15*time.Second {
 		return errors.New("health requires --workspace PATH and a timeout above zero and at most 15s")
