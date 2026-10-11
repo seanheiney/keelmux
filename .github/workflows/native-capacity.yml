@@ -1,0 +1,54 @@
+name: Native capacity investigation
+on:
+  push:
+    branches: ["codex/native-capacity-diagnostics"]
+permissions:
+  contents: read
+concurrency:
+  group: native-capacity-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  measure:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-26, ubuntu-24.04]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Reviewed diagnostic source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          path: diagnostic-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Untouched failing baseline
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: 732d9cc63521fda778ff657f829d079238ad451d
+          path: baseline-source
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.6"
+          cache-dependency-path: baseline-source/go.sum
+      - name: Unprofiled gates and separate finite profiles
+        id: capture
+        env:
+          KEELMUX_CAPACITY_RUNNER_LABEL: ${{ matrix.runner }}
+        run: >-
+          python3 diagnostic-source/scripts/native-capacity-diagnostics.py
+          --baseline baseline-source
+          --diagnostic diagnostic-source
+          --output "$RUNNER_TEMP/keelmux-native-capacity"
+      - name: Upload sanitized investigation receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-capacity-${{ matrix.runner }}-${{ github.sha }}
+          path: ${{ runner.temp }}/keelmux-native-capacity/public/
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false
